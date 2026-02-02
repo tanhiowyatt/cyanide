@@ -14,4 +14,10 @@ RUN mkdir -p logs && chmod 777 logs
 # Expose ports (mapped in docker-compose)
 EXPOSE 2222 2223 8000
 
-CMD ["python", "honeypot.py"]
+
+# Security: Run as non-root
+RUN useradd -m cyanide
+USER cyanide
+
+# Run
+CMD ["python", "main.py"]

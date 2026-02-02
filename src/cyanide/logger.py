@@ -35,19 +35,31 @@ class CyanideLogger:
 
     async def log_command(self, session_id, protocol, src_ip, username, command, client_version="unknown"):
         """Log a command execution event (compatibility wrapper)."""
-        data = {
-            "protocol": protocol,
+        # Flattened structure for SIEM
+        entry = {
+            "eventid": "command.input",
+            "timestamp": datetime.datetime.now().isoformat(),
+            "session": session_id,
             "src_ip": src_ip,
             "username": username,
+            "protocol": protocol,
             "input": command,
             "client_version": client_version
         }
-        self.log_event(session_id, "command.input", data)
+        self.cyanide_log.info(json.dumps(entry))
         
     async def log_event_async(self, data_dict):
         """Async wrapper for log_event to match HoneypotServer expectations."""
-        # HoneypotServer passes a dict with 'event' key, we map it to our structure
         event_type = data_dict.pop("event", "unknown")
         session_id = data_dict.pop("session_id", "unknown")
-        self.log_event(session_id, event_type, data_dict)
+        
+        # Merge basic fields
+        entry = {
+            "eventid": event_type,
+            "timestamp": datetime.datetime.now().isoformat(),
+            "session": session_id
+        }
+        # Merge rest of data
+        entry.update(data_dict)
+        self.cyanide_log.info(json.dumps(entry))
 

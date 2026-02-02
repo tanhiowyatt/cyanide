@@ -4,7 +4,7 @@ from .base import Command
 class WhoCommand(Command):
     """Show who is logged on."""
 
-    def execute(self, args: list[str]) -> tuple[str, str, int]:
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the who command.
         
         Returns:

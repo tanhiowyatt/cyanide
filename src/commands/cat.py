@@ -3,7 +3,7 @@ from .base import Command
 class CatCommand(Command):
     """Concatenate content of files and print to standard output."""
 
-    def execute(self, args: list[str]) -> tuple[str, str, int]:
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the cat command.
         
         Args:
@@ -13,7 +13,7 @@ class CatCommand(Command):
             tuple: (stdout, stderr, return_code)
         """
         if not args:
-            return "", "", 0
+            return input_data or "", "", 0
         
         output = ""
         for arg in args:

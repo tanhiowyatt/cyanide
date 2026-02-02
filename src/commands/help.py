@@ -3,7 +3,7 @@ from .base import Command
 class HelpCommand(Command):
     """Display information about builtin commands."""
 
-    def execute(self, args: list[str]) -> tuple[str, str, int]:
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the help command.
         
         Returns:

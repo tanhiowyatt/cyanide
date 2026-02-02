@@ -4,7 +4,7 @@ from .base import Command
 class WCommand(Command):
     """Show who is logged on and what they are doing."""
 
-    def execute(self, args: list[str]) -> tuple[str, str, int]:
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the w command.
         
         Returns:

@@ -3,7 +3,7 @@ from .base import Command
 class UnameCommand(Command):
     """Print system information."""
 
-    def execute(self, args: list[str]) -> tuple[str, str, int]:
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the uname command.
         
         Args:
@@ -12,14 +12,23 @@ class UnameCommand(Command):
         Returns:
              tuple: (system_info, empty_stderr, 0)
         """
+        # Get Profile from FS
+        profile = getattr(self.fs, "profile", None)
+        uname_a = "Linux server 5.15.0-91-generic..." # fallback
+        uname_r = "5.15.0-91-generic"
+        
+        if profile:
+            uname_a = profile.get("uname_a", uname_a)
+            uname_r = profile.get("uname_r", uname_r)
+
         if not args:
             return "Linux\n", "", 0
             
         if "-a" in args or "--all" in args:
-            return "Linux ubuntu-server 5.15.0-91-generic #101-Ubuntu SMP Tue Nov 14 13:30:08 UTC 2023 x86_64 x86_64 x86_64 GNU/Linux\n", "", 0
+            return f"{uname_a}\n", "", 0
             
         if "-r" in args:
-            return "5.15.0-91-generic\n", "", 0
+            return f"{uname_r}\n", "", 0
             
         if any(arg.startswith("-") for arg in args):
              # Simple error for now if not handled

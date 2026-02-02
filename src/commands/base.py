@@ -7,11 +7,12 @@ class Command:
         self.fs = emulator.fs
         self.username = emulator.username
 
-    def execute(self, args: list[str]) -> tuple[str, str, int]:
-        """Execute the command.
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+        """Execute the command asynchronously.
         
         Args:
             args: Command arguments (excluding command name).
+            input_data: Input from stdin (e.g. from pipe).
             
         Returns:
             tuple: (stdout, stderr, return_code)

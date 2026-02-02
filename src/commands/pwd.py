@@ -3,7 +3,7 @@ from .base import Command
 class PwdCommand(Command):
     """Print the name of the current working directory."""
 
-    def execute(self, args: list[str]) -> tuple[str, str, int]:
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the pwd command.
         
         Returns:

@@ -3,7 +3,7 @@ from .base import Command
 class ExportCommand(Command):
     """Set environment variables (mock)."""
 
-    def execute(self, args: list[str]) -> tuple[str, str, int]:
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the export command.
         
         Note:

@@ -3,7 +3,7 @@ from .base import Command
 class SudoCommand(Command):
     """Execute a command as another user (mock)."""
 
-    def execute(self, args: list[str]) -> tuple[str, str, int]:
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the sudo command (mock logic).
         
         Args:

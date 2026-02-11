@@ -202,20 +202,30 @@ class ProxyServerSession(asyncssh.SSHServerSession):
 
     def terminal_window_resized(self, width, height, pixwidth, pixheight): 
         """Handle window resize."""
-        if self.backend_channel: self.backend_channel.change_terminal_size(width, height, pixwidth, pixheight)
+        if self.backend_channel:
+            self.backend_channel.change_terminal_size(width, height, pixwidth, pixheight)
+            
     def break_received(self, msec): 
         """Handle break signal."""
-        if self.backend_channel: self.backend_channel.send_break(msec)
+        if self.backend_channel:
+            self.backend_channel.send_break(msec)
+            
     def signal_received(self, signal): 
         """Handle POSIX signal."""
-        if self.backend_channel: self.backend_channel.send_signal(signal)
+        if self.backend_channel:
+            self.backend_channel.send_signal(signal)
+            
     def eof_received(self):
         """Handle EOF from attacker."""
-        if self.backend_channel: self.backend_channel.write_eof()
+        if self.backend_channel:
+            self.backend_channel.write_eof()
+            
     def connection_lost(self, exc):
         """Handle connection loss."""
-        if self.send_task: self.send_task.cancel()
-        if self.backend_conn: self.backend_conn.close()
+        if self.send_task:
+            self.send_task.cancel()
+        if self.backend_conn:
+            self.backend_conn.close()
 
     async def _send_loop(self):
         """Buffered send loop to backend."""
@@ -228,7 +238,8 @@ class ProxyServerSession(asyncssh.SSHServerSession):
                     self.backend_channel.write(chunk)
                 else:
                     await asyncio.sleep(0.1)
-        except Exception: pass
+        except Exception:
+            pass
 
 class ProxyClientChannel(asyncssh.SSHClientSession):
     """Handles the session from Proxy -> Backend.
@@ -268,12 +279,15 @@ class ProxyClientChannel(asyncssh.SSHClientSession):
 
     def eof_received(self):
         """Handle EOF from backend."""
-        if self.peer_channel: self.peer_channel.write_eof()
+        if self.peer_channel:
+            self.peer_channel.write_eof()
 
     def connection_lost(self, exc):
         """Handle backend connection loss."""
-        if self.send_task: self.send_task.cancel()
-        if self.peer_channel: self.peer_channel.close()
+        if self.send_task:
+            self.send_task.cancel()
+        if self.peer_channel:
+            self.peer_channel.close()
 
     async def _send_loop(self):
         """Buffered send loop to attacker."""
@@ -284,12 +298,14 @@ class ProxyClientChannel(asyncssh.SSHClientSession):
                     # If data is str, join as str. If bytes, as bytes.
                     if self.buffer:
                          chunk = self.buffer[0]
-                         for b in self.buffer[1:]: chunk += b
+                         for b in self.buffer[1:]:
+                             chunk += b
                          self.buffer = []
                          self.peer_channel.write(chunk)
                 else:
                     await asyncio.sleep(0.1)
-        except Exception: pass
+        except Exception:
+            pass
 
 async def main():
     """Main entry point for proxy server."""

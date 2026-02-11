@@ -47,9 +47,11 @@ class GrepCommand(TextOpCommand):
             match = search_pattern in search_line
             
             if invert_match:
-                if not match: output += line
+                if not match:
+                    output += line
             else:
-                if match: output += line
+                if match:
+                    output += line
                 
         rc = 0 if output else 1
         return output, "", rc

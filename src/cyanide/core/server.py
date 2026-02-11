@@ -239,7 +239,8 @@ class HoneypotServer:
 
     def get_filesystem(self, session_id="unknown", src_ip="unknown"):
         """Factory to get the filesystem instance."""
-        audit_hook = lambda a, p: self._fs_audit_hook(a, p, session_id, src_ip)
+        def audit_hook(a, p):
+            return self._fs_audit_hook(a, p, session_id, src_ip)
         if self.fs_pickle_path and os.path.isfile(self.fs_pickle_path):
             try:
                 root = load_fs(self.fs_pickle_path)
@@ -641,7 +642,8 @@ class HoneypotServer:
             
             # Use Factory with session context
             fs = self.get_filesystem(session_id, src_ip)
-            quarantine_hook = lambda f, c: self.save_quarantine_file(f, c, session_id, src_ip)
+            def quarantine_hook(f, c):
+                self.save_quarantine_file(f, c, session_id, src_ip)
             shell = ShellEmulator(fs, username, quarantine_callback=quarantine_hook)
             
             # Setup TTY logging (scriptreplay + JSONL)
@@ -649,7 +651,8 @@ class HoneypotServer:
             log_dir = Path("var/log/cyanide/tty") / folder_name
             log_dir.mkdir(parents=True, exist_ok=True)
             
-            class TelnetState: pass
+            class TelnetState:
+                pass
             session_state = TelnetState()
             session_state.tty_log_path_jsonl = log_dir / f"{folder_name}.jsonl"
             session_state.tty_log_path = log_dir / f"{folder_name}.log"
@@ -795,7 +798,8 @@ class SSHServerFactory(asyncssh.SSHServer):
     def sftp_factory(self, channel):
         """Create SFTP server instance sharing the connection's filesystem."""
         # Use conn_id for SFTP since it's pre-shell
-        q_hook = lambda f, c: self.honeypot.save_quarantine_file(f, c, "sftp_"+self.conn_id, self.src_ip)
+        def q_hook(f, c):
+            self.honeypot.save_quarantine_file(f, c, "sftp_"+self.conn_id, self.src_ip)
         return CyanideSFTPServer(channel, self.fs, q_hook)
 
     def subsystem_requested(self, subsystem):
@@ -846,7 +850,8 @@ class SSHSession(asyncssh.SSHServerSession):
              # Helper for extraction
              def get_val(key, internal_attr=None, decode=False):
                  val = conn.get_extra_info(key)
-                 if val is not None: return val
+                 if val is not None:
+                     return val
                  if internal_attr:
                      val = getattr(conn, internal_attr, None)
                      if val is not None:
@@ -929,12 +934,14 @@ class SSHSession(asyncssh.SSHServerSession):
 
     def shell_requested(self):
         # Use shared FS
-        q_hook = lambda f, c: self.honeypot.save_quarantine_file(f, c, self.session_id, self.src_ip)
+        def q_hook(f, c):
+            self.honeypot.save_quarantine_file(f, c, self.session_id, self.src_ip)
         self.shell = ShellEmulator(self.fs, self.username, quarantine_callback=q_hook)
         return True
     
     def _get_prompt(self):
-        if not self.shell: return "$ "
+        if not self.shell:
+            return "$ "
         cwd = self.shell.cwd
         if cwd.startswith(f"/home/{self.username}"):
             cwd = cwd.replace(f"/home/{self.username}", "~", 1)
@@ -970,8 +977,10 @@ class SSHSession(asyncssh.SSHServerSession):
     def env_received(self, name, value):
         """Log client environment variables."""
         # Convert bytes to str if needed
-        if isinstance(name, bytes): name = name.decode('utf-8', 'ignore')
-        if isinstance(value, bytes): value = value.decode('utf-8', 'ignore')
+        if isinstance(name, bytes):
+            name = name.decode('utf-8', 'ignore')
+        if isinstance(value, bytes):
+            value = value.decode('utf-8', 'ignore')
         
         asyncio.create_task(self.honeypot.logger.log_event_async({
             "event": "client_env", 

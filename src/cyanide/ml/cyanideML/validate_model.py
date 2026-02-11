@@ -9,7 +9,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 
 # Mock prometheus if missing (for validate script)
 try:
-    import prometheus_client
+    # import prometheus_client
+    pass
 except ImportError:
     pass # Managed in metrics.py
 
@@ -45,12 +46,13 @@ def validate():
     with open(dataset_path, 'r') as f:
         for line in f:
             try:
-                l = json.loads(line)
+                log_line = json.loads(line)
                 # Assume prod logs are 'normal' for training, or we don't know label
                 # In unsupervised, we assume majority is normal.
-                l['label'] = 'unknown' 
-                normal_logs.append(l)
-            except: pass
+                log_line['label'] = 'unknown' 
+                normal_logs.append(log_line)
+            except Exception:
+                pass
             
     # Use 80/20 split for train/test from available logs
     split_idx = int(len(normal_logs) * 0.8)

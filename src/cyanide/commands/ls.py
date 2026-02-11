@@ -21,8 +21,10 @@ class LsCommand(Command):
         paths = []
         for arg in args:
             if arg.startswith("-"):
-                if "a" in arg: show_all = True
-                if "l" in arg: long_format = True
+                if "a" in arg:
+                    show_all = True
+                if "l" in arg:
+                    long_format = True
             else:
                 paths.append(arg)
         
@@ -67,8 +69,7 @@ class LsCommand(Command):
 
     def _format_long(self, nodes_with_names):
         """Format listing in long format (-l)."""
-        output = ""
-        total_blocks = 0 
+        output = "" 
         for node, name in nodes_with_names:
             # Fake date format
             date_str = node.mtime.strftime("%b %d %H:%M")

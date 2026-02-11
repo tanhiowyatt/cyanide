@@ -137,11 +137,13 @@ def run_test():
             else:
                 fn += 1
                 # Debug failures
-                if fn <= 5: print(f"  [MISS] {log.get('command') or log.get('username')} (Dist: {dist:.4f})")
+                if fn <= 5:
+                    print(f"  [MISS] {log.get('command') or log.get('username')} (Dist: {dist:.4f})")
         else:
             if is_pred_anomaly:
                 fp += 1
-                if fp <= 5: print(f"  [FALSE ALARM] {log.get('command')} (Dist: {dist:.4f})")
+                if fp <= 5:
+                    print(f"  [FALSE ALARM] {log.get('command')} (Dist: {dist:.4f})")
             else:
                 tn += 1
 

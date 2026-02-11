@@ -25,10 +25,11 @@ def load_config(path: Path = Path("config/cyanide.cfg")):
         if val is None:
             return default
             
-        if cast == bool:
-            if isinstance(val, bool): return val
+        if cast is bool:
+            if isinstance(val, bool):
+                return val
             return val.lower() in ('true', '1', 'yes', 'on')
-        elif cast == int:
+        elif cast is int:
             return int(val)
         return val
 

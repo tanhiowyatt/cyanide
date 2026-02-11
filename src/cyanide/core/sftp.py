@@ -33,7 +33,8 @@ class CyanideSFTPServer(asyncssh.SFTPServer):
 
     def _resolve_path(self, path):
         # Simplistic resolution
-        if path == ".": return "/root" # Should depend on cwd
+        if path == ".":
+            return "/root" # Should depend on cwd
         return path
 
     def stat(self, path):
@@ -140,9 +141,11 @@ class CyanideSFTPServer(asyncssh.SFTPServer):
         return handle
 
     def read(self, handle, offset, length):
-        if handle not in self.open_files: raise asyncssh.SFTPError(asyncssh.FX_INVALID_HANDLE, "")
+        if handle not in self.open_files:
+            raise asyncssh.SFTPError(asyncssh.FX_INVALID_HANDLE, "")
         obj = self.open_files[handle]
-        if obj["mode"] != "r": raise asyncssh.SFTPError(asyncssh.FX_PERMISSION_DENIED, "")
+        if obj["mode"] != "r":
+            raise asyncssh.SFTPError(asyncssh.FX_PERMISSION_DENIED, "")
         
         input_data = obj["buffer"]
         if offset >= len(input_data):
@@ -151,9 +154,11 @@ class CyanideSFTPServer(asyncssh.SFTPServer):
         return input_data[offset:offset+length]
 
     def write(self, handle, offset, data):
-        if handle not in self.open_files: raise asyncssh.SFTPError(asyncssh.FX_INVALID_HANDLE, "")
+        if handle not in self.open_files:
+            raise asyncssh.SFTPError(asyncssh.FX_INVALID_HANDLE, "")
         obj = self.open_files[handle]
-        if obj["mode"] != "w": raise asyncssh.SFTPError(asyncssh.FX_PERMISSION_DENIED, "")
+        if obj["mode"] != "w":
+            raise asyncssh.SFTPError(asyncssh.FX_PERMISSION_DENIED, "")
         
         # Simple APPEND logic (ignoring offset for now, usually sequential)
         # Proper implementation should handle seek/offset

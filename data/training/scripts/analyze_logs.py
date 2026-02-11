@@ -31,7 +31,7 @@ def analyze_logs(log_path):
                 
                 if dist > t2:
                     anomalies_new += 1
-            except:
+            except Exception:
                 continue
 
     if total == 0:

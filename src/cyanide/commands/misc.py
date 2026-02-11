@@ -1,5 +1,4 @@
 import asyncio
-import time
 import random
 from .base import Command
 
@@ -18,8 +17,10 @@ class PingCommand(Command):
             
         host = parsed.host
         if not host:
-             if unknown: host = unknown[-1]
-             else: return "", "ping: usage error: Destination address required\n", 2
+             if unknown:
+                 host = unknown[-1]
+             else:
+                 return "", "ping: usage error: Destination address required\n", 2
         
         count = parsed.count
         

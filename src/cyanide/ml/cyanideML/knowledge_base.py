@@ -140,9 +140,12 @@ class KnowledgeBase:
                     break
                     
         results = []
-        if cve_match: results.append(cve_match)
-        if mitre_tactic: results.append(mitre_tactic)
-        if mitre_technique: results.append(mitre_technique)
+        if cve_match:
+            results.append(cve_match)
+        if mitre_tactic:
+            results.append(mitre_tactic)
+        if mitre_technique:
+            results.append(mitre_technique)
             
         if not results:
             return None

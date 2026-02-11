@@ -95,17 +95,21 @@ def run_performance_test():
         
         if is_val_anomaly:
             anomaly_errors.append(dist)
-            if is_pred_anomaly: tp += 1
-            else: fn += 1
+            if is_pred_anomaly:
+                tp += 1
+            else:
+                fn += 1
         else:
             known_errors.append(dist)
-            if is_pred_anomaly: fp += 1
-            else: tn += 1
+            if is_pred_anomaly:
+                fp += 1
+            else:
+                tn += 1
 
     accuracy = (tp + tn) / len(test_set)
-    precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+    # precision = tp / (tp + fp) if (tp + fp) > 0 else 0
     recall = tp / (tp + fn) if (tp + fn) > 0 else 0
-    f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+    # f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
     
     print("\n" + "="*40)
     print("      MODEL PERFORMANCE REPORT      ")

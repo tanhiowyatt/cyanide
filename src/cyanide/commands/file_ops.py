@@ -14,7 +14,8 @@ class TouchCommand(FileOpCommand):
             
         for arg in args:
             # Ignore flags for now
-            if arg.startswith("-"): continue
+            if arg.startswith("-"):
+                continue
             
             path = self.emulator.resolve_path(arg)
             if self.fs.exists(path):

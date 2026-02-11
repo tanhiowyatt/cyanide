@@ -32,7 +32,7 @@ def benchmark(limit=10000):
         for line in f:
             try:
                 logs.append(json.loads(line))
-            except:
+            except Exception:
                 pass
             if len(logs) >= limit:
                 break

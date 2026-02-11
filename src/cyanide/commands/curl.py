@@ -26,8 +26,10 @@ class CurlCommand(Command):
 
         url = parsed.url
         if not url:
-             if unknown: url = unknown[-1]
-             else: return "", "curl: try 'curl --help' for more information\n", 1
+             if unknown:
+                 url = unknown[-1]
+             else:
+                 return "", "curl: try 'curl --help' for more information\n", 1
              
         # Determine output mode
         save_to_file = False
@@ -39,7 +41,8 @@ class CurlCommand(Command):
         elif parsed.remote_name:
             save_to_file = True
             filename = PurePosixPath(url).name
-            if not filename: filename = "index.html"
+            if not filename:
+                filename = "index.html"
             
         # Execute Request
         try:
@@ -89,7 +92,7 @@ class CurlCommand(Command):
                                      new_file = File(base_name, parent=parent_node, content=content.decode('utf-8', errors='ignore'), owner=self.username, group=self.username)
                                      parent_node.add_child(new_file)
                              else:
-                                  return "", f"curl: (23) Check output path\n", 23
+                                  return "", "curl: (23) Check output path\n", 23
                                   
                              if not parsed.silent:
                                  # Curl progress meter simulation (simplified)

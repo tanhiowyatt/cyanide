@@ -100,9 +100,9 @@ class FakeFilesystem:
         ]
         
         # Package Manager Consistency
-        pkg_manager = "apt"
+        # pkg_manager = "apt"
         if self.profile and "centos" in self.profile.get("name", "").lower():
-            pkg_manager = "yum"
+            # pkg_manager = "yum"
             history_cmds.insert(0, "yum update -y")
             history_cmds.insert(1, "yum install -y net-tools")
         else:

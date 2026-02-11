@@ -35,7 +35,7 @@ class FeatureExtractor:
         self.port_map = {} # port -> index
         self.port_counter = collections.Counter()
         self.total_logs = 0
-        self.port_lock = False # Simple flag, assume single thread for now or external lock
+        # self.port_lock = False # Simple flag, assume single thread for now or external lock
         
     def _calculate_entropy(self, text):
         """Calculates Shannon entropy of the string."""
@@ -78,11 +78,16 @@ class FeatureExtractor:
         # 1. Text Features
         # Combine relevant text fields
         text_content = ""
-        if "input" in log_entry: text_content += str(log_entry["input"]) + " "
-        if "username" in log_entry: text_content += str(log_entry["username"]) + " "
-        if "password" in log_entry: text_content += str(log_entry["password"]) + " "
-        if "cmd" in log_entry: text_content += str(log_entry["cmd"]) + " " # For command_not_found
-        if "command" in log_entry: text_content += str(log_entry["command"]) + " " # Standardized key
+        if "input" in log_entry:
+            text_content += str(log_entry["input"]) + " "
+        if "username" in log_entry:
+            text_content += str(log_entry["username"]) + " "
+        if "password" in log_entry:
+            text_content += str(log_entry["password"]) + " "
+        if "cmd" in log_entry:
+            text_content += str(log_entry["cmd"]) + " " # For command_not_found
+        if "command" in log_entry:
+            text_content += str(log_entry["command"]) + " " # Standardized key
         
         # HashingVectorizer returns scipy.sparse matrix
         text_vec = self.text_vectorizer.transform([text_content])
@@ -103,7 +108,7 @@ class FeatureExtractor:
         
         # 4. Port Features
         # One-hot encoded against Top-N ports, plus one for "Other"
-        port = log_entry.get("src_port") # Wait, Task says DESTINATION port (honeypot port).
+        # port = log_entry.get("src_port") # Wait, Task says DESTINATION port (honeypot port).
         # Log format check: existing logs don't clearly show destination port in all events?
         # Looking at previous file view...
         # 16: {"eventid": "connect", ..., "src_port": 50512} -> This is source port.

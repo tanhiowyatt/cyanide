@@ -48,9 +48,12 @@ class ShellEmulator:
         other_perm = perms[7:10]
         
         needed = ""
-        if "r" in mode: needed += "r"
-        if "w" in mode: needed += "w"
-        if "x" in mode: needed += "x"
+        if "r" in mode:
+            needed += "r"
+        if "w" in mode:
+            needed += "w"
+        if "x" in mode:
+            needed += "x"
         
         # Determine applicable scope
         scope_perm = other_perm
@@ -211,7 +214,7 @@ class ShellEmulator:
             
             if redirect_target:
                 # Redirect output
-                mode = 'a' if append_mode else 'w'
+                # mode = 'a' if append_mode else 'w'
                 # For fake fs, we need read/write logic
                 if append_mode:
                     # simplistic append

@@ -1,8 +1,8 @@
 # Machine Learning Documentation
 
-Cyanide uses a dedicated ML module (`cyanideML`) to filter traffic, detect anomalies, and benchmark performance.
+Cyanide uses a dedicated ML module (`cyanideML`) located in `src/cyanide/ml/cyanideML` to filter traffic, detect anomalies, and benchmark performance.
 
-## ml-models/cyanideML
+## src/cyanide/ml/cyanideML
 
 ### `model.py`
 **Class:** `HoneypotFilter`

@@ -1,7 +1,10 @@
 import configparser
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
+from .config_schema import CyanideConfig
+from pydantic import ValidationError
 
 def load_config(path: Path = Path("config/cyanide.cfg")):
     """Load and normalized configuration from INI file and .env."""
@@ -41,11 +44,19 @@ def load_config(path: Path = Path("config/cyanide.cfg")):
         "os_profile": get_val("server", "os_profile", "OS_PROFILE", "random"),
         "ssh": {
             "port": get_val("ssh", "listen_port", "SSH_PORT", 2222, int),
-            "enabled": get_val("ssh", "enabled", "SSH_ENABLED", True, bool)
+            "enabled": get_val("ssh", "enabled", "SSH_ENABLED", True, bool),
+            "backend_mode": get_val("ssh", "backend_mode", "SSH_BACKEND", "emulated"),
+            "target_host": get_val("ssh", "target_host", "SSH_TARGET_HOST", "127.0.0.1"),
+            "target_port": get_val("ssh", "target_port", "SSH_TARGET_PORT", 22222, int),
+            "version": get_val("ssh", "version", "SSH_VERSION", "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5")
         },
         "telnet": {
-            "port": get_val("telnet", "listen_port", "TELNET_PORT", 2223, int),
-            "enabled": get_val("telnet", "enabled", "TELNET_ENABLED", False, bool)
+            "port": get_val("telnet", "listen_port", "TELNET_PORT", 2323, int),
+            "enabled": get_val("telnet", "enabled", "TELNET_ENABLED", False, bool),
+            "backend_mode": get_val("telnet", "backend_mode", "TELNET_BACKEND", "emulated"),
+            "target_host": get_val("telnet", "target_host", "TELNET_TARGET_HOST", "127.0.0.1"),
+            "target_port": get_val("telnet", "target_port", "TELNET_TARGET_PORT", 23, int),
+            "banner": get_val("telnet", "banner", "TELNET_BANNER", None)
         },
         "users": []
     }
@@ -82,5 +93,16 @@ def load_config(path: Path = Path("config/cyanide.cfg")):
     if cfg.has_section("custom_profile"):
         for key in ["name", "ssh_banner", "uname_r", "uname_a", "etc_issue", "proc_version"]:
             config["custom_profile"][key] = cfg.get("custom_profile", key, fallback="")
+            
+    # Rate Limit
+    config["rate_limit"] = {
+        "max_connections_per_minute": get_val("rate_limit", "max_connections_per_minute", "RATE_LIMIT_MAX", 60, int),
+        "ban_duration": get_val("rate_limit", "ban_duration", "RATE_LIMIT_BAN", 3600, int)
+    }
         
-    return config
+    try:
+        model = CyanideConfig(**config)
+        return model.dict()
+    except ValidationError as e:
+        print(f"[!] Configuration Error:\n{e}")
+        sys.exit(1)

@@ -98,31 +98,26 @@ Wszystkie sesje są nagrywane w `var/log/cyanide/tty/`. Każda sesja ma własny 
 ```
 
 ## 💾 Konfiguracja systemu plików (YAML)
-
-System plików honeypot jest zdefiniowany w szablonach YAML w `config/fs-config/`.
-
-### 🌍 Profile OS
-Cyanide obsługuje kilka profili OS dla realizmu:
-- **Ubuntu 22.04**
-- **Debian 11**
-- **CentOS 7**
-
-### 📝 Ręczna edycja
-Główny system plików zdefiniowany jest w `config/fs-config/fs.yaml`. Po prostu edytuj plik YAML aby dodać honey-pliki:
-
-```yaml
-- name: passwords.txt
-  type: file
-  content: "admin:SuperSecret123!"
-```
-
-### 🎯 Personalizacja profili
-Użyj `generate_profiles.py`, aby zaktualizować YAML specyficzne dla dystrybucji:
-```bash
-python3 generate_profiles.py
-```
-
-**Skrypty nie są potrzebne do jednorazowych testów** — po prostu edytuj `config/fs-config/fs.yaml` i zrestartuj honeypot.
+ 
+ System plików honeypot jest zdefiniowany w szablonach YAML w `config/fs-config/`.
+ 
+ ### 🌍 Profile OS
+ Cyanide obsługuje kilka profili OS "out of the box". Każdy profil posiada odpowiadający mu plik YAML, zawierający zarówno strukturę systemu plików, jak i metadane OS:
+ - **fs.ubuntu_22_04.yaml**: Ubuntu 22.04 LTS
+ - **fs.debian_11.yaml**: Debian 11 (Bullseye)
+ - **fs.centos_7.yaml**: CentOS 7
+ 
+ ### 📝 Personalizacja metadanych
+ Każdy plik YAML zaczyna się od sekcji `metadata:`, w której można dostosować wygląd systemu operacyjnego:
+ ```yaml
+ metadata:
+   os_name: "Ubuntu 22.04 LTS"
+   ssh_banner: "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1"
+   uname_r: "5.15.0-76-generic"
+ ```
+ 
+ ### 🎯 Ręczna edycja
+ Przykład pełnej struktury systemu plików można znaleźć w `config/fs-config/fs.yaml.example`. Po prostu edytuj plik YAML i zrestartuj honeypota.
 
 ---
 

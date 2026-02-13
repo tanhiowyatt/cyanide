@@ -15,17 +15,9 @@ Connection handling settings.
 *   `host`: Listen address (0.0.0.0).
 *   `max_sessions`: Global connection limit.
 *   `session_timeout`: Inactivity timeout in seconds.
-*   `os_profile`: OS personality (`ubuntu_22_04`, `debian_11`, `centos_7`, `custom`, or `random`).
-    *   If `custom` is selected, the honeypot loads metadata from the `[custom_profile]` section and expects a filesystem at `config/fs-config/fs.custom.yaml`.
-
-## [custom_profile]
-Required if `os_profile = custom`.
-*   `name`: Descriptive name (e.g., "Generic Router").
-*   `ssh_banner`: Version string (e.g., `SSH-2.0-OpenSSH_9.0`).
-*   `uname_r`: Kernel release (`6.1.0`).
-*   `uname_a`: Full uname output.
-*   `etc_issue`: Content of `/etc/issue`.
-*   `proc_version`: Content of `/proc/version`.
+*   `os_profile`: OS personality (`ubuntu_22_04`, `debian_11`, `centos_7`, or `random`).
+    *   The honeypot selects a filesystem from `config/fs-config/` based on this profile.
+    *   Metadata (banners, uname) is loaded directly from the selected YAML.
 
 ## [ssh]
 SSH Service settings.
@@ -60,14 +52,26 @@ Allowed credentials for Emulated mode.
 *   Example: `root = 123456`
 
 ## [ml]
-Machine Learning settings.
+Machine Learning settings for anomaly detection.
 *   `enabled`: true/false.
+*   `ml_log`: Path to ML-specific logs.
+*   `model_path`: Path to the pre-trained `cyanideML` model.
+*   `online_learning`: If true, the model updates based on incoming traffic.
 
 ## [cleanup]
-Auto-cleanup settings.
+Auto-cleanup settings to prevent disk exhaustion.
 *   `enabled`: true/false.
-*   `interval`: Check interval in seconds.
-*   `retention_days`: Delete logs older than X days.
+*   `interval`: Check interval in seconds (default 3600).
+*   `retention_days`: Delete logs and files older than X days (default 7).
+*   `paths`: Comma-separated list of directories to clean.
+
+## [rate_limit]
+Protection against aggressive bot scanning.
+*   `max_connections_per_minute`: Number of connections allowed before banning an IP.
+*   `ban_duration`: Duration of the ban in seconds (default 3600).
+
+## [security]
+*   `allow_local_network`: true/false (default false). Blocks `curl`/`wget` access to internal/loopback IPs to prevent SSRF.
 
 ---
 

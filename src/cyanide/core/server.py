@@ -24,9 +24,22 @@ from cyanide.proxy.tcp_proxy import TCPProxy
 from .vm_pool import VMPool
 from .geoip import GeoIP
 from prometheus_client import generate_latest
+from .system_profiles import PROFILES
 
-# ML Integration - Moved to HoneypotServer.__init__ to avoid circular imports
+from .services.session_manager import SessionManager
+from .services.quarantine import QuarantineService
+from .services.analytics import AnalyticsService
+from .services.analytics import AnalyticsService
+from .services.telnet_handler import TelnetHandler
+from .async_logger import AsyncLogger
+from .telemetry import setup_telemetry
 
+class ServiceRegistry:
+    def __init__(self, session, quarantine, analytics, telnet):
+        self.session = session
+        self.quarantine = quarantine
+        self.analytics = analytics
+        self.telnet = telnet
 
 class HoneypotServer:
     """Main honeypot server orchestrating SSH, Telnet, and MySQL services."""
@@ -34,177 +47,110 @@ class HoneypotServer:
     def __init__(self, config: Dict[str, Any]):
         """Initialize honeypot server with configuration."""
         self.config = config
+        self.stats = StatsManager()
+        self.tracer = setup_telemetry("cyanide-honeypot", "1.0.0")
         
-        # Setup Cyanide Logger
-        log_path = os.getenv('TEST_LOG_DIR', config.get("log_path", "var/logs/cyanideLog"))
-        self.logger = CyanideLogger(log_path)
+        # --- Initialize Logger ---
+        log_dir = config.get("logging", {}).get("directory", "var/log/cyanide")
+        self.logger = CyanideLogger(log_dir)
         
-        # Setup Quarantine
-        self.quarantine_path = Path(config.get("quarantine_path", "var/quarantine"))
-        self.quarantine_path.mkdir(parents=True, exist_ok=True)
+        # --- Initialize Services ---
+        # 1. Session Manager
+        session_mgr = SessionManager(config)
         
-        self.users = self._load_users(config.get("users", []))
-        self.active_sessions = 0
-        self.max_sessions = config.get("max_sessions", 100)
-        self.max_sessions_per_ip = config.get("max_sessions_per_ip", 5)
-        self.sessions_per_ip = {} # Map of IP -> count
-        self.session_timeout = config.get("session_timeout", 300)
-        
-        # Quarantine quota (in MB)
-        self.quarantine_max_mb = config.get("quarantine_max_size_mb", 500)
-        
+        # 2. Quarantine Service
+        quarantine_svc = QuarantineService(config, self.logger)
+        # Pass VTScanner to QuarantineService
         # VirusTotal
         vt_key = config.get("virustotal", {}).get("api_key", "")
         self.vt_scanner = VTScanner(vt_key)
+        quarantine_svc.set_scanner(self.vt_scanner)
         
-        # GeoIP
-        self.geoip = GeoIP()
+        # 3. Analytics Service
+        analytics_svc = AnalyticsService(config, self.logger)
         
-        # OS Profile Selection
-        from .system_profiles import PROFILES
+        # Register Services temporarily to pass to TelnetHandler
+        class TempRegistry:
+             pass
+        temp_reg = TempRegistry()
+        temp_reg.session = session_mgr
+        temp_reg.quarantine = quarantine_svc
+        temp_reg.analytics = analytics_svc
         
-        profile_key = config.get("os_profile", "random")
-        if profile_key == "custom" and config.get("custom_profile"):
-            self.profile = config["custom_profile"]
-            self.logger.log_event("system", "system_status", {"message": "Using Custom OS Profile from configuration."})
-        elif profile_key in PROFILES:
-            self.profile = PROFILES[profile_key]
-        else:
-            if profile_key not in ("random", "custom"):
-                self.logger.log_event("system", "config_warning", {"message": f"Unknown profile '{profile_key}', falling back to random."})
-            self.profile = random.choice(list(PROFILES.values()))
-            # Reverse lookup for FS loading
-            profile_key = [k for k, v in PROFILES.items() if v == self.profile][0]
+        self.services = temp_reg # Needed for TelnetHandler init which expects server.services
         
-        self.logger.log_event("system", "system_status", {"message": f"OS Profile: {self.profile['name']}"})
-
-        # Preload FS if YAML based on profile
-        configured_fs_path = config.get("fs_yaml")
-        if configured_fs_path:
-             self.fs_yaml_path = configured_fs_path
-        else:
-             self.fs_yaml_path = f"config/fs-config/fs.{profile_key}.yaml"
-             if not os.path.exists(self.fs_yaml_path):
-                 self.logger.log_event("system", "warning", {"message": f"Profile FS not found at {self.fs_yaml_path}, falling back to config/fs-config/fs.yaml"})
-                 self.fs_yaml_path = "config/fs-config/fs.yaml"
+        # 4. Telnet Handler
+        telnet_handler = TelnetHandler(self, config)
         
-        # Stats Manager
-        self.stats = StatsManager()
-
-        # ML Initialization
-        self.ml_enabled = config.get("ml", {}).get("enabled", False)
-        self.ml_online_learning = config.get("ml", {}).get("online_learning", False)
-        self.ml_filter = None
-        if self.ml_enabled:
-            self.logger.log_event("system", "system_status", {"message": "Initializing ML Anomaly Detector..."})
-            try:
-                try:
-                    from cyanide.ml.cyanideML import HoneypotFilter
-                    from cyanide.ml.cyanideML.knowledge_base import KnowledgeBase
-                    
-                    config_path = config.get("ml", {}).get("model_path", "src/cyanide/ml/cyanideML/cyanideML.pkl")
-                    model_path = Path(config_path)
-                    
-                    if model_path.exists():
-                        self.logger.log_event("system", "system_status", {"message": f"Loading pre-trained ML model from {model_path}..."})
-                        self.ml_filter = HoneypotFilter.load(str(model_path))
-                        self.ml_filter.online_learning = self.ml_online_learning
-                    else:
-                        self.logger.log_event("system", "system_warning", {"message": "Pre-trained model not found, starting fresh (WARMUP mode)."})
-                        self.ml_filter = HoneypotFilter(online_learning=self.ml_online_learning)
-                except (ImportError, ModuleNotFoundError) as e:
-                    self.logger.log_event("system", "error", {"message": f"ML Module could not be loaded: {e}"})
-                    self.ml_enabled = False
-                    return
-                
-                self.ml_log_path = config.get("ml", {}).get("ml_log", "var/log/cyanide/cyanideML-log.json")
-                
-                # Load Knowledge Base
-                self.kb = KnowledgeBase()
-                kb_file = model_path.parent / "knowledge_base.pkl"
-                if kb_file.exists():
-                    self.kb.load(str(kb_file))
-                else:
-                    self.logger.log_event("system", "error", {"message": f"Knowledge Base file not found at {kb_file}"})
-            except Exception as e:
-                self.logger.log_event("system", "error", {"message": f"Failed to init ML model: {e}"})
-            except Exception as e:
-                self.logger.log_event("system", "error", {"message": f"Failed to init ML model: {e}"})
-                self.ml_enabled = False
+        # Final Registry
+        self.services = ServiceRegistry(
+            session=session_mgr,
+            quarantine=quarantine_svc,
+            analytics=analytics_svc,
+            telnet=telnet_handler
+        )
+        
+        # Backward compatibility / Shortcuts for internal use if needed
+        self.ml_enabled = analytics_svc.ml_enabled
+        self.ml_filter = analytics_svc.ml_filter
         
         self.ssh_server = None
         self.telnet_server = None
+        self.ssh_server = None
+        self.telnet_server = None
         self.metrics_server = None
+        
+        self.async_logger = AsyncLogger()
+        
+        # OS Profile and Filesystem config
+        profile_name = config.get("os_profile", "ubuntu_22_04")
+        if profile_name == "random":
+            profile_name = random.choice(["ubuntu_22_04", "debian_11", "centos_7"])
+            
+        self.profile = PROFILES.get(profile_name, PROFILES["ubuntu_22_04"]).copy()
+        self.fs_yaml_path = config.get("fs_yaml")
+        if not self.fs_yaml_path:
+            # Default to profile-specific FS if available
+            default_fs = f"config/fs-config/fs.{profile_name}.yaml"
+            if os.path.exists(default_fs):
+                self.fs_yaml_path = default_fs
+            else:
+                self.fs_yaml_path = "config/fs-config/fs.ubuntu_22_04.yaml" # Fallback
+                
+        # Load metadata from YAML to ensure self.profile is accurate for banners/uname
+        if self.fs_yaml_path and os.path.exists(self.fs_yaml_path):
+            try:
+                import yaml
+                with open(self.fs_yaml_path, 'r') as f:
+                    # We only need the top-level metadata, but safe_load is easiest
+                    y_data = yaml.safe_load(f)
+                    if "metadata" in y_data:
+                        self.profile.update(y_data["metadata"])
+                        print(f"[*] Initialized profile from {self.fs_yaml_path} metadata")
+            except Exception as e:
+                print(f"[!] Error loading metadata from {self.fs_yaml_path}: {e}")
+
+        self.users = config.get("users", [])
+        
+    @property
+    def active_sessions(self):
+        """Compatibility property for old code."""
+        return self.services.session.active_sessions
 
 
     def _analyze_command(self, cmd, username, src_ip, session_id, protocol):
-        """Run command through ML filter and alert if anomaly."""
-        try:
-            # Construct log entry format expected by filter
-            log_entry = {
-                "command": cmd,
-                "username": username,
-                "src_ip": src_ip,
-                "dst_port": self.config.get(protocol, {}).get("port", 0), # Best effort
-                "protocol": protocol
-            }
-            
-            is_anomaly, reason, distance = self.ml_filter.process_log(log_entry)
-            
-            # Log ML 'thought' for every action
-            ml_log_entry = {
-                "timestamp": datetime.datetime.now().isoformat(),
-                "src_ip": src_ip,
-                "session_id": session_id,
-                "verdict": "anomaly" if is_anomaly else "clean",
-                "reason": reason,
-                "distance": float(distance),
-                "command": cmd
-            }
-            
-            # Enrich with Knowledge Base if anomaly
-            if is_anomaly:
-                kb_results = self.kb.search(cmd)
-                if kb_results:
-                    ml_log_entry["kb_correlation"] = kb_results
-                    # Add human-readable display string
-                    kb_parts = []
-                    for match in kb_results:
-                        if match.get("source") == "MITRE":
-                            mid = match.get("id", "N/A")
-                            mname = match.get("name", "Unknown")
-                            mdesc = match.get("description", "").replace("\n", " ")
-                            kb_parts.append(f"{mid}\t{mname}\t{mdesc}")
-                        else:
-                            content = match.get("content", "")[:100].replace("\n", " ") + "..."
-                            kb_parts.append(f"[{match.get('source')}] {content}")
-                    ml_log_entry["kb_display"] = " | ".join(kb_parts)
-            
-            with open(self.ml_log_path, "a") as f:
-                f.write(json.dumps(ml_log_entry) + "\n")
-
-            if is_anomaly:
-                # Log to generic logger
-                asyncio.create_task(self.logger.log_event_async({
-                    "event": "ml_anomaly",
-                    "reason": reason,
-                    "distance": distance,
-                    "cmd": cmd,
-                    "src_ip": src_ip
-                }))
-                
-        except Exception as e:
-            self.logger.log_event(session_id, "error", {"message": f"ML Error: {e}"})
+        """Delegated to AnalyticsService."""
+        with self.tracer.start_as_current_span("analyze_command") as span:
+            span.set_attribute("command.body", cmd)
+            span.set_attribute("user.name", username)
+            span.set_attribute("net.peer.ip", src_ip)
+            span.set_attribute("session.id", session_id)
+            span.set_attribute("net.protocol.name", protocol)
+            self.services.analytics.analyze_command(cmd, username, src_ip, session_id, protocol)
 
     async def log_geoip(self, session_id, ip, protocol):
-        """Async GeoIP enrichment logging."""
-        geo_data = await self.geoip.lookup(ip)
-        if geo_data:
-            await self.logger.log_event_async({
-                "event": "client_geo", "session_id": session_id,
-                "protocol": protocol, "src_ip": ip,
-                "geo": geo_data
-            })
+        """Delegated to AnalyticsService."""
+        await self.services.analytics.log_geoip(session_id, ip, protocol)
 
 
     def _load_users(self, config_users):
@@ -257,12 +203,21 @@ class HoneypotServer:
         if self.fs_yaml_path and os.path.isfile(self.fs_yaml_path):
             try:
                 from cyanide.fs.yaml_fs import load_fs
-                root = load_fs(self.fs_yaml_path)
-                fs = FakeFilesystem(audit_callback=audit_hook, profile=self.profile)
+                root, metadata = load_fs(self.fs_yaml_path)
+                self.logger.log_event(session_id, "system_status", {"message": f"Loaded filesystem from {self.fs_yaml_path}"})
+                
+                # If YAML has metadata, we can use it to override/set profile for this session
+                # or just use the server default. For consistency, we use YAML metadata if it matches.
+                current_profile = self.profile.copy()
+                if metadata:
+                    current_profile.update(metadata)
+                
+                fs = FakeFilesystem(audit_callback=audit_hook, profile=current_profile)
                 fs.root = root # Hot-swap root
                 return fs
             except Exception as e:
                 self.logger.log_event(session_id, "error", {"message": f"Error loading YAML FS: {e}"})
+                traceback.print_exc()
         return FakeFilesystem(audit_callback=audit_hook, profile=self.profile)
 
     async def _scan_and_log(self, filename: str, content: bytes, session_id="unknown", src_ip="unknown"):
@@ -290,31 +245,8 @@ class HoneypotServer:
             })
 
     def save_quarantine_file(self, filename: str, content: bytes, session_id="unknown", src_ip="unknown"):
-        """Save a file to the quarantine directory with quota check."""
-        try:
-            # Check Disk Quota
-            current_size = sum(f.stat().st_size for f in self.quarantine_path.glob('*') if f.is_file())
-            content_size = len(content)
-            
-            if (current_size + content_size) > (self.quarantine_max_mb * 1024 * 1024):
-                self.logger.log_event(session_id, "quarantine_warning", {"message": f"Quarantine Quota Reached ({self.quarantine_max_mb}MB). Rejecting {filename}"})
-                return None
-
-            timestamp = int(time.time())
-            safe_name = f"{timestamp}_{Path(filename).name}"
-            target_path = self.quarantine_path / safe_name
-            
-            with open(target_path, "wb") as f:
-                f.write(content)
-            
-            # Trigger Async Analysis
-            if self.vt_scanner.enabled:
-                asyncio.create_task(self._scan_and_log(filename, content, session_id, src_ip))
-                
-            return str(target_path)
-        except Exception as e:
-            self.logger.log_event(session_id, "error", {"message": f"Error saving quarantine file: {e}"})
-            return None
+        """Delegated to QuarantineService."""
+        return asyncio.run(self.services.quarantine.save_file(filename, content, session_id, src_ip))
     def _log_tty(self, session_obj, direction: str, data: str):
         """Dual format logging: JSONL for reading + Timing/TS for scriptreplay."""
         if direction != "OUT" and not hasattr(session_obj, 'tty_log_path_jsonl'):
@@ -331,8 +263,7 @@ class HoneypotServer:
                     readable_data = data
                 
                 entry = {"timestamp": now, "direction": direction, "data": readable_data}
-                with open(session_obj.tty_log_path_jsonl, "a") as f:
-                    f.write(json.dumps(entry) + "\n")
+                self.async_logger.log(session_obj.tty_log_path_jsonl, json.dumps(entry) + "\n")
             except Exception as e:
                 self.logger.log_event("system", "tty_error", {"message": f"Error saving JSONL TTY: {e}"})
 
@@ -343,14 +274,12 @@ class HoneypotServer:
                 elapsed = now - session_obj.last_log_time
                 session_obj.last_log_time = now
                 
-                with open(session_obj.tty_timing_path, "a") as f_time:
-                    f_time.write(f"{elapsed:.6f} {len(data)}\n")
+                self.async_logger.log(session_obj.tty_timing_path, f"{elapsed:.6f} {len(data)}\n")
                     
-                with open(session_obj.tty_log_path, "ab") as f_log:
-                    if isinstance(data, str):
-                        f_log.write(data.encode())
-                    else:
-                        f_log.write(data)
+                if isinstance(data, str):
+                    self.async_logger.log(session_obj.tty_log_path, data.encode(), mode="ab")
+                else:
+                    self.async_logger.log(session_obj.tty_log_path, data, mode="ab")
             except Exception as e:
                 self.logger.log_event("system", "tty_error", {"message": f"Error saving scriptreplay TTY: {e}"})
 
@@ -406,8 +335,24 @@ class HoneypotServer:
                 elif path == "/stats":
                     content = json.dumps(self.stats.get_stats(), indent=2)
                     content_type = "application/json"
+                elif path == "/health":
+                    # Check core services
+                    ssh_status = "up" if self.ssh_server else "down"
+                    telnet_status = "up" if self.telnet_server else "down" # Might be None if disabled
+                    
+                    # If enabled in config but server is None, that's an issue (unless starting up)
+                    # For now, just report status
+                    status_code = 200
+                    status_data = {
+                        "status": "healthy",
+                        "ssh": ssh_status,
+                        "telnet": telnet_status,
+                        "uptime": time.time() - self.stats.start_time
+                    }
+                    content = json.dumps(status_data)
+                    content_type = "application/json"
                 else:
-                    content = "Cyanide Honeypot Metrics Server. Use /metrics or /stats."
+                    content = "Cyanide Honeypot Metrics Server. Use /metrics, /stats or /health."
                     content_type = "text/plain"
                     
                 response = (
@@ -437,6 +382,9 @@ class HoneypotServer:
 
     async def start(self):
         """Start all honeypot services and enter main event loop."""
+        # Start Async Logger
+        await self.async_logger.start()
+
         # Generate SSH Host Key
         ssh_key = asyncssh.generate_private_key("ssh-rsa")
         
@@ -492,7 +440,7 @@ class HoneypotServer:
 
             if backend_mode == "emulated":
                 self.telnet_server = await asyncio.start_server(
-                    self.handle_telnet, "0.0.0.0", telnet_port, reuse_address=True
+                    self.services.telnet.handle_connection, "0.0.0.0", telnet_port, reuse_address=True
                 )
                 self.logger.log_event("system", "service_started", {"service": "telnet_emulated", "port": telnet_port})
             elif backend_mode == "pool" or backend_mode == "proxy":
@@ -551,6 +499,9 @@ class HoneypotServer:
         if self.metrics_server:
             self.metrics_server.close()
             await self.metrics_server.wait_closed()
+            
+        await self.async_logger.stop()
+        
         if hasattr(self, '_stop_event'):
             self._stop_event.set()
 
@@ -584,178 +535,8 @@ class HoneypotServer:
             await asyncio.sleep(manager.interval)
 
     async def handle_telnet(self, reader, writer):
-        """Handle Telnet connections with interactive shell emulation."""
-        src_ip, src_port = writer.get_extra_info("peername")
-        
-        # Global limit
-        if self.active_sessions >= self.max_sessions:
-            self.logger.log_event("system", "connection_rejected", {"src_ip": src_ip, "reason": "global_limit_reached"})
-            writer.close()
-            return
-            
-        # Per-IP limit
-        per_ip_count = self.sessions_per_ip.get(src_ip, 0)
-        if per_ip_count >= self.max_sessions_per_ip:
-            self.logger.log_event("system", "connection_rejected", {"src_ip": src_ip, "reason": "per_ip_limit_reached"})
-            writer.close()
-            return
-
-        self.active_sessions += 1
-        self.sessions_per_ip[src_ip] = per_ip_count + 1
-        
-        session_id = str(uuid.uuid4())[:8]
-        start_time = time.time()
-        self.last_log_time = start_time # For TTY logging
-        
-        # Setup TTY logging for Telnet
-        folder_name = f"telnet_{src_ip}_{session_id}"
-        log_dir = Path("var/log/cyanide/tty") / folder_name
-        log_dir.mkdir(parents=True, exist_ok=True)
-        self.tty_log_path = log_dir / f"{folder_name}.jsonl"
-        open(self.tty_log_path, "w").close()
-        
-        commands = []
-        username = ""
-        password = ""
-        
-        try:
-            await self.logger.log_event_async({
-                "event": "connect", "protocol": "telnet", 
-                "src_ip": src_ip, "src_port": src_port, "session_id": session_id
-            })
-            
-            # GeoIP Lookup
-            asyncio.create_task(self.log_geoip(session_id, src_ip, "telnet"))
-            self.stats.on_connect("telnet", src_ip)
-
-            
-            # Simple auth
-            writer.write(b"login: ")
-            await writer.drain()
-            username = (await reader.readuntil(b"\n")).decode().strip()
-            
-            writer.write(b"Password: ")
-            await writer.drain()
-            password = (await reader.readuntil(b"\n")).decode().strip()
-            
-            success = self.is_valid_user(username, password)
-            self.stats.on_auth("telnet", src_ip, username, password, success)
-            await self.logger.log_event_async({
-                "event": "auth", "protocol": "telnet", "session_id": session_id,
-                "src_ip": src_ip, "username": username, "password": password, "success": success
-            })
-            
-            if not success:
-                 writer.write(b"\r\nLogin incorrect\r\n")
-                 await writer.drain()
-                 writer.close()
-                 return
-
-            # Shell loop
-            # Removed artificial banner to mimic real system behavior (banner handled by issue usually)
-            
-            # Use Factory with session context
-            fs = self.get_filesystem(session_id, src_ip)
-            def quarantine_hook(f, c):
-                self.save_quarantine_file(f, c, session_id, src_ip)
-            shell = ShellEmulator(fs, username, quarantine_callback=quarantine_hook)
-            
-            # Setup TTY logging (scriptreplay + JSONL)
-            folder_name = f"telnet_{src_ip}_{session_id}"
-            log_dir = Path("var/log/cyanide/tty") / folder_name
-            log_dir.mkdir(parents=True, exist_ok=True)
-            
-            class TelnetState:
-                pass
-            session_state = TelnetState()
-            session_state.tty_log_path_jsonl = log_dir / f"{folder_name}.jsonl"
-            session_state.tty_log_path = log_dir / f"{folder_name}.log"
-            session_state.tty_timing_path = log_dir / f"{folder_name}.time"
-            session_state.last_log_time = time.time()
-            
-            # Touch files
-            open(session_state.tty_log_path_jsonl, 'a').close()
-            open(session_state.tty_log_path, 'a').close()
-            open(session_state.tty_timing_path, 'a').close()
-            
-            prompt = f"{username}@server:~$ "
-            writer.write(prompt.encode())
-            self._log_tty(session_state, "OUT", prompt)
-            await writer.drain()
-            
-            while True:
-                try:
-                    line = await asyncio.wait_for(reader.readuntil(b"\n"), timeout=self.session_timeout)
-                    cmd = line.decode().strip()
-                    if not cmd:
-                        writer.write(prompt.encode())
-                        await writer.drain()
-                        continue
-                        
-                    commands.append(cmd)
-                    self._log_tty(session_state, "IN", cmd + "\n")
-                    
-                    if cmd in ("exit", "logout"):
-                        break
-                        
-                    # Log command immediately
-                    self.stats.on_command("telnet", src_ip, username, cmd)
-                    self.stats.on_command("telnet", src_ip, username, cmd)
-                    await self.logger.log_command(session_id, "telnet", src_ip, username, cmd, client_version="Telnet")
-                    
-                    # ML Analysis
-                    if self.ml_enabled and self.ml_filter:
-                         self._analyze_command(cmd, username, src_ip, session_id, "telnet")
-                    
-                    # Jitter
-                    await asyncio.sleep(random.uniform(0.05, 0.3))
-                    
-                    
-                    stdout, stderr, rc = await shell.execute(cmd)
-                    
-                    # Confusion Metric
-                    if rc == 127:
-                         await self.logger.log_event_async({
-                             "event": "command_not_found",
-                             "session_id": session_id,
-                             "cmd": cmd
-                         })
-                         
-                    output = stdout + stderr
-                    resp = output.replace("\n", "\r\n").encode()
-                    writer.write(resp)
-                    self._log_tty(session_state, "OUT", resp)
-                    
-                    # Update prompt
-                    cwd = shell.cwd
-                    if cwd.startswith(f"/home/{username}"):
-                        cwd = cwd.replace(f"/home/{username}", "~", 1)
-                    elif username == "root" and cwd.startswith("/root"):
-                        cwd = cwd.replace("/root", "~", 1)
-                        
-                    prompt = f"{username}@server:{cwd}$ "
-                    writer.write(prompt.encode())
-                    await writer.drain()
-                    
-                except asyncio.TimeoutError:
-                    writer.write(b"\r\nTimeout.\r\n")
-                    break
-        except Exception as e:
-            self.logger.log_event("system", "telnet_error", {"src_ip": src_ip, "message": f"Telnet Connection Error: {e}"})
-            self.logger.log_event(session_id, "telnet_exception", {"traceback": traceback.format_exc()})
-        finally:
-            duration = time.time() - start_time
-            await self.logger.log_event_async({
-                "event": "session_end", "protocol": "telnet", "session_id": session_id,
-                "src_ip": src_ip, "username": username, "commands": commands, "duration": duration
-            })
-            self.active_sessions -= 1
-            if src_ip in self.sessions_per_ip:
-                self.sessions_per_ip[src_ip] = max(0, self.sessions_per_ip[src_ip] - 1)
-                if self.sessions_per_ip[src_ip] == 0:
-                    del self.sessions_per_ip[src_ip]
-            self.stats.on_disconnect("telnet", src_ip)
-            writer.close()
+        """Deprecated. Use services.telnet.handle_connection."""
+        await self.services.telnet.handle_connection(reader, writer)
 
 class SSHServerFactory(asyncssh.SSHServer):
     """SSH server factory."""
@@ -771,31 +552,27 @@ class SSHServerFactory(asyncssh.SSHServer):
         self.src_ip = conn.get_extra_info("peername")[0]
         self.src_port = conn.get_extra_info("peername")[1]
         
-        # Check limits early
-        if self.honeypot.active_sessions >= self.honeypot.max_sessions:
-             self.honeypot.logger.log_event("system", "connection_rejected", {"src_ip": self.src_ip, "reason": "global_limit_reached"})
-             conn.close()
-             return
-             
-        per_ip = self.honeypot.sessions_per_ip.get(self.src_ip, 0)
-        if per_ip >= self.honeypot.max_sessions_per_ip:
-             self.honeypot.logger.log_event("system", "connection_rejected", {"src_ip": self.src_ip, "reason": "per_ip_limit_reached"})
-             conn.close()
-             return
-
-        self.honeypot.active_sessions += 1
-        self.honeypot.sessions_per_ip[self.src_ip] = per_ip + 1
-        
-        # Create a filesystem instance for this connection with IP context
-        self.fs = self.honeypot.get_filesystem(session_id="conn_"+self.conn_id, src_ip=self.src_ip)
+        with self.honeypot.tracer.start_as_current_span("ssh_connection_setup") as span:
+            span.set_attribute("net.peer.ip", self.src_ip)
+            span.set_attribute("net.peer.port", self.src_port)
+            
+            # Check limits via SessionManager
+            accepted, reason = self.honeypot.services.session.can_accept(self.src_ip)
+            if not accepted:
+                span.set_attribute("error", True)
+                span.set_attribute("rejection_reason", reason)
+                self.honeypot.logger.log_event("system", "connection_rejected", {"src_ip": self.src_ip, "reason": reason})
+                conn.close()
+                return
+                
+            self.honeypot.services.session.register_session(self.src_ip, "ssh")
+            
+            # Create a filesystem instance for this connection with IP context
+            self.fs = self.honeypot.get_filesystem(session_id="conn_"+self.conn_id, src_ip=self.src_ip)
         
     def connection_lost(self, exc):
         # Transport level cleanup - handle leaks here
-        self.honeypot.active_sessions -= 1
-        if self.src_ip in self.honeypot.sessions_per_ip:
-            self.honeypot.sessions_per_ip[self.src_ip] = max(0, self.honeypot.sessions_per_ip[self.src_ip] - 1)
-            if self.honeypot.sessions_per_ip[self.src_ip] == 0:
-                del self.honeypot.sessions_per_ip[self.src_ip]
+        self.honeypot.services.session.unregister_session(self.src_ip)
         self.honeypot.logger.log_event("system", "ssh_connection_lost", {"src_ip": self.src_ip, "active_sessions": self.honeypot.active_sessions})
         
     def password_auth_supported(self):
@@ -949,8 +726,8 @@ class SSHSession(asyncssh.SSHServerSession):
     def shell_requested(self):
         # Use shared FS
         def q_hook(f, c):
-            self.honeypot.save_quarantine_file(f, c, self.session_id, self.src_ip)
-        self.shell = ShellEmulator(self.fs, self.username, quarantine_callback=q_hook)
+            self.honeypot.services.quarantine.save_file(f, c, self.session_id, self.src_ip)
+        self.shell = ShellEmulator(self.fs, self.username, quarantine_callback=q_hook, config=self.honeypot.config)
         return True
     
     def _get_prompt(self):

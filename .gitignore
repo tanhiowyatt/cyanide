@@ -1,2 +1,13 @@
 /.venv
 .DS_Store
+
+# Coverage
+.coverage
+.coverage.*
+/htmlcov/
+/nosetests.xml
+/coverage.xml
+/cover/
+
+# Pytest
+.pytest_cache/

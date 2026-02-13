@@ -4,36 +4,29 @@ This document explains the purpose and structure of the static data directories 
 
 ## `fs_yaml` (Filesystem Configuration)
 
-**Configuration Key:** `FS_YAML` (env) or `fs_yaml` (cfg)  
-**Default Path:** `config/fs-config/fs.yaml`
+**Configuration Key:** `fs_yaml` (cfg)  
+**Default Path:** `config/fs-config/fs.ubuntu_22_04.yaml` (if no `fs_yaml` is specified and `os_profile` is `ubuntu_22_04`)
 
 ### Purpose
-Defines the virtual filesystem template. OS-specific profiles use this as a base.
+Defines the virtual filesystem template and OS metadata. Each profile has its own YAML file.
 
 ### Directory Structure: `config/fs-config/`
-- `fs.yaml`: The base template.
-- `fs.ubuntu_22_04.yaml`: Generated profile for Ubuntu.
-- `fs.debian_11.yaml`: Generated profile for Debian.
-- `fs.centos_7.yaml`: Generated profile for CentOS.
+- `fs.ubuntu_22_04.yaml`: Ubuntu 22.04 LTS profile.
+- `fs.debian_11.yaml`: Debian 11 profile.
+- `fs.centos_7.yaml`: CentOS 7 profile.
+- `fs.yaml.example`: Template for creating new filesystems.
 
 ### How to Customize
-1. **Edit the base:**
+1. **Edit the profile YAML:**
    ```bash
-   nano config/fs-config/fs.yaml
+   nano config/fs-config/fs.ubuntu_22_04.yaml
    ```
-2. **Regenerate profiles:**
-   ```bash
-   python3 generate_profiles.py
-   ```
+2. **Customize Metadata:**
+   Edit the `metadata:` section at the top of the file to change SSH banners or kernel versions.
 3. **Restart honeypot:**
    ```bash
-   docker compose restart
+   docker compose -f docker/docker-compose.yml restart cyanide
    ```
-
-### Benefits
-✅ **YAML Based** — Human-readable and editable.
-✅ **OS Specific** — Accurate emulation of different distros.
-✅ **Safe** — No binary deserialization.
 
 ## `var/` (Persistent Data)
 - **`var/log/cyanide/`**: JSON logs and TTY session recordings.

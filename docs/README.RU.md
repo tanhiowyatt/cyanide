@@ -100,27 +100,22 @@ Cyanide поддерживает более 25 стандартных коман
 Файловая система honeypot определена в шаблонах YAML в `config/fs-config/`.
 
 ### 🌍 Профили ОС
-Cyanide поддерживает несколько профилей ОС для реалистичности:
-- **Ubuntu 22.04**
-- **Debian 11**
-- **CentOS 7**
+Cyanide поддерживает несколько профилей ОС "из коробки". Каждый профиль имеет соответствующий YAML файл, содержащий как структуру файловой системы, так и метаданды ОС:
+- **fs.ubuntu_22_04.yaml**: Ubuntu 22.04 LTS
+- **fs.debian_11.yaml**: Debian 11 (Bullseye)
+- **fs.centos_7.yaml**: CentOS 7
 
-### 📝 Ручное редактирование
-Основная ФС определена в `config/fs-config/fs.yaml`. Просто отредактируйте YAML файл для добавления honey-файлов:
-
+### 📝 Настройка метаданных
+Каждый YAML файл начинается с секции `metadata:`, где вы можете настроить внешний вид ОС:
 ```yaml
-- name: passwords.txt
-  type: file
-  content: "admin:SuperSecret123!"
+metadata:
+  os_name: "Ubuntu 22.04 LTS"
+  ssh_banner: "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1"
+  uname_r: "5.15.0-76-generic"
 ```
 
-### 🎯 Кастомизация профилей
-Используйте `generate_profiles.py` для обновления специфичных для дистрибутивов YAML:
-```bash
-python3 generate_profiles.py
-```
-
-**Скрипты не нужны для разовых тестов** — просто отредактируйте `config/fs-config/fs.yaml` и перезапустите honeypot.
+### 🎯 Ручное редактирование
+Пример полной структуры ФС можно найти в `config/fs-config/fs.yaml.example`. Просто отредактируйте YAML файл и перезапустите honeypot.
 
 ---
 

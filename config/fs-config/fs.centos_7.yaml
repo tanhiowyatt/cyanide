@@ -1,8 +1,9 @@
-# OS Profile: centos_7
-# Name: CentOS 7
-# SSH Banner: SSH-2.0-OpenSSH_7.4
-# Kernel: 3.10.0-1160.108.1.el7.x86_64
-# Uname: Linux server 3.10.0-1160.108.1.el7.x86_64 #1 SMP Thu Jan 25 16:17:31 UTC 2024 x86_64 x86_64 x86_64 GNU/Linux
+metadata:
+  os_name: CentOS 7
+  ssh_banner: SSH-2.0-OpenSSH_7.4
+  uname_r: 3.10.0-1160.108.1.el7.x86_64
+  uname_a: Linux server 3.10.0-1160.108.1.el7.x86_64 #1 SMP Thu Jan 25 16:17:31 UTC 2024 x86_64 x86_64 x86_64 GNU/Linux
+  proc_version: "Linux version 3.10.0-1160.108.1.el7.x86_64 (mockbuild@kbuilder.bsys.centos.org) (gcc version 4.8.5 20150623 (Red Hat 4.8.5-44) (GCC) ) #1 SMP Thu Jan 25 16:17:31 UTC 2024\n"
 
 name: root
 type: directory

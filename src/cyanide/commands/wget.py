@@ -24,6 +24,12 @@ class WgetCommand(Command):
         if not parsed.url:
              return "", "wget: missing URL\n", 1
              
+        # Security: Validate URL
+        is_valid, error = self.validate_url(parsed.url)
+        if not is_valid:
+            print(f"URL validation failed: {error}") # Debug/Log
+            return "", f"wget: error: {error}\n", 1
+             
         url = parsed.url
         filename = parsed.output_document
         if not filename:

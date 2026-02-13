@@ -30,6 +30,11 @@ class CurlCommand(Command):
                  url = unknown[-1]
              else:
                  return "", "curl: try 'curl --help' for more information\n", 1
+                 
+        # Security: Validate URL
+        is_valid, error = self.validate_url(url)
+        if not is_valid:
+            return "", f"curl: (1) {error}\n", 1
              
         # Determine output mode
         save_to_file = False

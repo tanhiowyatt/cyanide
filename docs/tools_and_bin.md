@@ -39,11 +39,11 @@ When an attacker interacts with the honeypot (via SSH or Telnet), their complete
 
 ## How to Modify the Fake Filesystem
 
-Edit `config/fs-config/fs.yaml` directly:
+Edit the YAML template for the desired profile in `config/fs-config/` (e.g., `fs.ubuntu_22_04.yaml`) directly:
 
 ```bash
 # On host machine:
-nano config/fs-config/fs.yaml
+nano config/fs-config/fs.ubuntu_22_04.yaml
 
 # Add a honey file:
 # - name: confidential.txt
@@ -53,8 +53,8 @@ nano config/fs-config/fs.yaml
 #     API_KEY=sk-1...
 
 # Restart container:
-docker compose restart
+docker compose -f docker/docker-compose.yml restart cyanide
 ```
 
-**That's it!** No special tools needed.
+**That's it!** Changes will take effect immediately for new sessions.
 

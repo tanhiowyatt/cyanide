@@ -1,8 +1,9 @@
-# OS Profile: ubuntu_22_04
-# Name: Ubuntu 22.04 LTS
-# SSH Banner: SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.6
-# Kernel: 5.15.0-91-generic
-# Uname: Linux server 5.15.0-91-generic #101-Ubuntu SMP Tue Nov 14 13:30:08 UTC 2023 x86_64 x86_64 x86_64 GNU/Linux
+metadata:
+  os_name: Ubuntu 22.04 LTS
+  ssh_banner: SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1
+  uname_r: 5.15.0-76-generic
+  uname_a: "Linux server 5.15.0-76-generic #81-Ubuntu SMP Wed Jun 14 14:23:44 UTC 2023 x86_64 x86_64 x86_64 GNU/Linux"
+  proc_version: "Linux version 5.15.0-76-generic (buildd@lcy02-amd64-015) (gcc (Ubuntu 11.3.0-1ubuntu1~22.04.1) 11.3.0, GNU ld (GNU Binutils for Ubuntu) 2.38) #81-Ubuntu SMP Wed Jun 14 14:23:44 UTC 2023\n"
 
 name: root
 type: directory

@@ -1,8 +1,9 @@
-# OS Profile: debian_11
-# Name: Debian 11 (Bullseye)
-# SSH Banner: SSH-2.0-OpenSSH_8.4p1 Debian-5+deb11u3
-# Kernel: 5.10.0-28-amd64
-# Uname: Linux server 5.10.0-28-amd64 #1 SMP Debian 5.10.209-2 (2024-01-31) x86_64 GNU/Linux
+metadata:
+  os_name: "Debian 11 (Bullseye)"
+  ssh_banner: SSH-2.0-OpenSSH_8.4p1 Debian-5+deb11u3
+  uname_r: 5.10.0-28-amd64
+  uname_a: Linux server 5.10.0-28-amd64 #1 SMP Debian 5.10.209-2 (2024-01-31) x86_64 GNU/Linux
+  proc_version: "Linux version 5.10.0-28-amd64 (debian-kernel@lists.debian.org) (gcc-10 (Debian 10.2.1-6) 10.2.1 20210110, GNU ld (GNU Binutils for Debian) 2.35.2) #1 SMP Debian 5.10.209-2 (2024-01-31)\n"
 
 name: root
 type: directory

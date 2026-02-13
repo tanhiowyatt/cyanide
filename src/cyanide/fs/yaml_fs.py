@@ -30,13 +30,19 @@ def dict_to_node(data: Dict[str, Any], parent=None):
     
     raise ValueError(f"Unknown node type: {data.get('type')}")
 
-def load_fs(path: str) -> Directory:
-    """Loads filesystem from YAML."""
+def load_fs(path: str):
+    """Loads filesystem and metadata from YAML.
+    
+    Returns:
+        tuple: (Directory, dict) containing root node and metadata.
+    """
     if not os.path.exists(path):
         raise FileNotFoundError(f"Filesystem file not found: {path}")
     
     with open(path, 'r', encoding='utf-8') as f:
         data = yaml.safe_load(f)
-    print(f"DEBUG: load_fs loaded YAML from {path}. Root name: {data.get('name')}")
     
-    return dict_to_node(data)
+    metadata = data.pop("metadata", {})
+    print(f"DEBUG: load_fs loaded YAML from {path}. Metadata: {list(metadata.keys())}")
+    
+    return dict_to_node(data), metadata

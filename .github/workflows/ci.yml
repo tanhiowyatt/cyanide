@@ -91,7 +91,7 @@ jobs:
       - name: Install dependencies
         run: pip install tox
       - name: Run Tox
-        run: tox -e py311
+        run: tox -c tests/tox.ini -e py311
 
   ruff-lint:
     name: Ruff Lint

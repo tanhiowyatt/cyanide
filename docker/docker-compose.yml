@@ -39,7 +39,7 @@ services:
       - PYTHONUNBUFFERED=1
 
     healthcheck:
-      test: [ "CMD-SHELL", "python3 -c \"import socket; s=socket.socket(); exit(s.connect_ex(('127.0.0.1',2222))==0)\"" ]
+      test: [ "CMD", "python3", "/app/docker/healthcheck.py" ]
       interval: 30s
       timeout: 10s
       retries: 3

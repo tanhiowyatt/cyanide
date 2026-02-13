@@ -82,17 +82,17 @@ class TestFeature(unittest.IsolatedAsyncioTestCase):
 
 The application is an asynchronous event-driven server based on `asyncio`.
 
-1.  **Entry Point**: `main.py` -> `src/core/server.py:HoneypotServer.start()`
+1.  **Entry Point**: `scripts/cyanide` -> `src/cyanide/core/server.py:HoneypotServer.start()`
 2.  **Protocol Handlers**:
-    *   `src/core/server.py` handles Telnet.
-    *   `src/proxy/ssh_proxy.py` handles SSH (via `asyncssh`).
+    *   `src/cyanide/core/server.py` handles Telnet.
+    *   `src/cyanide/proxy/ssh_proxy.py` handles SSH (via `asyncssh`).
 3.  **Command Execution**:
-    *   Input is passed to `src/core/shell_emulator.py`.
+    *   Input is passed to `src/cyanide/core/shell_emulator.py`.
     *   Emulator parses syntax (`|`, `>`, `&&`).
-    *   Commands are delegated to classes in `src/commands/*.py`.
+    *   Commands are delegated to classes in `src/cyanide/commands/*.py`.
 4.  **Filesystem**:
-    *   `src/core/fake_filesystem.py`: In-memory object tree.
-    *   `data/cyanide/fs.yaml`: Persisted state (YAML format).
+    *   `src/cyanide/core/fake_filesystem.py`: In-memory object tree.
+    *   `config/fs-config/fs.*.yaml`: Persisted state (YAML templates).
 
 ### Key Class Interactions
 
@@ -104,7 +104,7 @@ graph TD
     B --> E[CommandRegistry]
     E --> F[LsCommand]
     E --> G[CdCommand]
-    D --> H[Persistent YAML]
+    D --> H["config/fs-config/*.yaml"]
 ```
 
 ---
@@ -114,7 +114,7 @@ graph TD
 ### Adding a New Command
 To add a command like `service`:
 
-1.  **Create file**: `src/commands/service.py`
+1.  **Create file**: `src/cyanide/commands/service.py`
 2.  **Implement class**:
     ```python
     from .base import Command
@@ -127,14 +127,14 @@ To add a command like `service`:
                  return "Restarting apache2... OK\n", "", 0
             return "", "Service not found\n", 1
     ```
-3.  **Register**: Add to `src/commands/__init__.py`.
+3.  **Register**: Add to `src/cyanide/commands/__init__.py`.
     ```python
     from .service import ServiceCommand
     COMMAND_MAP = { ..., "service": ServiceCommand }
     ```
 
 ### Adding a New Proxy Protocol
-1.  Use `src/proxy/tcp_proxy.py` as a base or reference.
+1.  Use `src/cyanide/proxy/tcp_proxy.py` as a base or reference.
 2.  Implement a class inheriting from `TCPProxy` or create a standalone asyncio server.
 3.  Initialize it in `HoneypotServer.start()`.
 
@@ -149,12 +149,12 @@ All application logs go to stdout (Docker logs) and `var/log/cyanide/cyanide.jso
 
 ### Common Issues
 *   **"Address already in use"**: Check if another container or system process is using port 2222/2223.
-*   **"Module not found"**: Ensure `PYTHONPATH` includes `src/`. Docker handles this automatically.
-*   **"Permission denied" on persistence**: Check file permissions on `data/cyanide/fs.yaml`. The container runs as user `cyanide` (UID often 1000 or 999).
+*   **"Module not found"**: Ensure `PYTHONPATH` includes `src/cyanide/`. Docker handles this automatically.
+*   **"Permission denied" on persistence**: Check file permissions on `config/fs-config/`. The container runs as user `cyanide`.
 
 ## 📦 Release Process
 
-1.  Bump version in `src/core/__init__.py` and `README.md`.
+1.  Bump version in `src/cyanide/__init__.py` and `README.md`.
 2.  Update `CHANGELOG.md`.
 3.  Build and test Docker image:
     ```bash

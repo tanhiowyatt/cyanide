@@ -6,7 +6,15 @@ Utilities for managing the persistence of the Fake Filesystem.
 
 ### `yaml_fs.py`
 Methods for loading the filesystem state from YAML.
-*   `load_fs(path)`: Loads and parses the filesystem tree from a YAML file.
+*   `load_fs(path)`: Loads and parses the filesystem tree and OS metadata from a YAML file. Returns `(root_node, metadata_dict)`.
+
+### Filesystem Metadata
+Each YAML template in `config/fs-config/` supports a `metadata:` section at the top. This metadata is used by the `HoneypotServer` to configure session-specific attributes:
+- `os_name`: Descriptive name of the OS.
+- `ssh_banner`: Version string for the SSH listener.
+- `uname_r`: Kernel release version.
+- `uname_a`: Full uname output.
+- `proc_version`: Content for `/proc/version`.
 
 ---
 

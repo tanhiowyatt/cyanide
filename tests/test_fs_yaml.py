@@ -36,7 +36,7 @@ children:
             os.remove(self.yaml_path)
 
     def test_load_fs(self):
-        root = load_fs(str(self.yaml_path))
+        root, metadata = load_fs(str(self.yaml_path))
         self.assertIsInstance(root, Directory)
         self.assertEqual(root.name, "")
         self.assertEqual(len(root.children), 1)

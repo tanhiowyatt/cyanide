@@ -1,4 +1,11 @@
-name: ""
+metadata:
+  os_name: "Example OS 1.0"
+  ssh_banner: "SSH-2.0-OpenSSH_X.Y"
+  uname_r: "X.Y.Z-generic"
+  uname_a: "Linux server X.Y.Z-generic #1 SMP x86_64 GNU/Linux"
+  proc_version: "Linux version X.Y.Z-generic (gcc version A.B.C) #1 SMP\n"
+
+name: root
 type: directory
 perm: drwxr-xr-x
 owner: root
@@ -11,6 +18,9 @@ children:
       - name: passwd
         type: file
         perm: "-rw-r--r--"
+        # nosemgrep: generic.secrets.security.detected-etc-shadow
+        # HONEYPOT FAKE FILE: These are intentional decoy credentials
+        # designed to attract and track attackers. Not real system data.
         content: |
           root:x:0:0:root:/root:/bin/bash
           admin:x:1000:1000:Admin User:/home/admin:/bin/bash

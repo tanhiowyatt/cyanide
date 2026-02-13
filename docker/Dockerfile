@@ -21,7 +21,6 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install runtime libs (if any needed)
-# libffi-dev and libssl-dev might be needed for runtime linking of some libs
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libffi-dev \
     libssl-dev \
@@ -40,22 +39,22 @@ ENV PYTHONPATH=/app/src:/app
 # Copy project files
 COPY . .
 
+# Copy healthcheck script
+COPY docker/healthcheck.py /app/docker/healthcheck.py
+
 # Create necessary directories and set ownership
-# We need write access to var/log/cyanide, var/lib/cyanide, var/run and data/cyanide (for fs.yaml if any)
-# Note: config is mounted read-only usually, but data might be read-only too. 
-# Var is where we write.
 RUN mkdir -p var/log/cyanide/tty var/lib/cyanide/quarantine var/run \
     && chown -R cyanide:cyanide /app/var /app/data
 
 # Switch to non-root user
 USER cyanide
 
-# Expose ports (High ports for non-root)
+# Expose ports
 EXPOSE 2222 2223 9090
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python3 -c "import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); result = s.connect_ex(('127.0.0.1', 2222)); exit(result)"
+    CMD python3 /app/docker/healthcheck.py || exit 1
 
 # Run main.py
 CMD ["python3", "src/cyanide/main.py"]

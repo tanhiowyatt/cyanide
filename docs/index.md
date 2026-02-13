@@ -4,16 +4,14 @@ Cyanide is a high-interaction SSH/Telnet/SMTP honeypot designed for capturing at
 
 ## Project Structure
 
-*   **/bin**: Executable entry points for the honeypot and utility scripts.
-*   **/src**: The main source code of the application.
-    *   **core**: The heart of the system (Server, Fake Filesystem, Shell Emulator).
-    *   **commands**: Implementations of emulated shell commands (ls, cd, wget, etc.).
-    *   **proxy**: Network proxies for SSH, Telnet, and generic TCP forwarding.
-    *   **cyanide**: Shared utilities, logging, and filesystem persistence.
-*   **/ai-models**: Machine Learning components for traffic analysis and anomaly detection.
-*   **/etc**: Configuration files.
-*   **/tools**: Helper scripts for dataset generation and log monitoring.
-*   **/var**: Runtime data (logs, quarantine, databases).
+*   **scripts/**: Executable entry points for the honeypot and utility scripts.
+*   **src/**: The main source code of the application.
+    *   **cyanide/core**: The heart of the system (Server, Fake Filesystem, Shell Emulator).
+    *   **cyanide/commands**: Implementations of emulated shell commands (ls, cd, wget, etc.).
+    *   **cyanide/proxy**: Network proxies for SSH, Telnet, and generic TCP forwarding.
+*   **ai_models**: Machine Learning components for traffic analysis and anomaly detection.
+*   **config**: Configuration files and filesystem templates.
+*   **var**: Runtime data (logs, lib, quarantine).
 
 ## Quick Links
 

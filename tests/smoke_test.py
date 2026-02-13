@@ -1,0 +1,64 @@
+import socket
+import time
+import sys
+
+def check_port(host, port, timeout=5):
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except (socket.timeout, ConnectionRefusedError):
+        return False
+
+def smoke_test():
+    host = "127.0.0.1"
+    ports = {
+        "SSH": 2222,
+        "Telnet": 2223,
+        "Metrics": 9090
+    }
+    
+    print("[*] Starting Smoke Test...")
+    all_passed = True
+    
+    # Wait for service startup
+    for i in range(10):
+        if check_port(host, 9090):
+            break
+        print(f"Waiting for service... {i+1}/10")
+        time.sleep(2)
+        
+    for name, port in ports.items():
+        if check_port(host, port):
+            print(f"[+] {name} (Port {port}): UP")
+        else:
+            print(f"[-] {name} (Port {port}): DOWN")
+            all_passed = False
+            
+    # Check /health endpoint
+    try:
+        import urllib.request
+        import json
+        with urllib.request.urlopen(f"http://{host}:9090/health", timeout=5) as response:
+            if response.status == 200:
+                data = json.loads(response.read().decode())
+                if data.get("status") == "healthy":
+                    print("[+] Health Endpoint: OK")
+                else:
+                    print(f"[-] Health Endpoint: UNHEALTHY ({data})")
+                    all_passed = False
+            else:
+                print(f"[-] Health Endpoint: {response.status}")
+                all_passed = False
+    except Exception as e:
+        print(f"[-] Health Endpoint Error: {e}")
+        all_passed = False
+
+    if all_passed:
+        print("[*] Smoke Test PASSED")
+        sys.exit(0)
+    else:
+        print("[!] Smoke Test FAILED")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    smoke_test()

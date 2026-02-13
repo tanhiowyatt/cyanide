@@ -38,13 +38,12 @@ The project is built on a modular principle using modern Python patterns:
 ### Directory Structure
 | Path | Description |
 |------|-------------|
-| `bin/` | Management and control tools |
-| `etc/` | Configuration files (`cyanide.cfg`) |
-| `src/core/` | Server core, shell emulator, and FS logic |
-| `src/commands/` | Implementations of emulated Linux commands |
-| `src/cyanide/` | Helper libraries and logging |
+| `scripts/` | Management and control tools |
+| `config/` | Configuration files (`cyanide.cfg`) and FS YAMLs |
+| `src/cyanide/core/` | Server core, shell emulator, and FS logic |
+| `src/cyanide/commands/` | Implementations of emulated Linux commands |
 | `var/log/cyanide/` | JSON logs and TTY recordings |
-| `var/quarantine/` | Isolated files |
+| `var/lib/cyanide/` | Data persistence and quarantine |
 
 ---
 
@@ -101,56 +100,33 @@ All sessions are recorded in `var/log/cyanide/tty/`. Each session has its own fo
 1.  Find the desired session folder in `var/log/cyanide/tty/`.
 2.  Execute the command:
 ```bash
-scriptreplay --timing var/log/cyanide/tty/<dir>/<dir>.timing --typescript var/log/cyanide/tty/<dir>/<dir>.log
+./scripts/cyanide-replay var/log/cyanide/tty/<dir>/
 ```
 
 ---
 
-## 💾 Filesystem Configuration (fs.yaml)
+## 💾 Filesystem Configuration (YAML)
 
-The honeypot filesystem is defined in `data/cyanide/fs.yaml`. This is a **human-editable** YAML file.
+The honeypot filesystem is defined in YAML templates located in `config/fs-config/`.
 
-### 📝 Manual Editing
+### 🌍 OS Profiles
+Cyanide supports multiple OS personalities out of the box. Each profile has a corresponding YAML file containing both the filesystem structure and OS metadata:
+-   `fs.ubuntu_22_04.yaml`: Ubuntu 22.04 LTS
+-   `fs.debian_11.yaml`: Debian 11 (Bullseye)
+-   `fs.centos_7.yaml`: CentOS 7
 
-Simply edit the YAML file to add honey files or modify the filesystem structure:
-
+### 📝 Metadata Customization
+Each YAML file starts with a `metadata:` section where you can customize the appearance of the OS:
 ```yaml
-name: ""
-type: directory
-perm: drwxr-xr-x
-owner: root
-group: root
-children:
-  - name: home
-    type: directory
-    perm: drwxr-xr-x
-    children:
-      - name: admin
-        type: directory
-        perm: drwxr-xr-x
-        children:
-          - name: passwords.txt
-            type: file
-            perm: "-rw-------"
-            owner: admin
-            group: admin
-            content: |
-              admin:SuperSecret123!
-              root:MyP@ssw0rd
-          - name: database_backup.sql
-            type: file
-            perm: "-rw-r--r--"
-            content: |
-              -- Database backup
-              USE production;
-              SELECT * FROM users;
+metadata:
+  os_name: "Ubuntu 22.04 LTS"
+  ssh_banner: "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1"
+  uname_r: "5.15.0-76-generic"
+  uname_a: "Linux server 5.15.0-76-generic ..."
 ```
 
-### 🎯 Example Files
-
-See `data/cyanide/fs.yaml.example` for a complete filesystem template.
-
-**No scripts needed** — just edit and restart the honeypot.
+### 🎯 Manual Structuring
+See `config/fs-config/fs.yaml.example` for a complete filesystem template. Simply edit the YAML file to add honey files or modify the structure, and restart the honeypot.
 
 ---
 

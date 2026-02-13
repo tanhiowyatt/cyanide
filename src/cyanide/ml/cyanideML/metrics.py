@@ -1,5 +1,5 @@
 try:
-    from prometheus_client import Counter, Histogram
+    from prometheus_client import Counter, Histogram, REGISTRY
 except ImportError:
     # Fallback if library not present
     class MockMetric:
@@ -10,21 +10,36 @@ except ImportError:
         
     Counter = MockMetric
     Histogram = MockMetric
+    REGISTRY = None
+
+def get_safe_metric(metric_class, name, documentation, labelnames=None, **kwargs):
+    """Safely register or retrieve a metric from the global registry."""
+    if REGISTRY:
+        # Check if metric already exists in the global registry
+        # prometheus_client stores them in _names_to_collectors
+        existing = REGISTRY._names_to_collectors.get(name)
+        if existing:
+            return existing
+            
+    return metric_class(name, documentation, labelnames=labelnames or [], **kwargs)
 
 # Metrics definition
-LOGS_PROCESSED_TOTAL = Counter(
+LOGS_PROCESSED_TOTAL = get_safe_metric(
+    Counter,
     'honeypot_logs_processed_total', 
     'Total number of logs processed by ML filter',
     ['status'] # 'anomaly' or 'clean'
 )
 
-PROCESSING_LATENCY = Histogram(
+PROCESSING_LATENCY = get_safe_metric(
+    Histogram,
     'honeypot_processing_latency_seconds',
     'Time taken to process a single log',
     buckets=[0.0005, 0.001, 0.002, 0.005, 0.01, 0.05, 0.1]
 )
 
-DISTANCE_SCORE = Histogram(
+DISTANCE_SCORE = get_safe_metric(
+    Histogram,
     'honeypot_distance_score',
     'Distance score of logs from nearest cluster',
     buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0]

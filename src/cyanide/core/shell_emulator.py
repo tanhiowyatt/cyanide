@@ -21,9 +21,10 @@ class ShellEmulator:
     - Command chaining (;, &&, ||)
     """
     
-    def __init__(self, fs: FakeFilesystem, username: str = "root", quarantine_callback=None):
+    def __init__(self, fs: FakeFilesystem, username: str = "root", quarantine_callback=None, config=None):
         self.fs = fs
         self.username = username
+        self.config = config or {}
         # Callback(filename, content) -> void
         self.quarantine_callback = quarantine_callback
         self.cwd = "/home/admin" if username == "admin" else "/root" if username == "root" else f"/home/{username}"
@@ -219,8 +220,9 @@ class ShellEmulator:
                 if append_mode:
                     # simplistic append
                     existing = ""
-                    if self.fs.exists(redirect_target):
-                        existing = self.fs.get_content(redirect_target)
+                    abs_target = self.resolve_path(redirect_target)
+                    if self.fs.exists(abs_target):
+                        existing = self.fs.get_content(abs_target)
                     self._write_file(redirect_target, existing + stdout)
                 else:
                     self._write_file(redirect_target, stdout)

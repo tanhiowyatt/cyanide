@@ -1,4 +1,6 @@
-# Cyanide Honeypot 2.1 🛡️
+# Cyanide 
+
+![alt text](data/assets/logoreedme.png)
 
 **Cyanide** is a high-interaction SSH & Telnet honeypot designed to deceive and analyze attacker behavior. It combines realistic Linux filesystem emulation, advanced command simulation, and deep anti-detection mechanisms.
 
@@ -71,13 +73,16 @@ docker compose -f docker/docker-compose.yml down
 
 ---
 
-## 🛠️ Tool Reference (`bin/`)
+## 🛠️ Tool Reference (`scripts/`)
 
 | Utility | Description |
 |---------|-------------|
-| `./bin/cyanide` | Main management script (start, stop, status, restart). |
-| `./bin/cyanide-replay` | TTY log player. |
-| `./bin/cyanide-clean` | Clean up old logs and quarantined files. |
+| `./scripts/cyanide start` | Start the honeypot server. |
+| `./scripts/cyanide stop` | Stop the honeypot server. |
+| `./scripts/cyanide restart` | Restart the honeypot server. |
+| `./scripts/cyanide stats` | Show real-time statistics (uptime, sessions, attackers). |
+| `./scripts/cyanide clean` | Clean up old logs and quarantined files. |
+| `./scripts/cyanide replay <file>` | Convert TTY logs to asciinema format. |
 
 ---
 
@@ -101,7 +106,8 @@ All sessions are recorded in `var/log/cyanide/tty/`. Each session has its own fo
 1.  Find the desired session folder in `var/log/cyanide/tty/`.
 2.  Execute the command:
 ```bash
-./scripts/cyanide-replay var/log/cyanide/tty/<dir>/
+./scripts/cyanide replay var/log/cyanide/tty/<dir>/session.log > playback.cast
+# Then view via asciinema or compatible player
 ```
 
 ---
@@ -136,9 +142,7 @@ See `config/fs-config/fs.yaml.example` for a complete filesystem template. Simpl
 After long operation, it is recommended to clear logs:
 ```bash
 # Delete logs older than 7 days
-make clean
-# or specifically:
-./bin/cyanide-clean --days 7 --force
+./scripts/cyanide clean --days 7 --force
 ```
 
 ---

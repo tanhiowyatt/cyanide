@@ -66,9 +66,11 @@
 
 | Утилита | Описание |
 |---------|-------------|
-| `./scripts/cyanide` | Основной скрипт управления (start, stop, status, restart). |
-| `./scripts/cyanide-replay` | Проигрыватель TTY логов. |
-| `./scripts/cyanide-clean` | Утилита очистки старых логов и файлов в карантине. |
+| `./scripts/cyanide start` | Запуск сервера honeypot. |
+| `./scripts/cyanide stop` | Остановка сервера. |
+| `./scripts/cyanide stats` | Просмотр статистики (аптайм, сессии, атаки). |
+| `./scripts/cyanide clean` | Очистка логов и файлов в карантине. |
+| `./scripts/cyanide replay <file>` | Конвертация TTY логов для просмотра. |
 
 ---
 
@@ -92,7 +94,7 @@ Cyanide поддерживает более 25 стандартных коман
 1.  Найдите нужную папку сессии в `var/log/cyanide/tty/`.
 2.  Выполните команду:
 ```bash
-./scripts/cyanide-replay var/log/cyanide/tty/<dir>/
+./scripts/cyanide replay var/log/cyanide/tty/<dir>/session.log > playback.cast
 ```
 
 ## 💾 Конфигурация файловой системы (YAML)
@@ -131,7 +133,7 @@ Cyanide защищен от атак типа SSRF и DNS Rebinding:
 После долгой работы рекомендуется очищать логи:
 ```bash
 # Удалить логи старше 7 дней
-./scripts/cyanide-clean --days 7 --force
+./scripts/cyanide clean --days 7 --force
 ```
 
 ---

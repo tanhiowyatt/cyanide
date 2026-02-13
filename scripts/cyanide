@@ -1,18 +1,51 @@
 #!/usr/bin/env python3
 import sys
 import os
+
+# Silence all technical noise (deprecation warnings and debug logs) at the earliest stage
+os.environ['PYTHONWARNINGS'] = 'ignore'
+import warnings
+import logging
+warnings.filterwarnings("ignore")
+logging.basicConfig(level=logging.ERROR)
+logging.getLogger().setLevel(logging.ERROR)
+
 import subprocess
 import signal
 import time
+import argparse
+import json
+import re
+from pathlib import Path
 
-# Simple wrapper to manage the honeypot process
-# In a real Cowrie installation, this interacts with twistd, here we manage python3 main.py
+# --- Path Configuration ---
+# Get the directory where this script is located
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+# The project root is one level up from the scripts/ directory
+ROOT_DIR = os.path.dirname(SCRIPT_DIR)
 
-PID_FILE = "var/run/cyanide.pid"
-STDOUT_LOG = "var/log/cyanide/cyanide.out"
-STDERR_LOG = "var/log/cyanide/cyanide.err"
+PID_FILE = os.path.join(ROOT_DIR, "var/run/cyanide.pid")
+STDOUT_LOG = os.path.join(ROOT_DIR, "var/log/cyanide/cyanide.out")
+STDERR_LOG = os.path.join(ROOT_DIR, "var/log/cyanide/cyanide.err")
+CONFIG_FILE = os.path.join(ROOT_DIR, "config/cyanide.cfg")
+SRC_DIR = os.path.join(ROOT_DIR, "src")
+EASTEREGG_FILE = os.path.join(ROOT_DIR, "data/assets/logo.txt")
+
+# Ensure src is in path
+if SRC_DIR not in sys.path:
+    sys.path.insert(0, SRC_DIR)
+
+# --- Service Management ---
 
 def start():
+    # Print logo/easteregg if it exists
+    if os.path.exists(EASTEREGG_FILE):
+        try:
+            with open(EASTEREGG_FILE, 'r') as f:
+                print(f.read())
+        except Exception:
+            pass
+
     # Ensure dirs exist
     os.makedirs(os.path.dirname(PID_FILE), exist_ok=True)
     os.makedirs(os.path.dirname(STDOUT_LOG), exist_ok=True)
@@ -23,45 +56,32 @@ def start():
 
     # Load and print configuration info
     try:
-        sys.path.append(os.path.join(os.getcwd(), 'src'))
         from cyanide.core.config import load_config
-        from pathlib import Path
-        
-        config = load_config(Path("config/cyanide.cfg"))
+        config = load_config(Path(CONFIG_FILE))
         if config:
             print("\n" + "="*50)
-            print(" CYANIDE HONEYPOT STARTUP INFO")
+            print(" CYANIDE STARTUP INFO")
             print("="*50)
-            
-            # Network info
-            bind_ip = "0.0.0.0" # Default 
+            bind_ip = "0.0.0.0" 
             print(f"[*] Bind Address:   {bind_ip}")
-            
             if config.get('ssh', {}).get('enabled'):
                 print(f"[*] SSH Port:       {config['ssh']['port']}")
-                
             if config.get('telnet', {}).get('enabled'):
                 print(f"[*] Telnet Port:    {config['telnet']['port']}")
-                
-            # User info
             users = [u['user'] for u in config.get('users', [])]
             print(f"[*] Available Users: {', '.join(users)}")
             print("="*50 + "\n")
-            
     except Exception as e:
         print(f"[!] Info: Could not load extra config info: {e}")
 
     print("Starting Cyanide...")
-    # Adjust python path to include src
     env = os.environ.copy()
-    env["PYTHONPATH"] = os.path.join(os.getcwd(), "src")
+    env["PYTHONPATH"] = SRC_DIR
     
-    # We execute main.py in the background
-    # Redirect output to a log file or /dev/null
     with open(STDOUT_LOG, "w") as out, open(STDERR_LOG, "w") as err:
         p = subprocess.Popen(
-            [sys.executable, "src/cyanide/main.py"], 
-            cwd=os.getcwd(),
+            [sys.executable, os.path.join(SRC_DIR, "cyanide/main.py")], 
+            cwd=ROOT_DIR,
             env=env,
             stdout=out, 
             stderr=err
@@ -82,28 +102,33 @@ def stop():
     print(f"Stopping Cyanide (PID {pid})...")
     try:
         os.kill(pid, signal.SIGTERM)
-        # Wait for it to die
         time.sleep(1)
     except ProcessLookupError:
         print("Process not found.")
     
-    os.remove(PID_FILE)
+    if os.path.exists(PID_FILE):
+        os.remove(PID_FILE)
     print("Stopped.")
 
-def stats():
-    import requests
-    from datetime import timedelta
+def restart():
+    stop()
+    start()
 
-    # Get port from config if possible
-    port = 9090 # Default fallback
+def stats():
     try:
-        sys.path.append(os.path.join(os.getcwd(), 'src'))
+        import requests
+    except ImportError:
+        print("[!] Error: 'requests' library required for stats. Install with: pip install requests")
+        return
+
+    from datetime import timedelta
+    port = 9090 
+    try:
         from cyanide.core.config import load_config
-        from pathlib import Path
-        config = load_config(Path("config/cyanide.cfg"))
+        config = load_config(Path(CONFIG_FILE))
         port = int(config.get("metrics", {}).get("port", 9090))
-    except Exception as e:
-        print(f"\033[1;33m[!] Warning: Could not load config for stats port: {e}\033[0m", file=sys.stderr)
+    except Exception:
+        pass
 
     try:
         url = f"http://localhost:{port}/stats"
@@ -112,9 +137,8 @@ def stats():
         data = response.json()
         
         print("\n" + "\033[1;36m" + "="*50 + "\033[0m")
-        print("\033[1;36m CYANIDE HONEYPOT STATISTICS\033[0m")
+        print("\033[1;36m CYANIDE STATISTICS\033[0m")
         print("\033[1;36m" + "="*50 + "\033[0m")
-        
         uptime = data.get('uptime_seconds', 0)
         print(f"[*] Uptime:          {timedelta(seconds=uptime)}")
         print(f"[*] Active Sessions: \033[1;32m{data.get('active_sessions', 0)}\033[0m")
@@ -125,46 +149,134 @@ def stats():
             print("\n\033[1;33m--- Top Attacker IPs ---\033[0m")
             for ip, count in data['top_ips'].items():
                 print(f" {ip:<20} | {count} hits")
-            
-        if data.get('recent_commands'):
-            print("\n\033[1;33m--- Recent Commands ---\033[0m")
-            for cmd in data['recent_commands']:
-                t = time.strftime('%H:%M:%S', time.localtime(cmd.get('timestamp', time.time())))
-                print(f" [{t}] {cmd.get('ip', 'unknown'):<15} ({cmd.get('username', 'unknown')}): {cmd.get('command', '')}")
-        
         print("\033[1;36m" + "="*50 + "\033[0m\n")
-
-    except requests.exceptions.ConnectionError:
-        print(f"\033[1;31m[!] Error: Could not connect to Cyanide at {url}\033[0m")
-        print("    Ensure the honeypot is running and metrics are enabled in config/cyanide.cfg")
-    except requests.exceptions.Timeout:
-        print(f"\033[1;31m[!] Error: Request to {url} timed out after 5 seconds\033[0m")
-    except requests.exceptions.RequestException as e:
-        print(f"\033[1;31m[!] Error fetching stats: {e}\033[0m")
     except Exception as e:
-        print(f"\033[1;31m[!] Unexpected error: {e}\033[0m")
+        print(f"\033[1;31m[!] Error fetching stats: {e}\033[0m")
 
+# --- Cleanup Logic ---
 
-def usage():
-    print("Usage: bin/cyanide {start|stop|restart|stats}")
-    sys.exit(1)
+def clean(args):
+    try:
+        from cyanide.core.config import load_config
+        from cyanide.core.cleanup import CleanupManager
+        
+        config = load_config(Path(CONFIG_FILE))
+        if not config:
+            print("Error: Could not load config.")
+            return
+            
+        manager = CleanupManager(config)
+        days = args.days
+        if args.all:
+            days = 0
+        elif days is None:
+            days = manager.retention_days
+            
+        print(f"[*] Cyanide Cleanup")
+        print(f"[*] Mode: {'DRY RUN' if args.dry_run else 'LIVE'}")
+        print(f"[*] Removing files older than {days} days from: {', '.join(manager.target_paths)}")
+        
+        if not args.dry_run and not args.force:
+            confirm = input("Are you sure? [y/N] ")
+            if confirm.lower() != 'y':
+                print("Aborted.")
+                return
+                
+        stats = manager.cleanup_files(retention_days_override=days, dry_run=args.dry_run)
+        print("\n" + "="*30)
+        print(f"Deleted files: {stats.get('deleted', 0)}")
+        print(f"Bytes freed:   {stats.get('bytes_freed', 0)}")
+        print(f"Errors:        {stats.get('errors', 0)}")
+        print("="*30 + "\n")
+            
+    except Exception as e:
+        print(f"Cleanup error: {e}")
+
+# --- Replay Logic ---
+
+def replay(args):
+    log_path = args.log_file
+    if not os.path.exists(log_path):
+        print(f"Error: File {log_path} not found.")
+        return
+
+    try:
+        import ast
+        start_time = 0.0
+        header = {
+            "version": 2, "width": 120, "height": 40, "timestamp": 0,
+            "env": {"SHELL": "/bin/bash", "TERM": "xterm-256color"}
+        }
+        
+        with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+            lines = f.readlines()
+            
+        if not lines: return
+            
+        match = re.search(r'started at (\d+\.\d+)', lines[0])
+        if match:
+            start_time = float(match.group(1))
+            header["timestamp"] = int(start_time)
+            
+        print(json.dumps(header))
+        
+        for line in lines[1:]:
+            parts = line.split(" ", 2)
+            if len(parts) < 3: continue
+            if "[OUT]" not in parts[1]: continue
+                
+            ts = float(parts[0])
+            try:
+                content = ast.literal_eval(parts[2].strip())
+            except:
+                content = parts[2]
+                
+            rel_time = max(0, ts - start_time)
+            print(json.dumps([round(rel_time, 6), "o", content]))
+            
+    except Exception as e:
+        print(f"Replay error: {e}", file=sys.stderr)
+
+# --- Main CLI ---
 
 def main():
-    if len(sys.argv) < 2:
-        usage()
-        
-    cmd = sys.argv[1]
-    if cmd == "start":
+    parser = argparse.ArgumentParser(description="Cyanide Honeypot Management Tool")
+    subparsers = parser.add_subparsers(dest="command", help="Command to execute")
+
+    # Service subcommands
+    subparsers.add_parser("start", help="Start the honeypot")
+    subparsers.add_parser("stop", help="Stop the honeypot")
+    subparsers.add_parser("restart", help="Restart the honeypot")
+    subparsers.add_parser("stats", help="Show statistics")
+
+    # Clean subcommand
+    clean_parser = subparsers.add_parser("clean", help="Clean up old logs and quarantined files")
+    clean_parser.add_argument("--days", type=int, help="Override retention days")
+    clean_parser.add_argument("--dry-run", action="store_true", help="Show what would be deleted")
+    clean_parser.add_argument("--force", action="store_true", help="Skip confirmation")
+    clean_parser.add_argument("--all", action="store_true", help="Delete ALL log data")
+
+    # Replay subcommand
+    replay_parser = subparsers.add_parser("replay", help="Convert TTY log to asciinema format")
+    replay_parser.add_argument("log_file", help="Path to the .log file")
+
+    args = parser.parse_args()
+
+    # Handle subcommands
+    if args.command == "start":
         start()
-    elif cmd == "stop":
+    elif args.command == "stop":
         stop()
-    elif cmd == "restart":
-        stop()
-        start()
-    elif cmd == "stats":
+    elif args.command == "restart":
+        restart()
+    elif args.command == "stats":
         stats()
+    elif args.command == "clean":
+        clean(args)
+    elif args.command == "replay":
+        replay(args)
     else:
-        usage()
+        parser.print_help()
 
 if __name__ == "__main__":
     main()

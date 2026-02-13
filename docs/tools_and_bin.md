@@ -4,10 +4,11 @@
 
 Executable scripts exposed to the user.
 
-*   **`cyanide`**: The main entry point. supports `start`, `stop`, `status`, `restart` commands.
-*   **`cyanide-replay`**: Replays captured TTY logs (from `var/log/cyanide/tty/`).
-    *   Usage: `./scripts/cyanide-replay var/log/cyanide/tty/<session_dir>/`
-*   **`cyanide-clean`**: Clean up old logs and quarantined files.
+*   **`cyanide`**: The main entry point. Supports the following commands:
+    *   `start`, `stop`, `restart`: Manage the honeypot process.
+    *   `stats`: Display real-time statistics.
+    *   `clean`: Remove old logs (supports `--days`, `--dry-run`, `--all`).
+    *   `replay <file>`: Convert TTY logs to asciinema format.
 
 ## Root Scripts
 
@@ -31,10 +32,10 @@ When an attacker interacts with the honeypot (via SSH or Telnet), their complete
     ```
 
 2.  **Play the session:**
-    Run the replay tool from the root of the project:
+    Run the replay command from the root of the project:
     
     ```bash
-    ./scripts/cyanide-replay var/log/cyanide/tty/ssh_X.X.X.X_sessionID/
+    ./scripts/cyanide replay var/log/cyanide/tty/ssh_X.X.X.X_sessionID/session.log > playback.cast
     ```
 
 ## How to Modify the Fake Filesystem

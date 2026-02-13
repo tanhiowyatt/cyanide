@@ -18,7 +18,7 @@ Cyanide is a high-interaction SSH/Telnet/SMTP honeypot designed for capturing at
 1.  [Core Engine & Proxy Architecture](core_and_proxy.md) - Details on `server.py`, `vm_pool.py`, and proxies.
 2.  [Filesystem & Commands](fs_and_commands.md) - How the fake FS works and how to add commands.
 3.  [AI & Machine Learning](ai_ml.md) - Documentation for `cyanideML` module.
-4.  [Tools & Binaries](tools_and_bin.md) - Guide to CLI tools like `cyanide-replay`.
+4.  [Tools & Binaries](tools_and_bin.md) - Guide to the `cyanide` management script.
 6.  [Configuration](configuration.md) - Reference for `cyanide.cfg`.
 7.  [Developer Guide](development.md) - How to contribute, test, and extend.
 

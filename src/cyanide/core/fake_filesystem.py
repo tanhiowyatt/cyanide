@@ -1,7 +1,7 @@
 from pathlib import PurePosixPath
 import posixpath
 from .filesystem_nodes import Directory, File, Node
-print(f"DEBUG: Loading FakeFilesystem from {__file__}")
+# print(f"DEBUG: Loading FakeFilesystem from {__file__}")
 
 class FakeFilesystem:
     """Simulated Linux filesystem for honeypot.

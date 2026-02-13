@@ -1,40 +1,12 @@
 version: 2
 updates:
-  # Python deps
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "daily"
-    ignore:
-      - dependency-name: "tox*"
-      - dependency-name: "ruff"
-      - dependency-name: "pytest*"
-      - dependency-name: "black"
-    open-pull-requests-limit: 5
-
-  # GitHub Actions 
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
       interval: "weekly"
-    groups:
-      security-scanning:
-        patterns:
-          - "github/codeql-action*"
-          - "actions/upload-artifact*"
-      testing:
-        patterns:
-          - "actions/setup-python*"
-          - "astral-sh/setup-ruff*"
-          - "pre-commit/action*"
-    open-pull-requests-limit: 3
-
-  # Docker 
+    open-pull-requests-limit: 10
+    
   - package-ecosystem: "docker"
-    directory: "/"
+    directory: "/docker"
     schedule:
       interval: "weekly"
-    ignore:
-      - dependency-name: "python"
-        update-types: ["version-update:semver-patch"]
-    open-pull-requests-limit: 3

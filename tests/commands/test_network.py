@@ -38,18 +38,24 @@ def mock_session(mocker, mock_response):
     return session
 
 @pytest.mark.asyncio
-async def test_curl_stdout(shell, mock_session, mock_response):
+async def test_curl_stdout(shell, mock_session, mock_response, mocker):
+    mocker.patch("socket.getaddrinfo", return_value=[(0, 0, 0, '', ('93.184.216.34', 80))])
     cmd = CurlCommand(shell)
     
     stdout, stderr, rc = await cmd.execute(["http://example.com"])
     assert rc == 0
     assert "<html>content</html>" in stdout
     
-    # Verify call
-    mock_session.get.assert_called_with("http://example.com", timeout=10)
+    # Verify call uses IP and Host header
+    mock_session.get.assert_called_with(
+        "http://93.184.216.34:80", 
+        headers={'Host': 'example.com'}, 
+        timeout=10
+    )
 
 @pytest.mark.asyncio
-async def test_curl_output_file(shell, mock_fs, mock_session):
+async def test_curl_output_file(shell, mock_fs, mock_session, mocker):
+    mocker.patch("socket.getaddrinfo", return_value=[(0, 0, 0, '', ('93.184.216.34', 80))])
     cmd = CurlCommand(shell)
     
     stdout, stderr, rc = await cmd.execute(["-o", "out.html", "http://example.com"])
@@ -69,7 +75,8 @@ async def test_curl_fail(shell, mock_session, mock_response):
     assert "returned error: 404" in stderr
 
 @pytest.mark.asyncio
-async def test_curl_head(shell, mock_session, mock_response):
+async def test_curl_head(shell, mock_session, mock_response, mocker):
+    mocker.patch("socket.getaddrinfo", return_value=[(0, 0, 0, '', ('93.184.216.34', 80))])
     cmd = CurlCommand(shell)
     
     stdout, stderr, rc = await cmd.execute(["-I", "http://example.com"])
@@ -77,4 +84,8 @@ async def test_curl_head(shell, mock_session, mock_response):
     assert "HTTP/1.1 200 OK" in stdout
     assert "Content-Type: text/html" in stdout
     
-    mock_session.head.assert_called_with("http://example.com", timeout=10)
+    mock_session.head.assert_called_with(
+        "http://93.184.216.34:80", 
+        headers={'Host': 'example.com'}, 
+        timeout=10
+    )

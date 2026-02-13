@@ -23,6 +23,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Circular import between `server.py` and `yaml_fs.py` by moving profile constants to `src/cyanide/core/defaults.py`.
+- Resolved Ruff linting issues (E402, F401) across the codebase.
+- Fixed `curl` and `wget` regression tests by updating them to support DNS pinning and IP resolution.
 
 ## [2.1.0] - 2026-02-12
 ### Added

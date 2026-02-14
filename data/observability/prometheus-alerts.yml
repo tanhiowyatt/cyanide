@@ -1,0 +1,29 @@
+groups:
+  - name: cyanide_alerts
+    rules:
+      - alert: HighSessionCount
+        expr: cyanide_active_sessions > 50
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High number of active sessions on {{ $labels.instance }}"
+          description: "Cyanide has more than 50 active sessions for over 5 minutes."
+
+      - alert: MalwareDetected
+        expr: increase(cyanide_malicious_files_total[1m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Malicious file detected on {{ $labels.instance }}"
+          description: "A file uploaded to the honeypot has been flagged as malicious by VirusTotal."
+
+      - alert: SessionSurge
+        expr: rate(cyanide_total_sessions_total[5m]) > 2
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Honeypot session surge on {{ $labels.instance }}"
+          description: "Connection rate is higher than 2 per second for 5 minutes."

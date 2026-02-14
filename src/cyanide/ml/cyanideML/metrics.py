@@ -23,24 +23,35 @@ def get_safe_metric(metric_class, name, documentation, labelnames=None, **kwargs
             
     return metric_class(name, documentation, labelnames=labelnames or [], **kwargs)
 
-# Metrics definition
-LOGS_PROCESSED_TOTAL = get_safe_metric(
-    Counter,
-    'honeypot_logs_processed_total', 
-    'Total number of logs processed by ML filter',
-    ['status'] # 'anomaly' or 'clean'
-)
+_metrics = None
 
-PROCESSING_LATENCY = get_safe_metric(
-    Histogram,
-    'honeypot_processing_latency_seconds',
-    'Time taken to process a single log',
-    buckets=[0.0005, 0.001, 0.002, 0.005, 0.01, 0.05, 0.1]
-)
+def get_metrics():
+    """Get or create singleton metrics."""
+    global _metrics
+    if _metrics is None:
+        _metrics = {
+            'logs_processed': get_safe_metric(
+                Counter,
+                'honeypot_logs_processed_total', 
+                'Total number of logs processed by ML filter',
+                ['status'] # 'anomaly' or 'clean'
+            ),
+            'latency': get_safe_metric(
+                Histogram,
+                'honeypot_processing_latency_seconds',
+                'Time taken to process a single log',
+                buckets=[0.0005, 0.001, 0.002, 0.005, 0.01, 0.05, 0.1]
+            ),
+            'distance': get_safe_metric(
+                Histogram,
+                'honeypot_distance_score',
+                'Distance score of logs from nearest cluster',
+                buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0]
+            )
+        }
+    return _metrics
 
-DISTANCE_SCORE = get_safe_metric(
-    Histogram,
-    'honeypot_distance_score',
-    'Distance score of logs from nearest cluster',
-    buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0]
-)
+# For backward compatibility / ease of use
+def get_processed_metric(): return get_metrics()['logs_processed']
+def get_latency_metric(): return get_metrics()['latency']
+def get_distance_metric(): return get_metrics()['distance']

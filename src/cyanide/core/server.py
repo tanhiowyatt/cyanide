@@ -96,6 +96,7 @@ class HoneypotServer:
         self.ssh_server = None
         self.telnet_server = None
         self.metrics_server = None
+        self.background_tasks = []
         
         self.async_logger = AsyncLogger()
         
@@ -344,20 +345,23 @@ class HoneypotServer:
                     ssh_conf = self.config.get("ssh", {})
                     telnet_conf = self.config.get("telnet", {})
                     
-                    ssh_status = "up" if self.ssh_server else ("down" if ssh_conf.get("enabled", True) else "disabled")
-                    telnet_status = "up" if self.telnet_server else ("down" if telnet_conf.get("enabled", False) else "disabled")
+                    ssh_up = self.ssh_server is not None
+                    telnet_up = self.telnet_server is not None
                     
                     is_healthy = True
-                    if ssh_conf.get("enabled", True) and not self.ssh_server:
+                    if ssh_conf.get("enabled", True) and not ssh_up:
                         is_healthy = False
-                    if telnet_conf.get("enabled", False) and not self.telnet_server:
+                    if telnet_conf.get("enabled", False) and not telnet_up:
                         is_healthy = False
                         
                     status_data = {
                         "status": "healthy" if is_healthy else "unhealthy",
-                        "ssh": ssh_status,
-                        "telnet": telnet_status,
-                        "uptime": time.time() - self.stats.start_time
+                        "version": "2.1.1",
+                        "uptime": int(time.time() - self.stats.start_time),
+                        "services": {
+                            "ssh": ssh_up,
+                            "telnet": telnet_up
+                        }
                     }
                     content = json.dumps(status_data)
                     content_type = "application/json"
@@ -484,10 +488,10 @@ class HoneypotServer:
 
 
         # Start Metrics Server
-        asyncio.create_task(self.start_metrics_server())
+        self.background_tasks.append(asyncio.create_task(self.start_metrics_server()))
 
         # Start Cleanup Task
-        asyncio.create_task(self._cleanup_loop())
+        self.background_tasks.append(asyncio.create_task(self._cleanup_loop()))
         
 
         # Keep running
@@ -500,6 +504,11 @@ class HoneypotServer:
     async def stop(self):
         """Stop all services."""
         self.logger.log_event("system", "system_status", {"message": "Stopping Honeypot Server..."})
+        
+        # Cancel background tasks
+        for task in self.background_tasks:
+            task.cancel()
+            
         if self.ssh_server:
             self.ssh_server.close()
             await self.ssh_server.wait_closed()

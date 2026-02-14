@@ -5,7 +5,7 @@ import collections
 import time
 import pickle
 from .feature_extractor import FeatureExtractor
-from .metrics import LOGS_PROCESSED_TOTAL, PROCESSING_LATENCY, DISTANCE_SCORE
+from .metrics import get_processed_metric, get_latency_metric, get_distance_metric
 
 class HoneypotFilter:
     """
@@ -99,10 +99,10 @@ class HoneypotFilter:
 
         # Record Metrics
         processing_time = time.time() - start_time
-        PROCESSING_LATENCY.observe(processing_time)
-        DISTANCE_SCORE.observe(reconstruction_error) # Using DISTANCE_SCORE for error
+        get_latency_metric().observe(processing_time)
+        get_distance_metric().observe(reconstruction_error) # Using DISTANCE_SCORE for error
         status = "anomaly" if is_anomaly else "clean"
-        LOGS_PROCESSED_TOTAL.labels(status=status).inc()
+        get_processed_metric().labels(status=status).inc()
             
         # 3. Online Learning (Buffer)
         if self.online_learning:

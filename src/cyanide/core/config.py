@@ -38,7 +38,9 @@ def load_config(path: Path = Path("config/cyanide.cfg")):
 
     # Convert to dictionary structure expected by HoneypotServer
     config = {
+        "hostname": get_val("honeypot", "hostname", "HOSTNAME", "server01"),
         "log_path": get_val("honeypot", "log_path", "LOG_PATH", "var/log/cyanide"),
+        "listen_ip": get_val("server", "host", "HOST", "0.0.0.0"),
         "fs_yaml": get_val("honeypot", "fs_yaml", "FS_YAML", None),
         "quarantine_path": get_val("honeypot", "quarantine_path", "DATA_PATH", "var/lib/cyanide/quarantine"),
         "os_profile": get_val("server", "os_profile", "OS_PROFILE", "random"),
@@ -48,8 +50,7 @@ def load_config(path: Path = Path("config/cyanide.cfg")):
             "enabled": get_val("ssh", "enabled", "SSH_ENABLED", True, bool),
             "backend_mode": get_val("ssh", "backend_mode", "SSH_BACKEND", "emulated"),
             "target_host": get_val("ssh", "target_host", "SSH_TARGET_HOST", "127.0.0.1"),
-            "target_port": get_val("ssh", "target_port", "SSH_TARGET_PORT", 22222, int),
-            "version": get_val("ssh", "version", "SSH_VERSION", "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5")
+            "target_port": get_val("ssh", "target_port", "SSH_TARGET_PORT", 22222, int)
         },
         "telnet": {
             "port": get_val("telnet", "listen_port", "TELNET_PORT", 2323, int),

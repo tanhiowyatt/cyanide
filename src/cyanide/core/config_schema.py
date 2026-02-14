@@ -7,7 +7,6 @@ class SSHConfig(BaseModel):
     backend_mode: str = Field("emulated", pattern="^(emulated|proxy|pool)$")
     target_host: Optional[str] = "127.0.0.1"
     target_port: Optional[int] = 22222
-    version: Optional[str] = "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5"
 
 class TelnetConfig(BaseModel):
     enabled: bool = False
@@ -37,6 +36,7 @@ class CyanideConfig(BaseModel):
     cleanup: Dict[str, Any] = Field(default_factory=dict)
     
     # Paths & Core
+    hostname: str = "server01"
     log_path: str = "var/log/cyanide"
     fs_yaml: Optional[str] = None
     quarantine_path: str = "var/lib/cyanide/quarantine"

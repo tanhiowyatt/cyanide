@@ -10,37 +10,13 @@ from pathlib import Path
 sys.path.append(os.path.join(os.getcwd(), 'src'))
 
 from cyanide.core import HoneypotServer, load_config
+from cyanide.core.aesthetics import print_startup_banner
 
 CONFIG_PATH = Path("config/cyanide.cfg")
-EASTEREGG_PATH = Path("data/assets/logo.txt")
 
 def is_docker():
     """Detect if running inside a Docker container."""
     return os.path.exists('/.dockerenv') or os.environ.get('DOCKER_CONTAINER')
-
-def setup_aesthetics(config):
-    """Print logo and startup information."""
-    # 1. Print Logo
-    if EASTEREGG_PATH.exists():
-        try:
-            print(EASTEREGG_PATH.read_text())
-        except Exception:
-            pass
-    
-    # 2. Print Startup Info
-    if config:
-        print("\n" + "="*50)
-        print(" CYANIDE STARTUP INFO")
-        print("="*50)
-        bind_ip = "0.0.0.0" 
-        print(f"[*] Bind Address:   {bind_ip}")
-        if config.get('ssh', {}).get('enabled'):
-            print(f"[*] SSH Port:       {config['ssh']['port']}")
-        if config.get('telnet', {}).get('enabled'):
-            print(f"[*] Telnet Port:    {config['telnet']['port']}")
-        users = [u['user'] for u in config.get('users', [])]
-        print(f"[*] Available Users: {', '.join(users)}")
-        print("="*50 + "\n")
 
 async def main():
     """Main entry point."""
@@ -52,7 +28,7 @@ async def main():
         # but we hide the known noisy ones.
     
     config = load_config(CONFIG_PATH)
-    setup_aesthetics(config)
+    print_startup_banner(config)
         
     server = HoneypotServer(config)
     

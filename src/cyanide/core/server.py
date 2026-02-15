@@ -22,7 +22,9 @@ from .stats import StatsManager
 from cyanide.proxy.tcp_proxy import TCPProxy
 from .vm_pool import VMPool
 from prometheus_client import generate_latest
+from prometheus_client import generate_latest
 from .defaults import DEFAULT_METADATA
+from .fs_utils import resolve_fs_path, validate_fs_config
 
 from .services.session_manager import SessionManager
 from .services.quarantine import QuarantineService
@@ -101,37 +103,23 @@ class HoneypotServer:
         self.async_logger = AsyncLogger()
         
         # OS Profile and Filesystem config
+        # OS Profile and Filesystem config
         profile_name = config.get("os_profile", "ubuntu_22_04")
-        self.fs_yaml_path = None
-
-        if profile_name == "custom":
-            # Use specific path if provided, else look for fs.custom.yaml
-            self.fs_yaml_path = config.get("fs_yaml") or "config/fs-config/fs.custom.yaml"
-        elif profile_name == "random":
-            # 1. First priority: Check if a specific FS_YAML was provided as an override
-            self.fs_yaml_path = config.get("fs_yaml")
-            
-            # 2. If no override, pick a random YAML from config/fs-config/
-            if not self.fs_yaml_path:
-                fs_dir = Path("config/fs-config")
-                if fs_dir.exists():
-                    yaml_files = list(fs_dir.glob("fs.*.yaml"))
-                    if yaml_files:
-                        self.fs_yaml_path = str(random.choice(yaml_files))
-            
-            if not self.fs_yaml_path:
-                self.fs_yaml_path = "config/fs-config/fs.ubuntu_22_04.yaml"
-        else:
-            # Use profile-specific YAML
-            self.fs_yaml_path = f"config/fs-config/fs.{profile_name}.yaml"
-            if not os.path.exists(self.fs_yaml_path):
-                self.fs_yaml_path = "config/fs-config/fs.ubuntu_22_04.yaml" # Fallback
+        
+        # Use new flexible resolution logic
+        self.fs_yaml_path = resolve_fs_path(profile_name)
                 
         # Initial profile from fallback constants
         self.profile = DEFAULT_METADATA.copy()
 
         # Load metadata from YAML to ensure self.profile is accurate for banners/uname
         if self.fs_yaml_path and os.path.exists(self.fs_yaml_path):
+            is_valid, err = validate_fs_config(Path(self.fs_yaml_path))
+            if not is_valid:
+                print(f"[!] Invalid filesystem config: {err}")
+                # Fallback to safe default? Or allow it to crash later?
+                # User requirement says "Provide clear error messages", which we did.
+            
             try:
                 import yaml
                 with open(self.fs_yaml_path, 'r') as f:

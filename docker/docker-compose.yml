@@ -42,11 +42,8 @@ services:
       - HOSTNAME=server01
       # Path to store data (quarantine, etc.)
       - DATA_PATH=var/lib/cyanide/quarantine
-      # Path to the filesystem YAML configuration (Active ONLY if OS_PROFILE=custom or random)
-      # Options: config/fs-config/fs.ubuntu_22_04.yaml, config/fs-config/fs.debian_11.yaml, etc.
-      - FS_YAML=config/fs-config/fs.ubuntu_22_04.yaml
       # OS Consistency Profile: determines filesystem structure and command output styles
-      # Options: ubuntu_22_04, debian_11, centos_7, custom, random
+      # Options: ubuntu_22_04, debian_11, centos_7, custom file (e.g. my-fs.yaml), or random
       - OS_PROFILE=random
       # DNS Cache TTL in seconds
       - DNS_CACHE_TTL=60

@@ -12,11 +12,9 @@ log_path = var/log/cyanide
 # Values: String (valid file path)
 data_path = var/lib/cyanide
 
-# Path to the YAML filesystem configuration
-# You can edit this file manually to add honey files
-fs_yaml = data/cyanide/fs.yaml
-
-fs_yaml = data/cyanide/fs.yaml
+# Path to store data (e.g. quarantine)
+# Values: String (valid file path)
+data_path = var/lib/cyanide
 
 
 [server]

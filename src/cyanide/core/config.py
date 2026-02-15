@@ -42,7 +42,6 @@ def load_config(path: Path = Path("config/cyanide.cfg")):
         "hostname": get_val("honeypot", "hostname", "HOSTNAME", "server01"),
         "log_path": get_val("honeypot", "log_path", "LOG_PATH", "var/log/cyanide"),
         "listen_ip": get_val("server", "host", "HOST", "0.0.0.0"),
-        "fs_yaml": get_val("honeypot", "fs_yaml", "FS_YAML", None),
         "quarantine_path": get_val("honeypot", "quarantine_path", "DATA_PATH", "var/lib/cyanide/quarantine"),
         "os_profile": get_val("server", "os_profile", "OS_PROFILE", "random"),
         "dns_cache_ttl": get_val("honeypot", "dns_cache_ttl", "DNS_CACHE_TTL", 60, int),

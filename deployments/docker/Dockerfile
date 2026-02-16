@@ -11,7 +11,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
+# Upgrade pip and setuptools to fix vulnerabilities (e.g., CVE-2025-47273)
+RUN pip install --user --upgrade pip setuptools>=78.1.1
+
 # Install dependencies
 COPY pyproject.toml .
 COPY src/ src/

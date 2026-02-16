@@ -15,7 +15,7 @@ async def verify_profile(profile_path, expected_pretty_name, expected_id, expect
     fs = FakeFilesystem(root=root_node, profile=metadata)
     emulator = ShellEmulator(fs)
     
-    print(f"--- 1. Testing /etc/os-release ---")
+    print("--- 1. Testing /etc/os-release ---")
     stdout, _, _ = await emulator.execute("cat /etc/os-release")
     print(stdout)
     assert f'PRETTY_NAME="{expected_pretty_name}"' in stdout

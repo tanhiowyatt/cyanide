@@ -1,6 +1,5 @@
 
 import sys
-import os
 import argparse
 import time
 import numpy as np
@@ -402,7 +401,6 @@ class ModelValidator:
         
         # Generate Report
         report_str = self.report.generate(self.passed_suites, self.failed_suites)
-        model_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../assets/models"))
         
         # Save
         Path(REPORT_DIR).mkdir(exist_ok=True)

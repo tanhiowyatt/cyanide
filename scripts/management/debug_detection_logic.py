@@ -6,7 +6,6 @@ Debug detection logic step by step
 import sys
 import os
 import torch
-from pathlib import Path
 
 # Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), 'src')))

@@ -234,3 +234,17 @@ This guide provides a granular breakdown of how to test every major internal mod
 - [ ] NO command can execute a real `subprocess.run` on the host.
 - [ ] NO file operation can `unlink` or `write` outside the virtual root (Path Traversal).
 - [ ] NO ML model loading occurs without the `RestrictedUnpickler`.
+---
+
+## 17. TTY Recording & Session Forensics
+
+### 17.1 Full Session Replay Compatibility
+- **Test Case**: Verify that every keystroke and output timing is captured for exact replay.
+- **Method**: 
+    1. Connect to the honeypot via SSH or Telnet.
+    2. Run interactive commands with specific pauses (e.g., `ls`, then wait 2 seconds, then `id`).
+    3. Locate the session folder in `var/log/cyanide/tty/` (e.g., `ssh_127.0.0.1_abc123/`).
+- **Validation**:
+    - Verify that both `.time` (timing) and `.log` (data) files are created in the folder.
+    - Run `scriptreplay --timing <session>.time <session>.log` on the host machine.
+    - **Success Criteria**: The replay MUST perfectly mirror the original session with the identical timing and characters.

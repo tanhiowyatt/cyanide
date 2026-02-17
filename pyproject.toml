@@ -42,6 +42,11 @@ dependencies = [
     "opentelemetry-exporter-otlp>=1.20.0",
     "requests>=2.31.0",
     "torch>=2.2.0",
+    "aiohttp==3.13.2",
+    "elasticsearch==8.18.1",
+    "pytz==2025.2",
+    "redis==7.1.0",
+    "tzlocal==5.3.1",
 ]
 
 # Группы зависимостей для разработки (замена requirements-dev.txt)

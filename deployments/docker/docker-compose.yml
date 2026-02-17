@@ -97,6 +97,60 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  elasticsearch:
+    image: elasticsearch:8.11.1
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    restart: unless-stopped
+
+  map_redis:
+    image: redis:alpine
+    container_name: map_redis
+    restart: unless-stopped
+
+  cyanide-map-data:
+    image: cyanide
+    container_name: cyanide-map-data
+    build:
+      context: ../../
+      dockerfile: deployments/docker/Dockerfile
+    command: python3 web/DataServer.py
+    depends_on:
+      - elasticsearch
+      - map_redis
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CYANIDE_ES_URL=http://elasticsearch:9200
+      - CYANIDE_REDIS_HOST=map_redis
+    volumes:
+      - ../../web:/app/web
+    restart: unless-stopped
+
+  cyanide-map-web:
+    image: cyanide
+    container_name: cyanide-map-web
+    build:
+      context: ../../
+      dockerfile: deployments/docker/Dockerfile
+    command: python3 web/AttackMapServer.py
+    depends_on:
+      - map_redis
+    ports:
+      - "64299:64299"
+    environment:
+      - CYANIDE_REDIS_URL=redis://map_redis:6379
+      - CYANIDE_WEB_PORT=64299
+    volumes:
+      - ../../web:/app/web
+    restart: unless-stopped
   # Вспомогательные сервисы закомментированы по умолчанию (User choice)
 
   # mailhog:
@@ -118,3 +172,6 @@ services:
   #   environment:
   #     - COLLECTOR_OTLP_ENABLED=true
   #   restart: unless-stopped
+
+volumes:
+  es_data:

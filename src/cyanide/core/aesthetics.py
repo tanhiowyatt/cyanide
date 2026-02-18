@@ -11,7 +11,7 @@ RESET    = "\033[0m"
 def print_startup_banner(config):
     """Print logo and startup information in a dynamic colored fastfetch-style layout."""
     root_dir = Path.cwd()
-    logo_path = root_dir / "data/assets/logo.txt"
+    logo_path = root_dir / "assets/branding/logo.txt"
     
     # 1. Read Logo ASCII
     logo_lines = []

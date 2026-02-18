@@ -58,9 +58,9 @@ def load_config(path: Path = Path("configs/app.yaml")):
     # Convert to dictionary structure expected by HoneypotServer
     config = {
         "hostname": get_val("honeypot", "hostname", "HOSTNAME", "server01"),
-        "log_path": get_val("honeypot", "log_path", "LOG_PATH", "var/log/cyanide"),
+        "log_path": "var/log/cyanide",
         "listen_ip": get_val("server", "host", "HOST", "0.0.0.0"),
-        "quarantine_path": get_val("honeypot", "quarantine_path", "DATA_PATH", "var/lib/cyanide/quarantine"),
+        "quarantine_path": "var/lib/cyanide/quarantine",
         "os_profile": get_val("server", "os_profile", "OS_PROFILE", "random"),
         "max_sessions": get_val("server", "max_sessions", "MAX_SESSIONS", 100, int),
         "max_sessions_per_ip": get_val("server", "max_sessions_per_ip", "MAX_SESSIONS_PER_IP", 5, int),
@@ -116,13 +116,13 @@ def load_config(path: Path = Path("configs/app.yaml")):
         
     config["ml"] = {
         "enabled": get_val("ml", "enabled", "ML_ENABLED", False, bool),
-        "ml_log": get_val("ml", "ml_log", "ML_LOG", "var/log/cyanide/cyanideML-log.json"),
-        "model_path": get_val("ml", "model_path", "MODEL_PATH", "assets/models/cyanideML.pkl"),
+        "ml_log": "var/log/cyanide/cyanideML-log.json",
+        "model_path": "assets/models/cyanideML.pkl",
         "online_learning": get_val("ml", "online_learning", "ONLINE_LEARNING", False, bool),
         "retraining_interval_days": get_val("ml", "retraining_interval_days", "ML_RETRAINING_INTERVAL_DAYS", 7, int),
         "training_data": {
-            "hacker_methods": Path(config_data.get("ml", {}).get("training_data", {}).get("hacker_methods", "data/raw")),
-            "mitre_cve": Path(config_data.get("ml", {}).get("training_data", {}).get("mitre_cve", "data/processed/kb_ready"))
+            "hacker_methods": Path("data/raw"),
+            "mitre_cve": Path("data/processed/kb_ready")
         }
     }
 
@@ -130,7 +130,7 @@ def load_config(path: Path = Path("configs/app.yaml")):
         "enabled": get_val("cleanup", "enabled", "CLEANUP_ENABLED", True, bool),
         "interval": get_val("cleanup", "interval", "CLEANUP_INTERVAL", 3600, int),
         "retention_days": get_val("cleanup", "retention_days", "CLEANUP_RETENTION_DAYS", 7, int),
-        "paths": get_val("cleanup", "paths", "CLEANUP_PATHS", "var/log/cyanide,var/lib/cyanide").split(",")
+        "paths": ["var/log/cyanide", "var/lib/cyanide"]
     }
 
     # Load Custom Profile metadata

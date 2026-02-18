@@ -12,7 +12,7 @@ sys.path.append(os.path.join(os.getcwd(), 'src'))
 from cyanide.core import HoneypotServer, load_config
 from cyanide.core.aesthetics import print_startup_banner
 
-CONFIG_PATH = Path("config/cyanide.cfg")
+CONFIG_PATH = Path("configs/app.yaml")
 
 def is_docker():
     """Detect if running inside a Docker container."""

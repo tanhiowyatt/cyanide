@@ -41,11 +41,9 @@ services:
 
     environment:
       - PYTHONUNBUFFERED=1
-      - CYANIDE_CONFIG_PATH=/app/configs/app.yaml
 
       # --- Honeypot Core ---
       - CYANIDE_CORE__HOSTNAME=server01
-      - CYANIDE_CORE__DATA_PATH=/app/var/lib/cyanide/quarantine
       - CYANIDE_VFS__PROFILE=ubuntu_22_04 # Соответствует configs/profiles/ubuntu_22_04.yaml
 
       # --- Session & Resource Limits ---
@@ -62,8 +60,6 @@ services:
 
       # --- Machine Learning (CyanideML) ---
       - CYANIDE_ML__ENABLED=true
-      - CYANIDE_ML__LOG_PATH=/app/var/log/cyanideML-log.json
-      - CYANIDE_ML__MODEL_PATH=/app/assets/models/autoencoder.pkl
       - CYANIDE_ML__RETRAINING_INTERVAL_DAYS=7
 
       # --- Maintenance & Cleanup ---

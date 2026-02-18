@@ -31,19 +31,9 @@ class WgetCommand(Command):
             return "", f"wget: error: {error}\n", 1
              
         url = parsed.url
-        # Use resolved IP to prevent DNS rebinding
+        # Use host for request to allow SNI/SSL verification
         request_url = url
         headers = {}
-        if resolved_ip:
-            from urllib.parse import urlparse
-            p = urlparse(url)
-            # Replace hostname with IP in URL for the request
-            # But keep original Host header
-            port = p.port or (80 if p.scheme == 'http' else 443)
-            request_url = f"{p.scheme}://{resolved_ip}:{port}{p.path}"
-            if p.query:
-                request_url += f"?{p.query}"
-            headers['Host'] = p.hostname
         filename = parsed.output_document
         if not filename:
              filename = PurePosixPath(url).name

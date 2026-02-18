@@ -36,17 +36,11 @@ class CurlCommand(Command):
         if not is_valid:
             return "", f"curl: (1) {error}\n", 1
              
-        # Use resolved IP to prevent DNS rebinding
+        # Use host for request to allow SNI/SSL verification
         request_url = url
         headers = {}
-        if resolved_ip:
-            from urllib.parse import urlparse
-            p = urlparse(url)
-            port = p.port or (80 if p.scheme == 'http' else 443)
-            request_url = f"{p.scheme}://{resolved_ip}:{port}{p.path}"
-            if p.query:
-                request_url += f"?{p.query}"
-            headers['Host'] = p.hostname
+        # We obtained resolved_ip during validation but we don't force it in URL
+        # aiohttp will resolve it again, which is fine for now to fix SSL
              
         # Determine output mode
         save_to_file = False

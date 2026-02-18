@@ -23,6 +23,8 @@ from .text_ops import GrepCommand, HeadCommand, TailCommand
 from .misc import PingCommand, EditorCommand
 from .curl import CurlCommand
 
+from .wget import WgetCommand
+
 # Central command registry
 COMMAND_MAP = {
     # Navigation/Basics
@@ -56,6 +58,7 @@ COMMAND_MAP = {
     
     # Misc/Realism
     "curl": CurlCommand,
+    "wget": WgetCommand,
     "ping": PingCommand,
     "vi": EditorCommand,
     "vim": EditorCommand,

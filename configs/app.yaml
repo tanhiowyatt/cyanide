@@ -2,12 +2,6 @@ honeypot:
   # Hostname reported by the honeypot
   hostname: server01
   
-  # Path to store logs
-  log_path: var/log/cyanide
-  
-  # Path to store data (e.g. quarantine)
-  data_path: var/lib/cyanide
-  
   # Quarantine max size in MB
   quarantine_max_size_mb: 500
 
@@ -42,13 +36,9 @@ metrics:
 ml:
   enabled: true
   metrics_port: 9090
-  ml_log: var/log/cyanide/cyanideML-log.json
-  model_path: assets/models/cyanideML.pkl
+  # Hardcoded in core
   online_learning: false
   retraining_interval_days: 7
-  training_data:
-    hacker_methods: "data/raw"
-    mitre_cve: data/processed/kb_ready
 
 ssh:
   enabled: true
@@ -75,7 +65,7 @@ cleanup:
   enabled: true
   interval: 3600
   retention_days: 7
-  paths: "var/log/cyanide,var/lib/cyanide"
+  retention_days: 7
 
 virustotal:
   enabled: true

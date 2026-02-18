@@ -1,6 +1,5 @@
 import pytest
-import asyncio
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 from cyanide.core.server import HoneypotServer
 
 @pytest.mark.asyncio
@@ -26,8 +25,8 @@ async def test_server_initialization(mock_config, mock_logger, mocker):
 async def test_server_start_stop(mock_server, mocker):
     """Test start and stop sequences."""
     # Mock external listeners
-    mock_ssh_listen = mocker.patch("asyncssh.listen", new_callable=AsyncMock)
-    mock_asyncio_start_server = mocker.patch("asyncio.start_server", new_callable=AsyncMock)
+    mocker.patch("asyncssh.listen", new_callable=AsyncMock)
+    mocker.patch("asyncio.start_server", new_callable=AsyncMock)
     
     # Mock database connections if any (SessionManager usually handles this)
     

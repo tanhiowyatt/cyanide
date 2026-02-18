@@ -1,6 +1,5 @@
 import pytest
 import torch
-import os
 from cyanide.ml.model import CommandAutoencoder
 
 # Skip if torch not available (though it should be)

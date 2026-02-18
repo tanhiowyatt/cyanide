@@ -1,6 +1,5 @@
-import pytest
+import os
 import time
-from pathlib import Path
 from cyanide.core.cleanup import CleanupManager
 
 def test_cleanup_initialization():
@@ -78,5 +77,3 @@ def test_cleanup_execution(tmp_path):
     assert new_file.exists()
     assert stats["deleted"] == 1
     assert stats["bytes_freed"] > 0
-
-import os # Need explicit import for utime

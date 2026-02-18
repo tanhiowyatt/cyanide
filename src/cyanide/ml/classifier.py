@@ -250,6 +250,7 @@ class KnowledgeBase:
         for kw, tech_id in keywords.items():
             if kw in command_lower:
                 tech_info = self.technique_db.get(tech_id, {'name': 'Unknown'})
+                enriched = self._enrich_technique_details(tech_id, tech_info)
                 return {
                     'classified': True,
                     'confidence': 0.3,

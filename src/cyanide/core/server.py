@@ -35,7 +35,13 @@ from .vt_scanner import VTScanner
 
 
 class ServiceRegistry:
-    def __init__(self, session: "SessionManager", quarantine: "QuarantineService", analytics: "AnalyticsService", telnet: Any = None):
+    def __init__(
+        self,
+        session: "SessionManager",
+        quarantine: "QuarantineService",
+        analytics: "AnalyticsService",
+        telnet: Any = None,
+    ):
         self.session = session
         self.quarantine = quarantine
         self.analytics = analytics
@@ -80,14 +86,13 @@ class HoneypotServer:
 
         # 4. Telnet Handler
         telnet_handler = TelnetHandler(self, config)
-        
+
         # Update declared telnet service
         self.services.telnet = telnet_handler
 
         # Backward compatibility / Shortcuts for internal use if needed
         self.ml_enabled = analytics_svc.ml_enabled
         self.ml_filter = analytics_svc.ml_filter
-
 
         self.ssh_server: Any = None
         self.telnet_server: Any = None

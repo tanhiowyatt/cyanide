@@ -261,7 +261,7 @@ class SecurityRuleEngine:
         Include Entropy Check.
         """
         matches = []
-        
+
         # 1. Regex Rules
         for rule in self.compiled_rules:
             if rule["regex"].search(command):
@@ -270,16 +270,18 @@ class SecurityRuleEngine:
         # 2. Entropy Check
         entropy = self._calculate_entropy(command)
         if entropy > 4.5 and len(command) > 20:
-             # High entropy + sufficient length = likely obfuscated/encrypted
-             matches.append({
-                 "category": "obfuscation",
-                 "pattern": "high_entropy",
-                 "severity": "HIGH",
-                 "technique": "T1027",
-                 "confidence": 0.85,
-                 "description": f"High entropy command ({entropy:.2f})",
-                 "regex": None # Dummy
-             })
+            # High entropy + sufficient length = likely obfuscated/encrypted
+            matches.append(
+                {
+                    "category": "obfuscation",
+                    "pattern": "high_entropy",
+                    "severity": "HIGH",
+                    "technique": "T1027",
+                    "confidence": 0.85,
+                    "description": f"High entropy command ({entropy:.2f})",
+                    "regex": None,  # Dummy
+                }
+            )
 
         if not matches:
             return {"matched": False}

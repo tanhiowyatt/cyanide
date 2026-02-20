@@ -4,6 +4,7 @@ Cyanide Emulated Commands
 Registry of all available shell commands and their respective implementations.
 """
 
+from .awk import AwkCommand
 from .cat import CatCommand
 from .cd import CdCommand
 from .curl import CurlCommand
@@ -59,6 +60,7 @@ COMMAND_MAP = {
     "grep": GrepCommand,
     "head": HeadCommand,
     "tail": TailCommand,
+    "awk": AwkCommand,
     # Misc/Realism
     "curl": CurlCommand,
     "wget": WgetCommand,

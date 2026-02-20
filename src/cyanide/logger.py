@@ -70,8 +70,12 @@ class CyanideLogger:
             "timestamp": datetime.datetime.now().isoformat(),
             "session": session_id,
             "eventid": event_type,
-            "data": data,
         }
+        if isinstance(data, dict):
+            entry.update(data)
+        else:
+            entry["data"] = data
+
         logger = self._get_target_logger(event_type)
         logger.info(json.dumps(entry))
 

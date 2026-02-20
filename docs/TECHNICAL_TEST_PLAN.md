@@ -114,7 +114,7 @@ This guide provides a granular breakdown of how to test every major internal mod
 ## 7. Configuration & Environment Resilience
 
 ### 7.1 Malformed Configuration
-- **Test**: Remove a mandatory field (e.g., `os_profile`) from `cyanide.cfg`.
+- **Test**: Remove a mandatory field (e.g., `os_profile`) from `configs/app.yaml`.
 - **Verify**: The server should either fallback to safe defaults or exit with a clear error message in the console before starting services.
 
 ### 7.2 Broken Profile Logic

@@ -44,7 +44,7 @@ async def test_cyanide_logger_structure(log_dir):
     with open(server_log, "r") as f:
         data = json.loads(f.read())
         assert data["eventid"] == "test_event"
-        assert data["data"]["foo"] == "bar"
+        assert data["foo"] == "bar"
 
     # Verify FS Log
     fs_log = os.path.join(log_dir, "cyanide-fs.json")

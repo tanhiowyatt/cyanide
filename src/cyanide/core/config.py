@@ -72,7 +72,7 @@ def load_config(path: Path = Path("configs/app.yaml")):
         ),
         "session_timeout": get_val("server", "session_timeout", "SESSION_TIMEOUT", 300, int),
         "quarantine_max_size_mb": get_val(
-            "server", "quarantine_max_size_mb", "QUARANTINE_MAX_SIZE_MB", 500, int
+            "honeypot", "quarantine_max_size_mb", "QUARANTINE_MAX_SIZE_MB", 500, int
         ),
         "ssh": {
             "port": get_val("ssh", "listen_port", "SSH_PORT", 2222, int),

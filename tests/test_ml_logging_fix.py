@@ -62,11 +62,10 @@ def test_ml_command_logging(analytics_svc):
     with open(log_path, "r") as f:
         line = f.readline()
         data = json.loads(line)
-        # In new structure, data is wrapped in "data" field if using log_event
-        # Wait, AnalyticsService uses log_event(sess, "ml_thought", {...})
+        # Standardized structure: fields are flattened
         assert data["eventid"] == "ml_thought"
-        assert data["data"]["command"] == "ls -la"
-        assert data["data"]["verdict"] == "anomaly"
+        assert data["command"] == "ls -la"
+        assert data["verdict"] == "anomaly"
 
 
 def test_ml_file_analysis_logging(analytics_svc):
@@ -89,14 +88,14 @@ def test_ml_file_analysis_logging(analytics_svc):
         # Find the ml_file_anomaly event
         data = json.loads(lines[-1])
         assert data["eventid"] == "ml_file_anomaly"
-        assert data["data"]["filename"] == "malware.sh"
-        assert data["data"]["score"] == 0.9
+        assert data["filename"] == "malware.sh"
+        assert data["score"] == 0.9
 
         # Check the thought event (second to last)
         thought_data = json.loads(lines[-2])
         assert thought_data["eventid"] == "ml_thought"
-        assert thought_data["data"]["file"] == "malware.sh"
-        assert thought_data["data"]["verdict"] == "anomaly"
+        assert thought_data["file"] == "malware.sh"
+        assert thought_data["verdict"] == "anomaly"
 
 
 async def test_quarantine_triggers_ml(mock_logger, analytics_svc):

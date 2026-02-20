@@ -2,7 +2,8 @@ import pytest
 
 from cyanide.core.emulator import ShellEmulator
 from cyanide.vfs.commands.cat import CatCommand
-from cyanide.vfs.commands.text_ops import HeadCommand, TailCommand
+from cyanide.vfs.commands.head import HeadCommand
+from cyanide.vfs.commands.tail import TailCommand
 
 
 @pytest.fixture

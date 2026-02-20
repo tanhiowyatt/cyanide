@@ -1,13 +1,11 @@
 import pytest
 
 from cyanide.core.emulator import ShellEmulator
-from cyanide.vfs.commands.file_ops import (
-    CpCommand,
-    MkdirCommand,
-    MvCommand,
-    RmCommand,
-    TouchCommand,
-)
+from cyanide.vfs.commands.cp import CpCommand
+from cyanide.vfs.commands.mkdir import MkdirCommand
+from cyanide.vfs.commands.mv import MvCommand
+from cyanide.vfs.commands.rm import RmCommand
+from cyanide.vfs.commands.touch import TouchCommand
 
 
 @pytest.fixture

@@ -96,7 +96,9 @@ jobs:
         run: |
           pip install .[dev]
           pip install tox tox-gh-actions
-      - name: Run Tests
+      - name: Command Registry Smoke Test
+        run: pytest -v tests/commands/test_registry_smoke.py
+      - name: Run All Tests with Coverage
         run: pytest --cov=src --cov-report=xml --cov-fail-under=40 tests/
 
   lint-and-type:

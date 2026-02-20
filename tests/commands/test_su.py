@@ -1,4 +1,3 @@
-
 import pytest
 
 from cyanide.core.emulator import ShellEmulator

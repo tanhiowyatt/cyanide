@@ -1,11 +1,12 @@
 import pytest
 
 from cyanide.core.emulator import ShellEmulator
+from cyanide.vfs.commands.base import Command
 
 # --- Mocks ---
 
 
-class MockCommand:
+class MockCommand(Command):
     """Mock command for testing shell orchestration."""
 
     def __init__(self, emulator):

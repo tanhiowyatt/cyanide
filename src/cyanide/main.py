@@ -30,9 +30,9 @@ async def async_main():
         # but we hide the known noisy ones.
 
     config = load_config(CONFIG_PATH)
-    print_startup_banner(config)
 
     server = HoneypotServer(config)
+    print_startup_banner(config, resolved_profile=server.resolved_profile_name)
 
     # Handle signals gracefully
     loop = asyncio.get_running_loop()

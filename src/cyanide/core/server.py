@@ -102,11 +102,20 @@ class HoneypotServer:
         self.async_logger = AsyncLogger()
 
         # OS Profile and Filesystem config
-        # OS Profile and Filesystem config
         profile_name = config.get("os_profile", "ubuntu_22_04")
 
         # Use new flexible resolution logic
         self.fs_yaml_path = resolve_fs_path(profile_name)
+
+        # Derive real profile display name from resolved path (handles 'random' case)
+        if self.fs_yaml_path:
+            resolved_filename = Path(self.fs_yaml_path).stem  # e.g. "fs.ubuntu_22_04"
+            # Strip "fs." prefix if present
+            if resolved_filename.startswith("fs."):
+                resolved_filename = resolved_filename[3:]
+            self.resolved_profile_name = resolved_filename
+        else:
+            self.resolved_profile_name = profile_name
 
         # Initial profile from fallback constants
         self.profile = DEFAULT_METADATA.copy()

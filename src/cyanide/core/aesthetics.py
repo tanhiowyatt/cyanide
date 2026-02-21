@@ -9,7 +9,7 @@ CLR_VAL = "\033[0m"  # Reset
 RESET = "\033[0m"
 
 
-def print_startup_banner(config):
+def print_startup_banner(config, resolved_profile: str = ""):
     """Print logo and startup information in a dynamic colored fastfetch-style layout."""
     root_dir = Path.cwd()
     logo_path = root_dir / "assets/branding/logo.txt"
@@ -38,7 +38,7 @@ def print_startup_banner(config):
     info_fields = [
         user_host,
         separator,
-        f"{fmt_key('OS:')} Cyanide Honeypot ({config.get('os_profile', 'random')})",
+        f"{fmt_key('OS:')} Cyanide Honeypot ({resolved_profile or config.get('os_profile', 'random')})",
         f"{fmt_key('Hostname:')} {config.get('hostname', 'server01')}",
         f"{fmt_key('Listen IP:')} {config.get('listen_ip', '0.0.0.0')}",
         f"{fmt_key('SSH:')} {config.get('ssh', {}).get('port', 2222)}",

@@ -67,11 +67,21 @@ def load_config(path: Path = Path("configs/app.yaml")):
 
     # Convert to dictionary structure expected by HoneypotServer
     config = {
-        "hostname": get_val("honeypot", "hostname", "HOSTNAME", "server01"),
+        # Hostname priority: CYANIDE_HONEYPOT__HOSTNAME > CYANIDE_CORE__HOSTNAME
+        #   > app.yaml > HOSTNAME (Docker sets this to container ID) > default
+        "hostname": (
+            os.getenv("CYANIDE_HONEYPOT__HOSTNAME")
+            or os.getenv("CYANIDE_CORE__HOSTNAME")
+            or (config_data.get("honeypot") or {}).get("hostname")
+            or os.getenv("HOSTNAME", "server01")
+        ),
         "log_path": "var/log/cyanide",
         "listen_ip": get_val("server", "host", "HOST", "0.0.0.0"),
         "quarantine_path": "var/lib/cyanide/quarantine",
-        "os_profile": get_val("server", "os_profile", "OS_PROFILE", "random"),
+        "os_profile": get_val("server", "os_profile", "OS_PROFILE", None)
+        or get_val("vfs", "profile", "VFS_PROFILE", None)
+        or os.getenv("CYANIDE_VFS__PROFILE")
+        or "random",
         "max_sessions": get_val("server", "max_sessions", "MAX_SESSIONS", 100, int),
         "max_sessions_per_ip": get_val(
             "server", "max_sessions_per_ip", "MAX_SESSIONS_PER_IP", 5, int

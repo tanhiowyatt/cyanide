@@ -4,7 +4,7 @@ Cyanide Core Engine
 Heart of the honeypot, containing the server, shell emulator, and filesystem logic.
 """
 
-from cyanide.vfs.provider import FakeFilesystem
+from cyanide.vfs.engine import FakeFilesystem
 
 from .config import load_config
 from .emulator import ShellEmulator

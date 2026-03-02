@@ -2,7 +2,7 @@ import pytest
 
 from cyanide.core.emulator import ShellEmulator
 from cyanide.vfs.commands.su import SuCommand
-from cyanide.vfs.provider import FakeFilesystem
+from cyanide.vfs.engine import FakeFilesystem
 
 
 @pytest.fixture
@@ -32,7 +32,8 @@ async def test_su_root_success(emulator):
     stdout, stderr, rc = await emulator.pending_input_callback("root")
     assert rc == 0
     assert emulator.username == "root"
-    assert emulator.cwd == "/root"
+    # su without - should not change directory
+    assert emulator.cwd == "/home/admin"
 
 
 @pytest.mark.asyncio

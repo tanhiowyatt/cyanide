@@ -1,6 +1,7 @@
-import time
 import random
-from typing import Dict, Any
+import time
+from typing import Any, Dict
+
 
 def uptime_provider(context: Any, args: Dict[str, Any] = None) -> str:
     """Returns a realistic uptime string."""
@@ -10,9 +11,10 @@ def uptime_provider(context: Any, args: Dict[str, Any] = None) -> str:
     idle_sec = uptime_sec * 0.9
     return f"{uptime_sec:.2f} {idle_sec:.2f}\n"
 
+
 def cpuinfo_provider(context: Any, args: Dict[str, Any] = None) -> str:
     """Returns a fake cpuinfo string."""
-    return f"""processor\t: 0
+    return """processor\t: 0
 vendor_id\t: GenuineIntel
 cpu family\t: 6
 model\t\t: 158
@@ -29,6 +31,7 @@ cache_alignment\t: 64
 address sizes\t: 39 bits physical, 48 bits virtual
 power management:
 """
+
 
 # Registry of available providers
 PROVIDERS = {

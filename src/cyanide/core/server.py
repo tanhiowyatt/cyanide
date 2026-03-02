@@ -22,7 +22,7 @@ from cyanide.services.analytics import AnalyticsService
 from cyanide.services.quarantine import QuarantineService
 from cyanide.services.session_manager import SessionManager
 from cyanide.services.telnet_handler import TelnetHandler
-from cyanide.vfs.provider import FakeFilesystem
+from cyanide.vfs.engine import FakeFilesystem
 
 from .async_logger import AsyncLogger
 from .defaults import DEFAULT_METADATA
@@ -99,15 +99,20 @@ class HoneypotServer:
 
         self.async_logger = AsyncLogger()
 
+        self.users = config.get("users", [])
+
         # OS Profile and VFS root
         from .fs_utils import resolve_os_profile
+
         self.os_profile = resolve_os_profile(config.get("os_profile", "ubuntu"))
         self.vfs_root = config.get("vfs_root", "configs/profiles")
-        
+
         # Initialize initial profile from VFS (lazy or explicitly here)
         # We create a dummy FS to grab the context metadata for banners
         try:
-            temp_fs = FakeFilesystem(os_profile=self.os_profile, root_dir=self.vfs_root)
+            temp_fs = FakeFilesystem(
+                os_profile=self.os_profile, root_dir=self.vfs_root, users=self.users
+            )
             self.profile = temp_fs.context.to_dict()
             self.resolved_profile_name = self.os_profile
             print(f"[*] Initialized VFS profile: {self.os_profile}")
@@ -115,8 +120,6 @@ class HoneypotServer:
             print(f"[!] Error initializing VFS profile {self.os_profile}: {e}")
             self.profile = DEFAULT_METADATA.copy()
             self.resolved_profile_name = "ubuntu"
-
-        self.users = config.get("users", [])
 
     @property
     def active_sessions(self):
@@ -197,7 +200,8 @@ class HoneypotServer:
                 os_profile=self.os_profile,
                 root_dir=self.vfs_root,
                 audit_callback=audit_hook,
-                stats=self.stats
+                stats=self.stats,
+                users=self.users,
             )
             return fs
         except Exception as e:

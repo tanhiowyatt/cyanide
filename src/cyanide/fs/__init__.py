@@ -1,9 +1,7 @@
 """
 Cyanide Filesystem Utilities
 ----------------------------
-Persistence logic for the fake filesystem (YAML).
+Persistence logic for the fake filesystem.
 """
 
-from .yaml_fs import load_fs
-
-__all__ = ["load_fs"]
+__all__ = []

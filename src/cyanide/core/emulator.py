@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 from cyanide.vfs.commands.base import Command
-from cyanide.vfs.provider import FakeFilesystem
+from cyanide.vfs.engine import FakeFilesystem
 
 
 @dataclass

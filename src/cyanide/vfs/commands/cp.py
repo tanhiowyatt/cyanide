@@ -1,5 +1,3 @@
-from pathlib import PurePosixPath
-
 from cyanide.vfs.nodes import Directory, File
 
 from .base import Command
@@ -17,116 +15,31 @@ class CpCommand(Command):
         sources = clean_args[:-1]
 
         dest_path = self.emulator.resolve_path(dest_str)
-        dest_node = self.fs.get_node(dest_path)
 
         # If dest doesn't exist, checks later
 
-        dest_is_dir = dest_node and isinstance(dest_node, Directory)
-
         for src_str in sources:
             src_path = self.emulator.resolve_path(src_str)
-            src_node = self.fs.get_node(src_path)
 
-            if not src_node:
+            if not self.fs.exists(src_path):
                 return (
                     "",
                     f"cp: cannot stat '{src_str}': No such file or directory\n",
                     1,
                 )
 
-            if isinstance(src_node, Directory):
-                if not recursive:
+            if not self.fs.copy(src_path, dest_path, recursive=recursive):
+                if self.fs.is_dir(src_path) and not recursive:
                     return (
                         "",
                         f"cp: -r not specified; omitting directory '{src_str}'\n",
                         1,
                     )
-
-                # Recursive copy
-                if dest_is_dir:
-                    # Copy INTO dest_dir
-                    new_name = src_node.name
-                    # Check if exists
-                    if dest_node.get_child(new_name):
-                        # Merge? Or Overwrite? standard cp -r into existing dir merges/overwrites content
-                        # Simplified: remove existing and copy new
-                        dest_node.remove_child(new_name)
-
-                    self._copy_node(src_node, dest_node, new_name)
-                else:
-                    # Copy AS dest_dir (only valid if single source)
-                    if len(sources) > 1:
-                        return (
-                            "",
-                            f"cp: target '{dest_str}' is not a directory\n",
-                            1,
-                        )
-
-                    if dest_node:
-                        # Overwrite existing file/dir?
-                        # If dest is file, cannot overwrite with dir
-                        return (
-                            "",
-                            f"cp: cannot overwrite non-directory '{dest_str}' with directory '{src_str}'\n",
-                            1,
-                        )
-
-                    # Create new dir at dest path
-                    parent_path = str(PurePosixPath(dest_path).parent)
-                    dirname = PurePosixPath(dest_path).name
-                    parent = self.fs.get_node(parent_path)
-
-                    if not parent or not isinstance(parent, Directory):
-                        return (
-                            "",
-                            f"cp: cannot create directory '{dest_str}': No such file or directory\n",
-                            1,
-                        )
-
-                    self._copy_node(src_node, parent, dirname)
-
-            else:
-                # File copy
-                content = src_node.content
-
-                if dest_is_dir:
-                    # Copy into directory
-                    new_name = src_node.name
-                    if dest_node.get_child(new_name):
-                        dest_node.get_child(new_name).content = content
-                    else:
-                        new_file = File(
-                            new_name,
-                            parent=dest_node,
-                            content=content,
-                            owner=self.username,
-                            group=self.username,
-                        )
-                        dest_node.add_child(new_file)
-                else:
-                    # Copy as dest name
-                    if dest_node:
-                        dest_node.content = content
-                    else:
-                        parent_path = str(PurePosixPath(dest_path).parent)
-                        filename = PurePosixPath(dest_path).name
-                        parent = self.fs.get_node(parent_path)
-
-                        if not parent or not isinstance(parent, Directory):
-                            return (
-                                "",
-                                f"cp: cannot create regular file '{dest_str}': No such file or directory\n",
-                                1,
-                            )
-
-                        new_file = File(
-                            filename,
-                            parent=parent,
-                            content=content,
-                            owner=self.username,
-                            group=self.username,
-                        )
-                        parent.add_child(new_file)
+                return (
+                    "",
+                    f"cp: cannot copy '{src_str}' to '{dest_str}'\n",
+                    1,
+                )
 
         return "", "", 0
 

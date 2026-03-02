@@ -37,7 +37,35 @@ static:
     source: "centos/root/root/.bashrc"
   /bin/**:
     source: "centos/root/bin/"
-  /usr/bin/**:
-    source: "centos/root/usr/bin/"
+  /sbin/**:
+    source: "centos/root/sbin/"
+  /usr/**:
+    source: "centos/root/usr/"
   /etc/**:
     source: "centos/root/etc/"
+  /var/**:
+    source: "centos/root/var/"
+  /lib/**:
+    source: "centos/root/lib/"
+  /lib64/**:
+    source: "centos/root/lib64/"
+  /home/**:
+    source: "centos/root/home/"
+  /root/**:
+    source: "centos/root/root/"
+  /boot/**:
+    source: "centos/root/boot/"
+  /dev/**:
+    source: "centos/root/dev/"
+  /media/**:
+    source: "centos/root/media/"
+  /mnt/**:
+    source: "centos/root/mnt/"
+  /opt/**:
+    source: "centos/root/opt/"
+  /run/**:
+    source: "centos/root/run/"
+  /srv/**:
+    source: "centos/root/srv/"
+  /tmp/**:
+    source: "centos/root/tmp/"

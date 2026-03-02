@@ -36,7 +36,6 @@ metrics:
 ml:
   enabled: true
   metrics_port: 9090
-  # Hardcoded in core
   online_learning: false
   retraining_interval_days: 7
 
@@ -44,7 +43,6 @@ ssh:
   enabled: true
   listen_port: 2222
   rsa_keying: true
-  # version: "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5" # Optional global override
   backend_mode: emulated
 
 telnet:

@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from cyanide.vfs.provider import FakeFilesystem
+from cyanide.vfs.engine import FakeFilesystem
 
 
 @pytest.fixture

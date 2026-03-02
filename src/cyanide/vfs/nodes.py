@@ -1,8 +1,10 @@
-from typing import Any, Dict, Optional, List
 import datetime
+from typing import Dict
+
 
 class Node:
     """Base class/Interface for all VFS nodes."""
+
     def __init__(self, name: str, parent=None, **kwargs):
         self.name = name
         self._parent = parent
@@ -22,8 +24,10 @@ class Node:
     def is_file(self) -> bool:
         return isinstance(self, File)
 
+
 class File(Node):
     """File node for the shell emulator."""
+
     def __init__(self, name: str, parent=None, **kwargs):
         super().__init__(name, parent, **kwargs)
         if "perm" not in kwargs:
@@ -31,8 +35,10 @@ class File(Node):
         if "size" not in kwargs:
             self.size = 0
 
+
 class Directory(Node):
     """Directory node for the shell emulator."""
+
     def __init__(self, name: str, parent=None, **kwargs):
         super().__init__(name, parent, **kwargs)
         self._children_getter = kwargs.get("children_getter", lambda: {})

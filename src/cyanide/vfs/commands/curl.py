@@ -102,7 +102,6 @@ class CurlCommand(Command):
                             # Save to Fake FS
                             full_path = self.emulator.resolve_path(filename)
                             parent_dir = str(PurePosixPath(full_path).parent)
-                            base_name = PurePosixPath(full_path).name
 
                             if not self.fs.exists(parent_dir):
                                 return (
@@ -111,26 +110,14 @@ class CurlCommand(Command):
                                     23,
                                 )
 
-                            from cyanide.vfs.nodes import Directory, File
-
-                            parent_node = self.fs.get_node(parent_dir)
-
-                            if isinstance(parent_node, Directory):
-                                # Overwrite logic
-                                if parent_node.get_child(base_name):
-                                    parent_node.get_child(base_name).content = content.decode(
-                                        "utf-8", errors="ignore"
-                                    )
-                                else:
-                                    new_file = File(
-                                        base_name,
-                                        parent=parent_node,
-                                        content=content.decode("utf-8", errors="ignore"),
-                                        owner=self.username,
-                                        group=self.username,
-                                    )
-                                    parent_node.add_child(new_file)
-                            else:
+                            if (
+                                self.fs.mkfile(
+                                    full_path,
+                                    content=content.decode("utf-8", errors="ignore"),
+                                    owner=self.username,
+                                )
+                                is None
+                            ):
                                 return "", "curl: (23) Check output path\n", 23
 
                             if not parsed.silent:

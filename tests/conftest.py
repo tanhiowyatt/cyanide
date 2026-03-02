@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from cyanide.vfs.provider import FakeFilesystem
+from cyanide.vfs.engine import FakeFilesystem
 
 # Suppress noise from asyncssh/cryptography
 warnings.filterwarnings("ignore", message=".*ARC4 has been moved.*")
@@ -44,7 +44,7 @@ def mock_config():
 @pytest.fixture
 def mock_fs():
     """Return a fresh FakeFilesystem instance."""
-    fs = FakeFilesystem(profile={"name": "TestProfile"})
+    fs = FakeFilesystem(os_profile="ubuntu")
     # Create standard directories to prevent CWD fallback to /
     fs.mkdir_p("/home/testuser")
     fs.mkdir_p("/home/admin")

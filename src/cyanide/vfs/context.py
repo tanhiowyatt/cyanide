@@ -1,9 +1,11 @@
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from typing import Any, Dict
+
 
 @dataclass
 class Context:
     """Global system metadata context for VFS templates and providers."""
+
     os_name: str
     kernel_version: str
     hostname: str

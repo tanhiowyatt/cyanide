@@ -1,8 +1,6 @@
 import argparse
 from pathlib import PurePosixPath
 
-from cyanide.vfs.nodes import Directory
-
 from .base import Command
 
 
@@ -29,35 +27,15 @@ class MkdirCommand(Command):
 
             # Simplified logic for -p
             if parsed.parents:
-                # Recursive creation
-                parts = [p for p in resolved.split("/") if p]
-                current = self.fs.root
-                for part in parts:
-                    child = current.get_child(part)
-                    if not child:
-                        child = Directory(
-                            part,
-                            parent=current,
-                            owner=self.username,
-                            group=self.username,
-                        )
-                        current.add_child(child)
-                    current = child
+                self.fs.mkdir_p(resolved, owner=self.username)
             else:
                 parent_path = str(PurePosixPath(resolved).parent)
-                dirname = PurePosixPath(resolved).name
-                parent = self.fs.get_node(parent_path)
-
-                if not parent or not isinstance(parent, Directory):
+                if not self.fs.exists(parent_path) or not self.fs.is_dir(parent_path):
                     return (
                         "",
                         f"mkdir: cannot create directory '{path_str}': No such file or directory\n",
                         1,
                     )
-
-                new_dir = Directory(
-                    dirname, parent=parent, owner=self.username, group=self.username
-                )
-                parent.add_child(new_dir)
+                self.fs.mkdir_p(resolved, owner=self.username)
 
         return "", "", 0

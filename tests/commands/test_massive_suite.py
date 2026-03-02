@@ -1,7 +1,7 @@
 import pytest
 
 from cyanide.core.emulator import ShellEmulator
-from cyanide.vfs.provider import FakeFilesystem
+from cyanide.vfs.engine import FakeFilesystem
 
 
 @pytest.fixture

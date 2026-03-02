@@ -41,7 +41,35 @@ static:
     source: "debian/root/root/.bashrc"
   /bin/**:
     source: "debian/root/bin/"
-  /usr/bin/**:
-    source: "debian/root/usr/bin/"
+  /sbin/**:
+    source: "debian/root/sbin/"
+  /usr/**:
+    source: "debian/root/usr/"
   /etc/**:
     source: "debian/root/etc/"
+  /var/**:
+    source: "debian/root/var/"
+  /lib/**:
+    source: "debian/root/lib/"
+  /lib64/**:
+    source: "debian/root/lib64/"
+  /home/**:
+    source: "debian/root/home/"
+  /root/**:
+    source: "debian/root/root/"
+  /boot/**:
+    source: "debian/root/boot/"
+  /dev/**:
+    source: "debian/root/dev/"
+  /media/**:
+    source: "debian/root/media/"
+  /mnt/**:
+    source: "debian/root/mnt/"
+  /opt/**:
+    source: "debian/root/opt/"
+  /run/**:
+    source: "debian/root/run/"
+  /srv/**:
+    source: "debian/root/srv/"
+  /tmp/**:
+    source: "debian/root/tmp/"

@@ -119,14 +119,14 @@ def load_config(path: Path = Path("configs/app.yaml")):
     }
 
     # User loading
-    users_env = os.getenv("CYANIDE_USERS")
+    users_env = os.getenv("CYANIDE_AUTH__USERS") or os.getenv("CYANIDE_USERS")
     if users_env:
         try:
             env_users = json.loads(users_env)
             if isinstance(env_users, list):
                 config["users"].extend(env_users)
         except json.JSONDecodeError:
-            print("[!] Failed to parse CYANIDE_USERS env var.")
+            print(f"[!] Failed to parse users env var: {users_env}")
 
     # Load users from YAML
     yaml_users = config_data.get("users", [])

@@ -1,7 +1,3 @@
-from pathlib import PurePosixPath
-
-from cyanide.vfs.nodes import Directory, File
-
 from .base import Command
 
 
@@ -21,20 +17,7 @@ class TouchCommand(Command):
                 pass
             else:
                 # Create empty file
-                parent_path = str(PurePosixPath(path).parent)
-                filename = PurePosixPath(path).name
-
-                parent = self.fs.get_node(parent_path)
-                if isinstance(parent, Directory):
-                    new_file = File(
-                        filename,
-                        parent=parent,
-                        content="",
-                        owner=self.username,
-                        group=self.username,
-                    )
-                    parent.add_child(new_file)
-                else:
+                if self.fs.mkfile(path, content="", owner=self.username) is None:
                     return (
                         "",
                         f"touch: cannot touch '{arg}': No such file or directory\n",

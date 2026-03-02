@@ -18,7 +18,7 @@ import asyncssh
 
 sys.path.append(os.getcwd())
 
-from cyanide.vfs.provider import FakeFilesystem
+from cyanide.vfs.engine import FakeFilesystem
 
 # Configure logging to stdout as json
 logging.basicConfig(

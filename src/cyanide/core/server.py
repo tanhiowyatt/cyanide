@@ -499,15 +499,8 @@ class CyanideServer:
         # Start Async Logger
         await self.async_logger.start()
 
-        # Generate or load SSH Host Key
-        ssh_key_path = "var/lib/cyanide/ssh_host_rsa_key"
-        if not os.path.exists(ssh_key_path):
-            os.makedirs(os.path.dirname(ssh_key_path), exist_ok=True)
-            ssh_key_obj = asyncssh.generate_private_key("ssh-rsa")
-            ssh_key_obj.write_private_key(ssh_key_path)
-            ssh_key = ssh_key_obj
-        else:
-            ssh_key = asyncssh.read_private_key(ssh_key_path)
+        # Generate SSH Host Key
+        ssh_key = asyncssh.generate_private_key("ssh-rsa")
 
         # Initialize VM Pool if needed
         self.vm_pool = VMPool(self.config)

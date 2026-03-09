@@ -96,11 +96,11 @@ async def test_telnet_connection(honeypot_server):
     # Expect login prompt
     out = await reader.readuntil(b"login: ")
     assert b"login: " in out
-    writer.write("root\n")
+    writer.write("root\n")  # type: ignore
 
     out = await reader.readuntil(b"Password: ")
     assert b"Password: " in out
-    writer.write("toor\n")
+    writer.write("toor\n")  # type: ignore
 
     # Expect shell prompt
     out = await reader.readuntil(b"$ ")

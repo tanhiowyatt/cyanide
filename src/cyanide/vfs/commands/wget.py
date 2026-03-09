@@ -74,37 +74,13 @@ class WgetCommand(Command):
 
             # 2. Save to Fake FS
             # We save actual content to support `cat` later
-            parent_dir = str(PurePosixPath(full_path).parent)
-            base_name = PurePosixPath(full_path).name
-
-            if not self.fs.exists(parent_dir):
-                return output_msg, f"{filename}: No such file or directory\n", 1
-
-            # Add file
-            from cyanide.vfs.nodes import Directory, File
-
-            parent_node = self.fs.get_node(parent_dir)
-            if isinstance(parent_node, Directory):
-                # Check overwrite?
-                # Default behavior: overwrite for now
-                if parent_node.get_child(base_name):
-                    parent_node.get_child(base_name).content = content.decode(
-                        "utf-8", errors="ignore"
-                    )
-                else:
-                    new_file = File(
-                        base_name,
-                        parent=parent_node,
-                        content=content.decode("utf-8", errors="ignore"),
-                        owner=self.username,
-                        group=self.username,
-                    )
-                    parent_node.add_child(new_file)
-            else:
-                return output_msg, f"{filename}: Not a directory\n", 1
+            if self.fs.mkfile(full_path, content=content.decode("utf-8", errors="ignore"), owner=self.username, group=self.username) is None:
+                return output_msg, f"{filename}: error creating file in VFS\n", 1
 
         except Exception as e:
-            return output_msg, f"wget: error: {e}\n", 1
+            import traceback
+            traceback.print_exc()
+            return output_msg, f"wget: error: {str(e)}\n", 1
 
         if not parsed.quiet:
             output_msg += f"\n     0K ....                                      100% {len(content)}={len(content)/1024:.2f}K/s\n\n2026-02-02 12:00:00 ({filename}) - saved [{len(content)}/{len(content)}]\n"

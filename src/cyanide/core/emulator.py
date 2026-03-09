@@ -41,10 +41,21 @@ class ShellEmulator:
         )
         if not self.fs.exists(self.cwd):
             self.cwd = "/"
+        
+        # Resource Limits
+        self.max_chain_depth = self.config.get("shell", {}).get("max_chain_depth", 100)
+        self.max_output_size = self.config.get("shell", {}).get("max_output_size", 1024 * 1024) # 1MB
 
         self.pending_input_callback = None
         self.pending_input_prompt = None
         self.history: list[str] = []
+        self.env: dict[str, str] = {
+            "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "HOME": self.cwd,
+            "USER": self.username,
+            "SHELL": "/bin/bash",
+            "TERM": "xterm-256color",
+        }
         self.aliases: dict[str, str] = {
             "l": "ls -CF",
             "la": "ls -A",
@@ -141,11 +152,17 @@ class ShellEmulator:
         # Append to history
         self.history.append(command_line.strip())
 
+        # 0. Expand environment variables
+        command_line = self._expand_vars(command_line)
+
         # 1. Parse into a chain of commands separated by operators
         try:
             nodes = self._parse_chain(command_line)
         except Exception as e:
             return "", f"Parse error: {str(e)}\n", 2
+
+        if len(nodes) > self.max_chain_depth:
+            return "", "shell: maximum command chain depth exceeded\n", 1
 
         full_stdout = ""
         full_stderr = ""
@@ -174,6 +191,12 @@ class ShellEmulator:
             full_stdout += stdout
             full_stderr += stderr
             last_rc = rc
+
+            if len(full_stdout) > self.max_output_size:
+                full_stdout = full_stdout[:self.max_output_size] + "\n[output truncated]\n"
+                full_stderr += "shell: maximum output size exceeded\n"
+                last_rc = 1
+                break
 
             # Decide validation for next node
             if node.operator == "&&":
@@ -383,3 +406,22 @@ class ShellEmulator:
         """Helper to write to fake fs."""
         abs_path = self.resolve_path(path)
         self.fs.mkfile(abs_path, content=content, owner=self.username, group=self.username)
+
+    def _expand_vars(self, s: str) -> str:
+        """Expand environment variables $VAR or ${VAR} in string."""
+        import re
+
+        # Handle ${VAR}
+        def replace_braced(match):
+            var_name = match.group(1)
+            return self.env.get(var_name, "")
+
+        s = re.sub(r"\${([a-zA-Z_][a-zA-Z0-9_]*)}", replace_braced, s)
+
+        # Handle $VAR
+        def replace_simple(match):
+            var_name = match.group(1)
+            return self.env.get(var_name, "")
+
+        s = re.sub(r"\$([a-zA-Z_][a-zA-Z0-9_]*)", replace_simple, s)
+        return s

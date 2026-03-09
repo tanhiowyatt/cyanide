@@ -289,9 +289,13 @@ class CyanideServer:
         self, filename: str, content: bytes, session_id="unknown", src_ip="unknown"
     ):
         """Delegated to QuarantineService."""
-        return asyncio.run(
-            self.services.quarantine.save_file(filename, content, session_id, src_ip)
-        )
+        try:
+            asyncio.create_task(
+                self.services.quarantine.save_file(filename, content, session_id, src_ip)
+            )
+        except RuntimeError:
+            # No loop running
+            pass
 
     # Function 49: Handles event logging and telemetry.
     def _log_tty(self, session_obj, direction: str, data: str):
@@ -515,7 +519,10 @@ class CyanideServer:
             if backend_mode == "emulated":
                 # Anti-Fingerprinting
                 # Use override from config if available, otherwise use banner from profile
-                chosen_version = ssh_conf.get("version") or self.profile["ssh_banner"]
+                chosen_version = ssh_conf.get("version") or self.profile.get("ssh_banner", "")
+                if chosen_version.startswith("SSH-2.0-"):
+                    chosen_version = chosen_version[8:]
+
                 self.logger.log_event(
                     "system", "system_status", {"message": f"SSH Banner: {chosen_version}"}
                 )
@@ -928,7 +935,7 @@ class SSHSession(asyncssh.SSHServerSession):
     def shell_requested(self):
         # Function 70: Performs operations related to q hook.
         def q_hook(f, c):
-            self.honeypot.services.quarantine.save_file(f, c, self.session_id, self.src_ip)
+            self.honeypot.save_quarantine_file(f, c, self.session_id, self.src_ip)
 
         self.shell = ShellEmulator(
             self.fs, self.username, quarantine_callback=q_hook, config=self.honeypot.config
@@ -1181,8 +1188,15 @@ class SSHSession(asyncssh.SSHServerSession):
         # Use Factory
         self._ensure_tty_log()
         fs = self.fs
+
+        def q_hook(f, c):
+            self.honeypot.save_quarantine_file(f, c, self.session_id, self.src_ip)
+
         shell = ShellEmulator(
-            fs, self.username, quarantine_callback=self.honeypot.save_quarantine_file
+            fs,
+            self.username,
+            quarantine_callback=q_hook,
+            config=self.honeypot.config,
         )
 
         # ML Analysis

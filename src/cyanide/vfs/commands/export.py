@@ -15,6 +15,9 @@ class ExportCommand(Command):
         Returns:
             tuple: (stdout, stderr, 0)
         """
-        # Allow export command but do nothing (fake success)
         # Often SSH clients send 'export LANG=...' on startup
+        for arg in args:
+            if "=" in arg:
+                key, val = arg.split("=", 1)
+                self.emulator.env[key] = val
         return "", "", 0

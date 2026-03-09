@@ -372,6 +372,7 @@ async def main():
 
     # Generate host key in memory instead of saving to disk
     from asyncssh import generate_private_key
+
     key = generate_private_key("ssh-rsa")
 
     print(f"Starting SSH Proxy on 0.0.0.0:{listen_port} -> {dst_host}:{dst_port}...")

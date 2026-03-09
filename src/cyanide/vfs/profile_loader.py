@@ -18,6 +18,7 @@ CACHE_FORMAT_VERSION = 2
 COMPILED_FILE_NAME = ".compiled.msgpack"
 
 
+# Function 312: Performs operations related to compute hash.
 def _compute_hash(base_file: Path, static_file: Path) -> str:
     """Compute SHA-256 hash of base.yaml and static.yaml contents."""
     h = hashlib.sha256()
@@ -33,6 +34,7 @@ def _compute_hash(base_file: Path, static_file: Path) -> str:
     return h.hexdigest()
 
 
+# Function 313: Performs operations related to parse yaml profile.
 def _parse_yaml_profile(base_file: Path, static_file: Path) -> Dict[str, Any]:
     """Parse profile from YAML files."""
     if not base_file.exists():
@@ -59,6 +61,7 @@ def _parse_yaml_profile(base_file: Path, static_file: Path) -> Dict[str, Any]:
     }
 
 
+# Function 314: Performs operations related to load.
 def load(profile_name: str, profiles_dir: Path) -> Dict[str, Any]:
     """
     Load profile data with two-tier caching.
@@ -133,6 +136,7 @@ def load(profile_name: str, profiles_dir: Path) -> Dict[str, Any]:
         return cache_entry
 
 
+# Function 315: Invalidates data or cache.
 def invalidate(profile_name: Optional[str] = None) -> None:
     """Clear memory cache. Disk cache is self-invalidating via hash."""
     with _CACHE_LOCK:

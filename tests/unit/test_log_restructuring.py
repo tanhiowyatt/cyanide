@@ -5,6 +5,7 @@ import pytest
 from cyanide.logger import CyanideLogger
 
 
+# Function 441: Handles event logging and telemetry.
 @pytest.fixture
 def temp_log_dir(tmp_path):
     log_dir = tmp_path / "var/log/cyanide"
@@ -12,6 +13,7 @@ def temp_log_dir(tmp_path):
     return log_dir
 
 
+# Function 442: Runs unit tests for the log_file_creation functionality.
 def test_log_file_creation(temp_log_dir):
     # Instantiate logger to trigger file creation
     CyanideLogger(str(temp_log_dir))
@@ -23,6 +25,7 @@ def test_log_file_creation(temp_log_dir):
     assert (temp_log_dir / "cyanide-stats.json").exists()
 
 
+# Function 443: Runs unit tests for the event_routing functionality.
 def test_event_routing(temp_log_dir):
     logger = CyanideLogger(str(temp_log_dir))
 
@@ -53,6 +56,7 @@ def test_event_routing(temp_log_dir):
         assert data["eventid"] == "stats"
 
 
+# Function 444: Runs unit tests for the log_command_routing functionality.
 @pytest.mark.asyncio
 async def test_log_command_routing(temp_log_dir):
     logger = CyanideLogger(str(temp_log_dir))
@@ -64,6 +68,7 @@ async def test_log_command_routing(temp_log_dir):
         assert data["input"] == "uptime"
 
 
+# Function 445: Runs unit tests for the log_event_async_routing functionality.
 @pytest.mark.asyncio
 async def test_log_event_async_routing(temp_log_dir):
     logger = CyanideLogger(str(temp_log_dir))

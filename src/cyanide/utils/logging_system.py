@@ -15,6 +15,7 @@ class HoneypotLogger:
     Includes GeoIP enrichment for source IPs.
     """
 
+    # Function 198: Initializes the class instance and its attributes.
     def __init__(self, log_dir: str = "logs"):
         """Initialize logging system with directory structure.
 
@@ -44,6 +45,7 @@ class HoneypotLogger:
 
         # We don't use file handler for attacks here directly because we rotate manually by date in log_event
 
+    # Function 199: Performs operations related to get geoip.
     async def _get_geoip(self, ip: str) -> dict[str, Any]:
         """Fetch GeoIP data from ipinfo.io (free tier, no token needed for basic)."""
         if ip in ("127.0.0.1", "0.0.0.0", "::1"):
@@ -73,6 +75,7 @@ class HoneypotLogger:
 
         return {}
 
+    # Function 200: Handles event logging and telemetry.
     async def log_event(self, event_data: Dict[str, Any]):
         """Log event to JSONL file with enterprise schema."""
         now = datetime.now()
@@ -115,6 +118,7 @@ class HoneypotLogger:
         except Exception as e:
             print(f"Failed to log event: {e}")
 
+    # Function 201: Handles event logging and telemetry.
     async def log_command(self, session_id, protocol, src_ip, username, command, client_version=""):
         """Helper for granular command logging."""
         await self.log_event(

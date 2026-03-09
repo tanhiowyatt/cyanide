@@ -50,6 +50,7 @@ class RestrictedUnpickler(pickle.Unpickler):
         "ai_models.cyanideML.model",
     }
 
+    # Function 34: Performs operations related to find class.
     def find_class(self, module, name):
         # 1. Allow Safe Builtins
         if module == "builtins":
@@ -71,11 +72,13 @@ class RestrictedUnpickler(pickle.Unpickler):
         )
 
 
+# Function 35: Performs operations related to load.
 def load(file_obj):
     """Secure replacement for pickle.load()"""
     return RestrictedUnpickler(file_obj).load()
 
 
+# Function 36: Performs operations related to loads.
 def loads(data):
     """Secure replacement for pickle.loads()"""
     return RestrictedUnpickler(io.BytesIO(data)).load()

@@ -5,6 +5,7 @@ import os
 
 
 class CyanideLogger:
+    # Function 100: Initializes the class instance and its attributes.
     def __init__(self, log_dir):
         self.log_dir = log_dir
         if not os.path.exists(log_dir):
@@ -26,6 +27,7 @@ class CyanideLogger:
             "cyanide_stats", os.path.join(log_dir, "cyanide-stats.json")
         )
 
+    # Function 101: Sets up initial configuration and state.
     def _setup_logger(self, name, path):
         logger = logging.getLogger(name)
         logger.setLevel(logging.INFO)
@@ -43,6 +45,7 @@ class CyanideLogger:
         logger.addHandler(handler)
         return logger
 
+    # Function 102: Handles event logging and telemetry.
     def _get_target_logger(self, event_type):
         """Routes event target logger based on event_type."""
         # Hacker activity (FS/Interactive)
@@ -64,6 +67,7 @@ class CyanideLogger:
         # Default: Server system log
         return self.server_log
 
+    # Function 103: Handles event logging and telemetry.
     def log_event(self, session_id, event_type, data):
         """Log a generic event in structured JSON, routed to proper file."""
         entry = {
@@ -79,6 +83,7 @@ class CyanideLogger:
         logger = self._get_target_logger(event_type)
         logger.info(json.dumps(entry))
 
+    # Function 104: Handles event logging and telemetry.
     async def log_command(
         self, session_id, protocol, src_ip, username, command, client_version="unknown"
     ):
@@ -96,6 +101,7 @@ class CyanideLogger:
         }
         self.fs_log.info(json.dumps(entry))
 
+    # Function 105: Handles event logging and telemetry.
     async def log_event_async(self, data_dict):
         """Async wrapper for log_event to match CyanideServer expectations."""
         # Make a copy to avoid mutating the original

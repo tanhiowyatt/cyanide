@@ -9,6 +9,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent / "src"))
 from cyanide.core.server import CyanideServer
 
 
+# Function 339: Runs unit tests for the smoke_test functionality.
 async def smoke_test():
     config = {
         "os_profile": "ubuntu",

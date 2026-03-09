@@ -4,6 +4,7 @@ from .base import Command
 
 
 class RmCommand(Command):
+    # Function 261: Executes the 'rm' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
         recursive = "-r" in args or "-rf" in args or "-R" in args
         force = "-f" in args or "-rf" in args

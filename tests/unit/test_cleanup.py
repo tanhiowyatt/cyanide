@@ -4,6 +4,7 @@ import time
 from cyanide.core.cleanup import CleanupManager
 
 
+# Function 425: Runs unit tests for the cleanup_initialization functionality.
 def test_cleanup_initialization():
     """Test that cleanup manager initializes with config."""
     config = {
@@ -16,6 +17,7 @@ def test_cleanup_initialization():
     assert mgr.target_paths == ["/tmp/logs"]
 
 
+# Function 426: Runs unit tests for the cleanup_dry_run functionality.
 def test_cleanup_dry_run(tmp_path):
     """Test dry run does not delete files."""
     # Create old file
@@ -42,6 +44,7 @@ def test_cleanup_dry_run(tmp_path):
     # Yes, it counts them.
 
 
+# Function 427: Runs unit tests for the cleanup_execution functionality.
 def test_cleanup_execution(tmp_path):
     """Test actual deletion of old files."""
     # Create old file

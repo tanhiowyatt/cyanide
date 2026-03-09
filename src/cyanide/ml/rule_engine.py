@@ -9,6 +9,7 @@ class SecurityRuleEngine:
     Detects known attack patterns via regex with confidence scoring.
     """
 
+    # Function 135: Initializes the class instance and its attributes.
     def __init__(self):
         # Format: (Regex Pattern, Severity, Description, TechniqueID, Confidence)
         # Severity: LOW=1, MEDIUM=2, HIGH=3, CRITICAL=4
@@ -16,6 +17,7 @@ class SecurityRuleEngine:
         self.rules = self._load_rules()
         self.compiled_rules = self._compile_rules()
 
+    # Function 136: Performs operations related to load rules.
     def _load_rules(self) -> List[dict]:
         return [
             # --- Privilege Escalation (T1548) ---
@@ -245,6 +247,7 @@ class SecurityRuleEngine:
             },
         ]
 
+    # Function 137: Performs operations related to compile rules.
     def _compile_rules(self):
         compiled = []
         for rule in self.rules:
@@ -254,6 +257,7 @@ class SecurityRuleEngine:
             compiled.append(c_rule)
         return compiled
 
+    # Function 138: Performs operations related to evaluate.
     def evaluate(self, command: str) -> dict:
         """
         Evaluates command against all rules.
@@ -305,6 +309,7 @@ class SecurityRuleEngine:
             "match_method": "rule_based",
         }
 
+    # Function 139: Performs operations related to calculate entropy.
     def _calculate_entropy(self, text: str) -> float:
         """Calculate Shannon entropy of text."""
         if not text:

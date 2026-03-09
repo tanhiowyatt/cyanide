@@ -2,6 +2,7 @@ from .base import Command
 
 
 class TouchCommand(Command):
+    # Function 271: Executes the 'touch' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
         if not args:
             return "", "touch: missing file operand\n", 1

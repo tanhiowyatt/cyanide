@@ -9,11 +9,13 @@ class GeoIP:
     For production, replace with local MMDB or paid API.
     """
 
+    # Function 32: Initializes the class instance and its attributes.
     def __init__(self, cache_size=1000):
         self.base_url = "http://ip-api.com/json"
         self.cache: Dict[str, Any] = {}
         self.cache_size = cache_size
 
+    # Function 33: Performs operations related to lookup.
     async def lookup(self, ip: str) -> Optional[dict]:
         """
         Lookup IP details.

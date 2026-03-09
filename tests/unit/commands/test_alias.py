@@ -4,12 +4,14 @@ from cyanide.core.emulator import ShellEmulator
 from cyanide.vfs.engine import FakeFilesystem
 
 
+# Function 343: Performs operations related to emulator.
 @pytest.fixture
 def emulator():
     fs = FakeFilesystem()
     return ShellEmulator(fs, username="root")
 
 
+# Function 344: Runs unit tests for the alias_defaults functionality.
 @pytest.mark.asyncio
 async def test_alias_defaults(emulator):
     out, err, rc = await emulator.execute("alias")
@@ -18,6 +20,7 @@ async def test_alias_defaults(emulator):
     assert "alias ls='ls --color=auto'" in out
 
 
+# Function 345: Runs unit tests for the alias_setting functionality.
 @pytest.mark.asyncio
 async def test_alias_setting(emulator):
     out, err, rc = await emulator.execute("alias mycmd='echo hello'")
@@ -27,6 +30,7 @@ async def test_alias_setting(emulator):
     assert rc == 0
 
 
+# Function 346: Runs unit tests for the alias_execution functionality.
 @pytest.mark.asyncio
 async def test_alias_execution(emulator):
     await emulator.execute("alias myecho='echo hello world'")
@@ -38,6 +42,7 @@ async def test_alias_execution(emulator):
     assert "hello world again" in out
 
 
+# Function 347: Runs unit tests for the unalias functionality.
 @pytest.mark.asyncio
 async def test_unalias(emulator):
     # Ensure it's there

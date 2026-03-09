@@ -9,15 +9,18 @@ from urllib.parse import urlparse
 class Command:
     """Base class for shell commands."""
 
+    # Function 206: Initializes the class instance and its attributes.
     def __init__(self, emulator):
         self.emulator = emulator
         self.fs = emulator.fs
         self.username = emulator.username
 
+    # Function 207: Retrieves ip addr data.
     def get_ip_addr(self) -> str:
         """Get the simulated IP address of the honeypot."""
         return str(self.emulator.config.get("ip_address", "192.168.1.15"))
 
+    # Function 208: Performs operations related to generate mac.
     def generate_mac(self) -> str:
         """Generate a deterministic-ish MAC address for this session."""
         # Use first 3 octets for a common vendor (e.g., VirtualBox)
@@ -28,6 +31,7 @@ class Command:
         random.seed(None)  # Reset seed
         return ":".join(f"{x:02x}" for x in vendor + rest)
 
+    # Function 209: Retrieves random network stats data.
     def get_random_network_stats(self) -> dict:
         """Generate some random traffic stats."""
         return {
@@ -37,6 +41,7 @@ class Command:
             "tx_bytes": random.randint(100000, 5000000),
         }
 
+    # Function 210: Retrieves random connections data.
     def get_random_connections(self, count: int = 3) -> list[dict]:
         """Generate some random active connections."""
         connections = []
@@ -82,10 +87,12 @@ class Command:
             )
         return connections
 
+    # Function 211: Executes the 'base' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the command logic. Must be implemented by subclasses."""
         raise NotImplementedError
 
+    # Function 212: Performs operations related to auth and execute.
     async def auth_and_execute(
         self, args: list[str], input_data: str = "", paths_to_check: Optional[list[str]] = None
     ) -> tuple[str, str, int]:
@@ -115,6 +122,7 @@ class Command:
 
         return await self.execute(args, input_data=input_data)
 
+    # Function 213: Performs operations related to on password auth.
     async def _on_password_auth(
         self, password: str, args: list[str], input_data: str
     ) -> tuple[str, str, int]:
@@ -123,6 +131,7 @@ class Command:
         # Optional: update CWD to /root if it was ~ for old user
         return await self.execute(args, input_data=input_data)
 
+    # Function 214: Performs operations related to validate url.
     def validate_url(self, url: str) -> tuple[bool, str, Optional[str]]:
         """Validate URL to prevent SSRF and local file access.
 

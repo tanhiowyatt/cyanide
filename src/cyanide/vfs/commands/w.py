@@ -6,6 +6,7 @@ from .base import Command
 class WCommand(Command):
     """Show who is logged on and what they are doing."""
 
+    # Function 275: Executes the 'w' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the w command.
 

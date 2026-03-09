@@ -14,6 +14,7 @@ class WgetCommand(Command):
     Also creates a dummy file in the fake filesystem.
     """
 
+    # Function 276: Executes the 'wget' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
         parser = argparse.ArgumentParser(prog="wget", add_help=False)
         parser.add_argument(

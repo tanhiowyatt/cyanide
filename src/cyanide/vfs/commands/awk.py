@@ -10,6 +10,7 @@ class AwkCommand(Command):
     Supports -F and simple {print $N}.
     """
 
+    # Function 205: Executes the 'awk' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
         parser = argparse.ArgumentParser(prog="awk", add_help=False)
         parser.add_argument("-F", "--field-separator", default=" ")

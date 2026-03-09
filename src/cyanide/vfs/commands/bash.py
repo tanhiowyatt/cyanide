@@ -6,6 +6,7 @@ from .base import Command
 class BashCommand(Command):
     """Bourne-Again SHell."""
 
+    # Function 215: Executes the 'bash' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         if "-c" in args:
             cmd_index = args.index("-c") + 1

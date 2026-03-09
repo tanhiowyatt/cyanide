@@ -2,6 +2,7 @@ from .base import Command
 
 
 class MvCommand(Command):
+    # Function 251: Executes the 'mv' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
         if len(args) < 2:
             return "", "mv: missing file operand\n", 1

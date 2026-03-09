@@ -9,6 +9,7 @@ CLR_VAL = "\033[0m"  # Reset
 RESET = "\033[0m"
 
 
+# Function 7: Performs operations related to print startup banner.
 def print_startup_banner(config, resolved_profile: str = ""):
     """Print logo and startup information in a dynamic colored fastfetch-style layout."""
     root_dir = Path.cwd()
@@ -32,6 +33,7 @@ def print_startup_banner(config, resolved_profile: str = ""):
     user_host = f"{CLR_USER}root@{hostname}{RESET}"
     separator = f"{CLR_SEP}{'-' * (len('root@') + len(hostname))}{RESET}"
 
+    # Function 8: Performs operations related to fmt key.
     def fmt_key(k):
         return f"{CLR_KEY}{k}{RESET}"
 

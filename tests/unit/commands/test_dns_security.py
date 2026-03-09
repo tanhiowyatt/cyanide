@@ -5,6 +5,7 @@ import pytest
 from cyanide.vfs.commands.curl import CurlCommand
 
 
+# Function 358: Performs operations related to mock emulator.
 @pytest.fixture
 def mock_emulator():
     emulator = MagicMock()
@@ -15,6 +16,7 @@ def mock_emulator():
     return emulator
 
 
+# Function 359: Runs unit tests for the validate_url_checks_all_ips functionality.
 @pytest.mark.asyncio
 async def test_validate_url_checks_all_ips(mock_emulator):
     cmd = CurlCommand(mock_emulator)
@@ -28,6 +30,7 @@ async def test_validate_url_checks_all_ips(mock_emulator):
         assert "Access to private/local resource" in error
 
 
+# Function 360: Runs unit tests for the dns_caching_logic functionality.
 @pytest.mark.asyncio
 async def test_dns_caching_logic(mock_emulator):
     cmd = CurlCommand(mock_emulator)
@@ -48,6 +51,7 @@ async def test_dns_caching_logic(mock_emulator):
         assert mock_dns.call_count == 1  # Still 1
 
 
+# Function 361: Runs unit tests for the dns_cache_expiry functionality.
 @pytest.mark.asyncio
 async def test_dns_cache_expiry(mock_emulator):
     cmd = CurlCommand(mock_emulator)

@@ -13,6 +13,7 @@ class TelnetHandler:
     Handles Telnet connections and interactive shell emulation.
     """
 
+    # Function 195: Initializes the class instance and its attributes.
     def __init__(self, server, config: Dict):
         self.server = server  # Reference to CyanideServer for shared resources if needed
         self.config = config
@@ -22,6 +23,7 @@ class TelnetHandler:
 
         self.session_timeout = config.get("session_timeout", 300)
 
+    # Function 196: Handles incoming connection events.
     async def handle_connection(self, reader, writer):
         """Handle Telnet connection."""
         src_ip, src_port = writer.get_extra_info("peername")
@@ -144,7 +146,7 @@ class TelnetHandler:
                 writer.close()
                 return
 
-            # Reuse the VFS created above for the shell session
+            # Function 197: Performs operations related to quarantine hook.
             def quarantine_hook(f, c):
                 self.services.quarantine.save_file(f, c, session_id, src_ip)
 

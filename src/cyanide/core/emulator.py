@@ -22,6 +22,7 @@ class ShellEmulator:
     - Command chaining (;, &&, ||)
     """
 
+    # Function 18: Initializes the class instance and its attributes.
     def __init__(
         self, fs: FakeFilesystem, username: str = "root", quarantine_callback=None, config=None
     ):
@@ -53,6 +54,7 @@ class ShellEmulator:
 
         self._register_commands()
 
+    # Function 19: Performs operations related to check permission.
     def check_permission(self, path: str, mode: str = "r") -> bool:
         """Check if current user has permission for path."""
         # Root can do anything
@@ -97,6 +99,7 @@ class ShellEmulator:
 
         return True
 
+    # Function 20: Performs operations related to register commands.
     def _register_commands(self):
         """Register available commands using the central registry."""
         from cyanide.vfs.commands import COMMAND_MAP
@@ -108,12 +111,14 @@ class ShellEmulator:
         # Add manual aliases
         self.commands["dir"] = self.commands.get("ls")
 
+    # Function 21: Performs operations related to resolve path.
     def resolve_path(self, path: str) -> str:
         """Resolve relative or absolute path to filesystem path."""
         if path.startswith("/"):
             return str(self.fs.resolve(path))
         return str(self.fs.resolve(f"{self.cwd}/{path}"))
 
+    # Function 22: Executes the 'emulator' command logic within the virtual filesystem.
     async def execute(self, command_line: str) -> tuple[str, str, int]:
         """Execute a shell command line dealing with chains, pipes, and redirections.
 
@@ -180,6 +185,7 @@ class ShellEmulator:
 
         return full_stdout, full_stderr, last_rc
 
+    # Function 23: Performs operations related to parse chain.
     def _parse_chain(self, command_line: str) -> List[CommandNode]:
         """Split command line by operators &&, ||, ; dealing with quotes."""
         # This is a basic parser. A full lexer would be better but overkill.
@@ -232,6 +238,7 @@ class ShellEmulator:
 
         return [CommandNode(cmd, op) for cmd, op in tokens if cmd]
 
+    # Function 24: Performs operations related to execute pipeline.
     async def _execute_pipeline(self, pipeline_str: str) -> tuple[str, str, int]:
         """Execute a single pipeline (A | B | C)."""
         # Split by pipe '|' respecting quotes
@@ -271,6 +278,7 @@ class ShellEmulator:
 
         return input_data, err_out, last_rc
 
+    # Function 25: Performs operations related to execute single command.
     async def _execute_single_command(self, cmd_line: str, input_data: str) -> tuple[str, str, int]:
         try:
             args = shlex.split(cmd_line)
@@ -312,6 +320,7 @@ class ShellEmulator:
         else:
             return "", f"{cmd_name}: command not found\n", 127
 
+    # Function 26: Performs operations related to parse redirections.
     def _parse_redirections(self, cmd: str) -> tuple[str, Optional[str], bool]:
         """Extract redirection > or >> from command string.
         Returns (clean_cmd, target_file, is_append)
@@ -345,6 +354,7 @@ class ShellEmulator:
         # Reconstruct command line for the command execution
         return shlex.join(clean_parts), target, append
 
+    # Function 27: Performs operations related to split ignore quotes.
     def _split_ignore_quotes(self, s: str, separator: str) -> List[str]:
         # Helper to split by separator but ignore if in quotes
         # Similar logic to _parse_chain but simpler
@@ -368,6 +378,7 @@ class ShellEmulator:
         tokens.append(current.strip())
         return tokens
 
+    # Function 28: Performs operations related to write file.
     def _write_file(self, path: str, content: str):
         """Helper to write to fake fs."""
         abs_path = self.resolve_path(path)

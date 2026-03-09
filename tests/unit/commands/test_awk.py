@@ -4,11 +4,13 @@ from cyanide.core.emulator import ShellEmulator
 from cyanide.vfs.commands.awk import AwkCommand
 
 
+# Function 348: Performs operations related to shell.
 @pytest.fixture
 def shell(mock_fs):
     return ShellEmulator(mock_fs, username="root")
 
 
+# Function 349: Runs unit tests for the awk_basic_print functionality.
 @pytest.mark.asyncio
 async def test_awk_basic_print(shell):
     cmd = AwkCommand(shell)
@@ -20,6 +22,7 @@ async def test_awk_basic_print(shell):
     assert stdout == "root\ndaemon\n"
 
 
+# Function 350: Runs unit tests for the awk_multiple_fields functionality.
 @pytest.mark.asyncio
 async def test_awk_multiple_fields(shell):
     cmd = AwkCommand(shell)
@@ -31,6 +34,7 @@ async def test_awk_multiple_fields(shell):
     assert stdout == "field1 field3\nval1 val3\n"
 
 
+# Function 351: Runs unit tests for the awk_print_all functionality.
 @pytest.mark.asyncio
 async def test_awk_print_all(shell):
     cmd = AwkCommand(shell)
@@ -42,6 +46,7 @@ async def test_awk_print_all(shell):
     assert stdout == "line one\nline two\n"
 
 
+# Function 352: Runs unit tests for the awk_file_input functionality.
 @pytest.mark.asyncio
 async def test_awk_file_input(shell, mock_fs):
     cmd = AwkCommand(shell)
@@ -52,6 +57,7 @@ async def test_awk_file_input(shell, mock_fs):
     assert stdout == "b\ne\n"
 
 
+# Function 353: Runs unit tests for the awk_unsupported_script functionality.
 @pytest.mark.asyncio
 async def test_awk_unsupported_script(shell):
     cmd = AwkCommand(shell)

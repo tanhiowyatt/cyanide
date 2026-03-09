@@ -3,6 +3,7 @@ import sys
 import time
 
 
+# Function 328: Performs operations related to check port.
 def check_port(host, port, timeout=5):
     try:
         with socket.create_connection((host, port), timeout=timeout):
@@ -11,6 +12,7 @@ def check_port(host, port, timeout=5):
         return False
 
 
+# Function 329: Performs operations related to check ssh functional.
 async def check_ssh_functional(host, port):
     """Try to login and execute a simple command."""
     try:
@@ -33,6 +35,7 @@ async def check_ssh_functional(host, port):
         return False, str(e)
 
 
+# Function 330: Runs unit tests for the smoke_test functionality.
 def smoke_test():
     host = "127.0.0.1"
     ports = {"SSH": 2222, "Telnet": 2223, "Metrics": 9090}

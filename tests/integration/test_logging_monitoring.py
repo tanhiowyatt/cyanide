@@ -7,6 +7,7 @@ from cyanide.core.stats import StatsManager
 from cyanide.logger import CyanideLogger
 
 
+# Function 331: Handles event logging and telemetry.
 @pytest.fixture
 def log_dir(tmp_path):
     d = tmp_path / "logs"
@@ -14,6 +15,7 @@ def log_dir(tmp_path):
     return str(d)
 
 
+# Function 332: Runs unit tests for the stats_to_prometheus functionality.
 def test_stats_to_prometheus():
     stats = StatsManager()
     stats.on_connect("ssh", "192.168.1.1")
@@ -27,6 +29,7 @@ def test_stats_to_prometheus():
     assert 'cyanide_protocols_total{protocol="ssh"} 1' in output
 
 
+# Function 333: Runs unit tests for the cyanide_logger_structure functionality.
 @pytest.mark.asyncio
 async def test_cyanide_logger_structure(log_dir):
     logger = CyanideLogger(log_dir)

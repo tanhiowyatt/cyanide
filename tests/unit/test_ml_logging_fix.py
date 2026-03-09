@@ -9,6 +9,7 @@ from cyanide.services.analytics import AnalyticsService
 from cyanide.services.quarantine import QuarantineService
 
 
+# Function 446: Handles event logging and telemetry.
 @pytest.fixture
 def temp_log_dir(tmp_path):
     log_dir = tmp_path / "var/log/cyanide"
@@ -16,6 +17,7 @@ def temp_log_dir(tmp_path):
     return log_dir
 
 
+# Function 447: Handles event logging and telemetry.
 @pytest.fixture
 def mock_logger(temp_log_dir):
     # Use real logger for integration testing to verify file writes
@@ -23,6 +25,7 @@ def mock_logger(temp_log_dir):
     return logger
 
 
+# Function 448: Performs operations related to analytics svc.
 @pytest.fixture
 def analytics_svc(mock_logger):
     config = {
@@ -36,11 +39,13 @@ def analytics_svc(mock_logger):
     return svc
 
 
+# Function 449: Runs unit tests for the ml_logging_path_creation functionality.
 def test_ml_logging_path_creation(analytics_svc):
     # Verify that the log directory exists
     assert analytics_svc.ml_log_path.parent.exists()
 
 
+# Function 450: Runs unit tests for the ml_command_logging functionality.
 def test_ml_command_logging(analytics_svc):
     # Mock pipeline analyze_command
     analytics_svc.ml_pipeline = MagicMock()
@@ -68,6 +73,7 @@ def test_ml_command_logging(analytics_svc):
         assert data["verdict"] == "anomaly"
 
 
+# Function 451: Runs unit tests for the ml_file_analysis_logging functionality.
 def test_ml_file_analysis_logging(analytics_svc):
     # Mock pipeline analyze_command
     analytics_svc.ml_pipeline = MagicMock()
@@ -98,6 +104,7 @@ def test_ml_file_analysis_logging(analytics_svc):
         assert thought_data["verdict"] == "anomaly"
 
 
+# Function 452: Runs unit tests for the quarantine_triggers_ml functionality.
 async def test_quarantine_triggers_ml(mock_logger, analytics_svc):
     config = {
         "quarantine_path": str(Path(mock_logger.log_dir).parent / "quarantine"),

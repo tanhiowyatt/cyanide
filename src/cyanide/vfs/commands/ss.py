@@ -2,6 +2,7 @@ from .base import Command
 
 
 class SsCommand(Command):
+    # Function 265: Executes the 'ss' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
         connections = self.get_random_connections()
         output = (

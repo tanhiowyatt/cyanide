@@ -2,6 +2,7 @@ from .base import Command
 
 
 class FindCommand(Command):
+    # Function 231: Executes the 'find' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
         if not args:
             return ".\n", "", 0
@@ -22,6 +23,7 @@ class FindCommand(Command):
 
         return "\n".join(all_paths) + ("\n" if all_paths else ""), "", 0
 
+    # Function 232: Performs operations related to walk.
     def _walk(self, path):
         paths = [path]
         node = self.fs.get_node(path)

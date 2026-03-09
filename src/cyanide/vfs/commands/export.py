@@ -4,6 +4,7 @@ from .base import Command
 class ExportCommand(Command):
     """Set environment variables (mock)."""
 
+    # Function 230: Executes the 'export' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the export command.
 

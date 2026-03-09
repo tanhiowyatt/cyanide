@@ -5,6 +5,7 @@ from .base import Command
 
 
 class MkdirCommand(Command):
+    # Function 250: Executes the 'mkdir' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
         parser = argparse.ArgumentParser(prog="mkdir", add_help=False)
         parser.add_argument("-p", "--parents", action="store_true")

@@ -4,6 +4,7 @@ from .base import Command
 class IdCommand(Command):
     """Print user and group information for the specified user."""
 
+    # Function 241: Executes the 'id' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the id command.
 

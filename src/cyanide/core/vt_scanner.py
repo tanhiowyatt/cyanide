@@ -10,12 +10,14 @@ class VTScanner:
     Checks file hash against VT database. If unknown, uploads the file.
     """
 
+    # Function 98: Initializes the class instance and its attributes.
     def __init__(self, api_key: str):
         self.api_key = api_key
         self.base_url = "https://www.virustotal.com/api/v3"
         self.headers = {"x-apikey": self.api_key}
         self.enabled = bool(api_key and api_key != "YOUR_API_KEY")
 
+    # Function 99: Performs operations related to scan.
     async def scan(self, content: bytes, filename: str) -> Optional[dict]:
         """
         Scan a file.

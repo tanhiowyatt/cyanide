@@ -2,6 +2,7 @@ from .base import Command
 
 
 class NetstatCommand(Command):
+    # Function 253: Executes the 'netstat' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
         connections = self.get_random_connections()
         output = (

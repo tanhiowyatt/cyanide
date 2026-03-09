@@ -7,6 +7,7 @@ class VMPool:
     Provides targets for the proxy services.
     """
 
+    # Function 95: Initializes the class instance and its attributes.
     def __init__(self, config):
         """
         Initialize the pool from config.
@@ -26,6 +27,7 @@ class VMPool:
                     # For simplicity, require port or use default 22
                     self.targets.append((pass_parts[0], 22))
 
+    # Function 96: Retrieves target data.
     def get_target(self):
         """
         Get a target (host, port) from the pool.
@@ -36,6 +38,7 @@ class VMPool:
             return None
         return random.choice(self.targets)
 
+    # Function 97: Performs operations related to report failure.
     def report_failure(self, host, port):
         """
         Report a failed backend. Could disable it temporarily.

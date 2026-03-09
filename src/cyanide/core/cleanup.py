@@ -7,6 +7,7 @@ from typing import Optional
 class CleanupManager:
     """Manages automatic cleanup of old logs and data."""
 
+    # Function 14: Initializes the class instance and its attributes.
     def __init__(self, config):
         """Initialize with configuration dict.
 
@@ -25,6 +26,7 @@ class CleanupManager:
         else:
             self.target_paths = raw_paths
 
+    # Function 15: Performs operations related to cleanup files.
     def cleanup_files(
         self, retention_days_override: Optional[int] = None, dry_run: bool = False
     ) -> dict:

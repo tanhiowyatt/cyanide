@@ -4,6 +4,7 @@ from .base import Command
 
 
 class GrepCommand(Command):
+    # Function 236: Executes the 'grep' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
         # Improved grep: supports -i, -v
         parser = argparse.ArgumentParser(prog="grep", add_help=False)
@@ -63,6 +64,7 @@ class GrepCommand(Command):
         rc = 0 if output else 1
         return output, "", rc
 
+    # Function 237: Performs operations related to get recursive files.
     def _get_recursive_files(self, path):
         """Helper to find all files recursively."""
         files = []

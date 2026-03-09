@@ -2,6 +2,7 @@ from .base import Command
 
 
 class PerlCommand(Command):
+    # Function 254: Executes the 'perl' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
         if "-e" in args:
             return "", "", 0

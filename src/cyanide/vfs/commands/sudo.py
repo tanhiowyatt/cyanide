@@ -4,6 +4,7 @@ from .base import Command
 class SudoCommand(Command):
     """Execute a command as another user (mock)."""
 
+    # Function 268: Executes the 'sudo' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute command as root or switch user."""
         target_user = "root"

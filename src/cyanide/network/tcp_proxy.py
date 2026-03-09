@@ -11,6 +11,7 @@ class TCPProxy:
     Logs connection metadata and data volume.
     """
 
+    # Function 177: Initializes the class instance and its attributes.
     def __init__(
         self,
         listen_host,
@@ -28,6 +29,7 @@ class TCPProxy:
         self.target_selector = target_selector  # Callable returning (host, port)
         self.server = None
 
+    # Function 178: Performs operations related to start.
     async def start(self):
         """Start the TCP Proxy server."""
         self.server = await asyncio.start_server(
@@ -38,6 +40,7 @@ class TCPProxy:
         )
         return self.server
 
+    # Function 179: Handles incoming client events.
     async def handle_client(self, client_reader, client_writer):
         """Handle incoming client connection."""
         src_ip, src_port = client_writer.get_extra_info("peername")
@@ -99,6 +102,7 @@ class TCPProxy:
         await target_writer.wait_closed()
         await client_writer.wait_closed()
 
+    # Function 180: Performs operations related to forward.
     async def forward(self, reader, writer, direction):
         """Forward data between reader and writer."""
         try:

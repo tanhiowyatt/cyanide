@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List
 
 
+# Function 29: Retrieves fs config dir data.
 def get_fs_config_dir() -> Path:
     """Return the absolute path to the config/profiles directory."""
     current_dir = Path(__file__).parent
@@ -11,6 +12,7 @@ def get_fs_config_dir() -> Path:
     return root_dir / "configs" / "profiles"
 
 
+# Function 30: Performs operations related to list profiles.
 def list_profiles() -> List[str]:
     """List all available OS profiles (subdirectories in configs/profiles)."""
     fs_dir = get_fs_config_dir()
@@ -25,6 +27,7 @@ def list_profiles() -> List[str]:
     return profiles or ["ubuntu"]
 
 
+# Function 31: Performs operations related to resolve os profile.
 def resolve_os_profile(profile_name: str) -> str:
     """
     Resolve the OS profile name.

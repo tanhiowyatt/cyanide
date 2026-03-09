@@ -5,6 +5,7 @@ import pytest
 from cyanide.core.server import CyanideServer
 
 
+# Function 464: Runs unit tests for the server_initialization functionality.
 @pytest.mark.asyncio
 async def test_server_initialization(mock_config, mock_logger, mocker):
     """Test that server initializes services correctly."""
@@ -27,6 +28,7 @@ async def test_server_initialization(mock_config, mock_logger, mocker):
     # We can check if services are instances of mocks
 
 
+# Function 465: Runs unit tests for the server_start_stop functionality.
 @pytest.mark.asyncio
 async def test_server_start_stop(mock_server, mocker):
     """Test start and stop sequences."""

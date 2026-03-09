@@ -9,6 +9,7 @@ class QuarantineService:
     Manages quarantine directory and file saving with quota checks.
     """
 
+    # Function 186: Initializes the class instance and its attributes.
     def __init__(self, config: Dict, logger):
         self.logger = logger
         self.config = config
@@ -24,9 +25,11 @@ class QuarantineService:
         # For now, let's keep it simple and maybe handle scanning via callback or event
         self.vt_scanner = None  # Set by server if needed
 
+    # Function 187: Configures or sets scanner.
     def set_scanner(self, scanner):
         self.vt_scanner = scanner
 
+    # Function 188: Performs operations related to save file.
     async def save_file(
         self, filename: str, content: bytes, session_id: str = "unknown", src_ip: str = "unknown"
     ) -> Optional[str]:
@@ -76,6 +79,7 @@ class QuarantineService:
             )
             return None
 
+    # Function 189: Handles event logging and telemetry.
     async def _scan_and_log(self, filename: str, content: bytes, session_id: str, src_ip: str):
         """Background task to scan file and log results."""
         if not self.vt_scanner:

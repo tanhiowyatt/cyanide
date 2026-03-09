@@ -3,6 +3,7 @@ import pytest
 from cyanide.core.config import load_config
 
 
+# Function 428: Performs operations related to valid config.
 @pytest.fixture
 def valid_config(tmp_path):
     cfg_path = tmp_path / "cyanide.yaml"
@@ -56,6 +57,7 @@ virustotal:
     return cfg_path
 
 
+# Function 429: Performs operations related to invalid config.
 @pytest.fixture
 def invalid_config(tmp_path):
     # Invalid backend_mode
@@ -96,6 +98,7 @@ virustotal:
     return cfg_path
 
 
+# Function 430: Runs unit tests for the load_valid_config functionality.
 def test_load_valid_config(valid_config):
     config = load_config(valid_config)
     assert config["ssh"]["port"] == 2222
@@ -103,6 +106,7 @@ def test_load_valid_config(valid_config):
     assert config["rate_limit"]["max_connections_per_minute"] == 60
 
 
+# Function 431: Runs unit tests for the load_invalid_config functionality.
 def test_load_invalid_config(invalid_config):
     # Expect sys.exit(1)
     with pytest.raises(SystemExit) as e:

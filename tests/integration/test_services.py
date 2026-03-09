@@ -12,6 +12,7 @@ from cyanide.core.server import CyanideServer
 # Let's mock the server dependencies or use a light config.
 
 
+# Function 334: Performs operations related to server config.
 @pytest.fixture
 def server_config(tmp_path):
     return {
@@ -25,6 +26,7 @@ def server_config(tmp_path):
     }
 
 
+# Function 335: Performs operations related to honeypot server.
 @pytest_asyncio.fixture
 async def honeypot_server(server_config):
     server = CyanideServer(server_config)
@@ -46,6 +48,7 @@ async def honeypot_server(server_config):
         pass
 
 
+# Function 336: Runs unit tests for the ssh_connection functionality.
 @pytest.mark.asyncio
 async def test_ssh_connection(honeypot_server):
     """Test that SSH server accepts connections."""
@@ -65,6 +68,7 @@ async def test_ssh_connection(honeypot_server):
         pytest.fail(f"SSH connection failed: {e}")
 
 
+# Function 337: Runs unit tests for the ssh_auth_failure functionality.
 @pytest.mark.asyncio
 async def test_ssh_auth_failure(honeypot_server):
     """Test invalid SSH credentials."""
@@ -81,6 +85,7 @@ async def test_ssh_auth_failure(honeypot_server):
             pass
 
 
+# Function 338: Runs unit tests for the telnet_connection functionality.
 @pytest.mark.asyncio
 async def test_telnet_connection(honeypot_server):
     """Test Telnet connection and auth."""

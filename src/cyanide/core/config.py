@@ -11,6 +11,7 @@ from pydantic import ValidationError
 from .config_schema import CyanideConfig
 
 
+# Function 16: Loads config from storage or configuration.
 def load_config(path: Path = Path("configs/app.yaml")):
     """Load and normalized configuration from YAML file and .env."""
     # Load .env file
@@ -34,6 +35,7 @@ def load_config(path: Path = Path("configs/app.yaml")):
         # Or just warn.
         print(f"[*] Config file not found at {path}, using .env and defaults.")
 
+    # Function 17: Retrieves val data.
     def get_val(section, key, env_var, default, cast=str):
         # Priority: Env (Full Name) > Env (Simplified) > Config File (Nested) > Default
         # support both REDIS_HOST and CYANIDE_REDIS__HOST
@@ -120,20 +122,23 @@ def load_config(path: Path = Path("configs/app.yaml")):
 
     # User loading
     users_env = os.getenv("CYANIDE_AUTH__USERS") or os.getenv("CYANIDE_USERS")
+    env_users_loaded = False
     if users_env:
         try:
             env_users = json.loads(users_env)
             if isinstance(env_users, list):
                 config["users"].extend(env_users)
+                env_users_loaded = True
         except json.JSONDecodeError:
             print(f"[!] Failed to parse users env var: {users_env}")
 
-    # Load users from YAML
-    yaml_users = config_data.get("users", [])
-    if isinstance(yaml_users, list):
-        for user_obj in yaml_users:
-            if isinstance(user_obj, dict) and "user" in user_obj and "pass" in user_obj:
-                config["users"].append(user_obj)
+    # Load users from YAML only if ENV didn't provide them
+    if not env_users_loaded:
+        yaml_users = config_data.get("users", [])
+        if isinstance(yaml_users, list):
+            for user_obj in yaml_users:
+                if isinstance(user_obj, dict) and "user" in user_obj and "pass" in user_obj:
+                    config["users"].append(user_obj)
 
     if not config["users"]:
         config["users"] = [{"user": "root", "pass": "admin"}, {"user": "admin", "pass": "admin"}]

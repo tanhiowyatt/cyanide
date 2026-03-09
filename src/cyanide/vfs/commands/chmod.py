@@ -2,6 +2,7 @@ from .base import Command
 
 
 class ChmodCommand(Command):
+    # Function 218: Executes the 'chmod' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
         if len(args) < 2:
             return "", "chmod: missing operand\n", 1

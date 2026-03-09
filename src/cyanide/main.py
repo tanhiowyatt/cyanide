@@ -15,11 +15,13 @@ from cyanide.core.aesthetics import print_startup_banner
 CONFIG_PATH = Path("configs/app.yaml")
 
 
+# Function 106: Checks condition: is docker.
 def is_docker():
     """Detect if running inside a Docker container."""
     return os.path.exists("/.dockerenv") or os.environ.get("DOCKER_CONTAINER")
 
 
+# Function 107: Main entry point for the application execution.
 async def async_main():
     """Main entry point."""
     # Silence noise ONLY if NOT in Docker
@@ -43,6 +45,7 @@ async def async_main():
     await server.start()
 
 
+# Function 108: Main entry point for the application execution.
 def main():
     """Synchronous entry point for console_scripts."""
     try:

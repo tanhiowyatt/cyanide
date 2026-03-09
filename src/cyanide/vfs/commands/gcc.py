@@ -2,6 +2,7 @@ from .base import Command
 
 
 class GccCommand(Command):
+    # Function 235: Executes the 'gcc' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
         if not args:
             return "", "gcc: fatal error: no input files\ncompilation terminated.\n", 1

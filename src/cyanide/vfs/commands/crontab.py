@@ -2,6 +2,7 @@ from .base import Command
 
 
 class CrontabCommand(Command):
+    # Function 221: Executes the 'crontab' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
         cron_dir = "/var/spool/cron/crontabs"
         cron_file = f"{cron_dir}/{self.emulator.username}"
@@ -49,6 +50,7 @@ class CrontabCommand(Command):
 
         return "crontab: usage error: file name must be specified for install.\n", "", 1
 
+    # Function 222: Performs operations related to on editor input.
     async def _on_editor_input(self, line: str) -> tuple[str, str, int]:
         raw_line = line.strip()
         if raw_line == "CANCEL":

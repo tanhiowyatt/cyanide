@@ -7,6 +7,7 @@ from cyanide.ml.model import CommandAutoencoder
 pytest.importorskip("torch")
 
 
+# Function 453: Runs unit tests for the model_init functionality.
 def test_model_init():
     """Test model initialization and dimensions."""
     model = CommandAutoencoder(input_dim=128, latent_dim=32)
@@ -16,6 +17,7 @@ def test_model_init():
     assert isinstance(model.decoder, torch.nn.Sequential)
 
 
+# Function 454: Runs unit tests for the preprocess functionality.
 def test_preprocess():
     """Test command tokenization and normalization."""
     model = CommandAutoencoder(input_dim=50)
@@ -33,6 +35,7 @@ def test_preprocess():
     # We can check simple properties if tokenizer behaves standardly.
 
 
+# Function 455: Runs unit tests for the prediction_basics functionality.
 def test_prediction_basics():
     """Test forward pass and anomaly scoring."""
     model = CommandAutoencoder(input_dim=50)
@@ -44,6 +47,7 @@ def test_prediction_basics():
     assert error >= 0.0
 
 
+# Function 456: Runs unit tests for the save_load functionality.
 def test_save_load(tmp_path):
     """Test model persistence."""
     model = CommandAutoencoder(input_dim=64, latent_dim=16)

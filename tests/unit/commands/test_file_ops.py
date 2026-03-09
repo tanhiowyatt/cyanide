@@ -8,11 +8,13 @@ from cyanide.vfs.commands.rm import RmCommand
 from cyanide.vfs.commands.touch import TouchCommand
 
 
+# Function 362: Performs operations related to shell.
 @pytest.fixture
 def shell(mock_fs):
     return ShellEmulator(mock_fs, username="root")
 
 
+# Function 363: Runs unit tests for the touch functionality.
 @pytest.mark.asyncio
 async def test_touch(shell, mock_fs):
     cmd = TouchCommand(shell)
@@ -27,6 +29,7 @@ async def test_touch(shell, mock_fs):
     assert rc == 0
 
 
+# Function 364: Runs unit tests for the mkdir functionality.
 @pytest.mark.asyncio
 async def test_mkdir(shell, mock_fs):
     cmd = MkdirCommand(shell)
@@ -47,6 +50,7 @@ async def test_mkdir(shell, mock_fs):
     assert rc != 0
 
 
+# Function 365: Runs unit tests for the rm functionality.
 @pytest.mark.asyncio
 async def test_rm(shell, mock_fs):
     cmd = RmCommand(shell)
@@ -74,6 +78,7 @@ async def test_rm(shell, mock_fs):
     assert rc == 0
 
 
+# Function 366: Runs unit tests for the cp functionality.
 @pytest.mark.asyncio
 async def test_cp(shell, mock_fs):
     cmd = CpCommand(shell)
@@ -94,6 +99,7 @@ async def test_cp(shell, mock_fs):
     assert mock_fs.exists("/root/dst_dir/f.txt")
 
 
+# Function 367: Runs unit tests for the mv functionality.
 @pytest.mark.asyncio
 async def test_mv(shell, mock_fs):
     cmd = MvCommand(shell)

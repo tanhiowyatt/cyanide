@@ -4,6 +4,7 @@ from cyanide.core.emulator import ShellEmulator
 from cyanide.vfs.engine import FakeFilesystem
 
 
+# Function 368: Performs operations related to emulator.
 @pytest.fixture
 def emulator():
     fs = FakeFilesystem()
@@ -11,6 +12,7 @@ def emulator():
     return ShellEmulator(fs, username="root")
 
 
+# Function 369: Runs unit tests for the python_interactive functionality.
 @pytest.mark.asyncio
 async def test_python_interactive(emulator):
     # Enter interactive python
@@ -37,6 +39,7 @@ async def test_python_interactive(emulator):
     assert emulator.pending_input_callback is None
 
 
+# Function 370: Runs unit tests for the editor_functionality functionality.
 @pytest.mark.asyncio
 async def test_editor_functionality(emulator):
     # Ensure /root exists
@@ -61,6 +64,7 @@ async def test_editor_functionality(emulator):
     assert content == "echo 'Hello World'\nexit 0\n"
 
 
+# Function 371: Runs unit tests for the crontab_functionality functionality.
 @pytest.mark.asyncio
 async def test_crontab_functionality(emulator):
     # Add new cron job

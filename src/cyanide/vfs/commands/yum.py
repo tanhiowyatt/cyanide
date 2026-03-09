@@ -2,6 +2,7 @@ from .base import Command
 
 
 class YumCommand(Command):
+    # Function 279: Executes the 'yum' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         os_profile = getattr(self.fs, "os_profile", "centos").lower()
         if os_profile not in ["centos", "rhel", "fedora", "rocky", "almalinux", "custom"]:

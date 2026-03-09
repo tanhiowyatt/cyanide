@@ -4,6 +4,7 @@ from .base import Command
 
 
 class SystemctlCommand(Command):
+    # Function 269: Executes the 'systemctl' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
         if "status" in args:
             service = (

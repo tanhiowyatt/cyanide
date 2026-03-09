@@ -2,6 +2,7 @@ from .base import Command
 
 
 class EnvCommand(Command):
+    # Function 229: Executes the 'env' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
         user = self.emulator.username
         home = "/root" if user == "root" else f"/home/{user}"

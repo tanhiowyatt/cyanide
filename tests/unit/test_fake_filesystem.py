@@ -5,17 +5,20 @@ import pytest
 from cyanide.vfs.engine import FakeFilesystem
 
 
+# Function 432: Performs operations related to fs.
 @pytest.fixture
 def fs():
     return FakeFilesystem()
 
 
+# Function 433: Runs unit tests for the initial_state functionality.
 def test_initial_state(fs):
     assert fs.exists("/")
     assert fs.is_dir("/")
     assert not fs.exists("/nonexistent")
 
 
+# Function 434: Runs unit tests for the mkdir_p functionality.
 def test_mkdir_p(fs):
     # Single level
     fs.mkdir_p("/test")
@@ -34,6 +37,7 @@ def test_mkdir_p(fs):
     assert node.perm == "drwxr-xr-x"  # Default
 
 
+# Function 435: Runs unit tests for the mkfile functionality.
 def test_mkfile(fs):
     # File in root
     fs.mkfile("/file1.txt", content="hello")
@@ -58,6 +62,7 @@ def test_mkfile(fs):
     assert not fs.exists("/missing/file.txt")
 
 
+# Function 436: Runs unit tests for the remove functionality.
 def test_remove(fs):
     fs.mkdir_p("/dir/subdir")
     fs.mkfile("/dir/file.txt")
@@ -84,6 +89,7 @@ def test_remove(fs):
     assert fs.remove("/") is False
 
 
+# Function 437: Runs unit tests for the resolve functionality.
 def test_resolve(fs):
     assert fs.resolve("/") == "/"
     assert fs.resolve("//") == "/"
@@ -95,6 +101,7 @@ def test_resolve(fs):
     )  # posixpath.normpath returns relative if input is relative
 
 
+# Function 438: Runs unit tests for the list_dir functionality.
 def test_list_dir(fs):
     fs.mkdir_p("/list")
     fs.mkfile("/list/a.txt")
@@ -111,6 +118,7 @@ def test_list_dir(fs):
     assert fs.list_dir("/nothing") == []
 
 
+# Function 439: Runs unit tests for the audit_callback functionality.
 def test_audit_callback():
     mock_cb = Mock()
     fs = FakeFilesystem(audit_callback=mock_cb)
@@ -126,6 +134,7 @@ def test_audit_callback():
     mock_cb.assert_called_with("delete", "/audit.txt")
 
 
+# Function 440: Runs unit tests for the permissions_storage functionality.
 def test_permissions_storage(fs):
     fs.mkfile("/secret.txt", owner="root", perm="-rw-------")
     node = fs.get_node("/secret.txt")

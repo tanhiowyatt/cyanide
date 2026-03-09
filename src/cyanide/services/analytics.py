@@ -8,6 +8,7 @@ class AnalyticsService:
     Handles ML analysis, GeoIP enrichment, and statistics.
     """
 
+    # Function 181: Initializes the class instance and its attributes.
     def __init__(self, config: Dict, logger):
         self.config = config
         self.logger = logger
@@ -36,6 +37,7 @@ class AnalyticsService:
         if self.ml_enabled:
             self._init_ml()
 
+    # Function 182: Performs operations related to init ml.
     def _init_ml(self):
         try:
             from pathlib import Path
@@ -81,6 +83,7 @@ class AnalyticsService:
             self.logger.log_event("system", "error", {"message": f"Failed to init ML model: {e}"})
             self.ml_enabled = False
 
+    # Function 183: Performs operations related to analyze command.
     def analyze_command(
         self,
         cmd: str,
@@ -134,6 +137,7 @@ class AnalyticsService:
         except Exception as e:
             self.logger.log_event(session_id, "error", {"message": f"ML Error: {e}"})
 
+    # Function 184: Performs operations related to analyze file.
     def analyze_file(self, filename: str, content: bytes, session_id: str, src_ip: str):
         """Analyze uploaded file content and filename via ML."""
         if not self.ml_enabled or not getattr(self, "ml_pipeline", None):
@@ -180,6 +184,7 @@ class AnalyticsService:
         except Exception as e:
             self.logger.log_event(session_id, "error", {"message": f"ML File Analysis Error: {e}"})
 
+    # Function 185: Handles event logging and telemetry.
     async def log_geoip(self, session_id: str, ip: str, protocol: str):
         """Async GeoIP enrichment logging."""
         geo_data = await self.geoip.lookup(ip)

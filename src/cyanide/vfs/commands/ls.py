@@ -6,6 +6,7 @@ from .base import Command
 class LsCommand(Command):
     """List directory contents."""
 
+    # Function 246: Executes the 'ls' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the ls command.
 
@@ -73,6 +74,7 @@ class LsCommand(Command):
 
         return "  ".join([n[1] for n in nodes_to_list if n[1]]) + "\n", "", 0
 
+    # Function 247: Performs operations related to format long.
     def _format_long(self, nodes_with_names):
         """Format listing in long format (-l)."""
         output = ""

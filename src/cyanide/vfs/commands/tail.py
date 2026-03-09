@@ -4,6 +4,7 @@ from .base import Command
 
 
 class TailCommand(Command):
+    # Function 270: Executes the 'tail' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
         parser = argparse.ArgumentParser(prog="tail", add_help=False)
         parser.add_argument("-n", "--lines", type=int, default=10)

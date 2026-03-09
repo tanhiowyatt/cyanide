@@ -6,6 +6,7 @@ from cyanide.vfs.commands.curl import CurlCommand
 from cyanide.vfs.commands.wget import WgetCommand
 
 
+# Function 402: Performs operations related to mock emulator.
 @pytest.fixture
 def mock_emulator(mock_fs):
     emulator = MagicMock()
@@ -16,6 +17,7 @@ def mock_emulator(mock_fs):
     return emulator
 
 
+# Function 403: Runs unit tests for the curl_validate_url_scheme functionality.
 @pytest.mark.asyncio
 async def test_curl_validate_url_scheme(mock_emulator):
     cmd = CurlCommand(mock_emulator)
@@ -40,6 +42,7 @@ async def test_curl_validate_url_scheme(mock_emulator):
         assert error == ""
 
 
+# Function 404: Runs unit tests for the curl_validate_private_ip functionality.
 @pytest.mark.asyncio
 async def test_curl_validate_private_ip(mock_emulator):
     cmd = CurlCommand(mock_emulator)
@@ -53,6 +56,7 @@ async def test_curl_validate_private_ip(mock_emulator):
         assert "Access to private/local resource" in error
 
 
+# Function 405: Runs unit tests for the wget_security functionality.
 @pytest.mark.asyncio
 async def test_wget_security(mock_emulator):
     cmd = WgetCommand(mock_emulator)
@@ -63,6 +67,7 @@ async def test_wget_security(mock_emulator):
     assert "Access to private/local resource" in stderr
 
 
+# Function 406: Runs unit tests for the curl_allow_local_network functionality.
 @pytest.mark.asyncio
 async def test_curl_allow_local_network(mock_emulator):
     # Enable allow_local_network

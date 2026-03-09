@@ -6,6 +6,7 @@ import pytest
 from cyanide.core.server import SSHSession
 
 
+# Function 421: Performs operations related to mock honeypot.
 @pytest.fixture
 def mock_honeypot():
     hp = MagicMock()
@@ -20,6 +21,7 @@ def mock_honeypot():
     return hp
 
 
+# Function 422: Runs unit tests for the bot_detection_by_timing functionality.
 @pytest.mark.asyncio
 async def test_bot_detection_by_timing(mock_honeypot):
     session = SSHSession(mock_honeypot, MagicMock(), "1.1.1.1", 1234)
@@ -37,6 +39,7 @@ async def test_bot_detection_by_timing(mock_honeypot):
     assert kwargs["is_bot"] is True
 
 
+# Function 423: Runs unit tests for the bot_detection_by_paste functionality.
 @pytest.mark.asyncio
 async def test_bot_detection_by_paste(mock_honeypot):
     session = SSHSession(mock_honeypot, MagicMock(), "1.1.1.1", 1234)
@@ -49,6 +52,7 @@ async def test_bot_detection_by_paste(mock_honeypot):
     assert kwargs["is_bot"] is True
 
 
+# Function 424: Runs unit tests for the human_typing_timing functionality.
 @pytest.mark.asyncio
 async def test_human_typing_timing(mock_honeypot):
     session = SSHSession(mock_honeypot, MagicMock(), "1.1.1.1", 1234)

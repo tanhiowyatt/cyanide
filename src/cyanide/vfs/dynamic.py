@@ -3,6 +3,7 @@ import time
 from typing import Any, Dict, Optional
 
 
+# Function 281: Provides dynamic content for virtual files.
 def uptime_provider(context: Any, args: Optional[Dict[str, Any]] = None) -> str:
     """Returns a realistic uptime string."""
     # Start time is some random point in the past
@@ -12,6 +13,7 @@ def uptime_provider(context: Any, args: Optional[Dict[str, Any]] = None) -> str:
     return f"{uptime_sec:.2f} {idle_sec:.2f}\n"
 
 
+# Function 282: Provides dynamic content for virtual files.
 def cpuinfo_provider(context: Any, args: Optional[Dict[str, Any]] = None) -> str:
     """Returns a fake cpuinfo string."""
     return """processor\t: 0

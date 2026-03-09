@@ -10,6 +10,7 @@ warnings.filterwarnings("ignore", message=".*ARC4 has been moved.*")
 warnings.filterwarnings("ignore", message=".*TripleDES has been moved.*")
 
 
+# Function 324: Performs operations related to mock config.
 @pytest.fixture
 def mock_config():
     """Return a standard test configuration dictionary."""
@@ -41,6 +42,7 @@ def mock_config():
     }
 
 
+# Function 325: Performs operations related to mock fs.
 @pytest.fixture
 def mock_fs():
     """Return a fresh FakeFilesystem instance."""
@@ -54,6 +56,7 @@ def mock_fs():
     return fs
 
 
+# Function 326: Handles event logging and telemetry.
 @pytest.fixture
 def mock_logger(mocker):
     """Return a mocked CyanideLogger."""
@@ -64,6 +67,7 @@ def mock_logger(mocker):
     return logger
 
 
+# Function 327: Performs operations related to mock server.
 @pytest.fixture
 def mock_server(mock_config, mock_logger, mocker):
     """Return a mocked CyanideServer instance."""

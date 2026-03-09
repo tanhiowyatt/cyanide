@@ -2,6 +2,7 @@ from .base import Command
 
 
 class AptCommand(Command):
+    # Function 204: Executes the 'apt' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         # Check OS profile support
         os_profile = getattr(self.fs, "os_profile", "ubuntu").lower()

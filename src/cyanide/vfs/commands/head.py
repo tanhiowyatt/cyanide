@@ -4,6 +4,7 @@ from .base import Command
 
 
 class HeadCommand(Command):
+    # Function 238: Executes the 'head' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
         parser = argparse.ArgumentParser(prog="head", add_help=False)
         parser.add_argument("-n", "--lines", type=int, default=10)

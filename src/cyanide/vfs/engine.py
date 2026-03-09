@@ -14,6 +14,7 @@ from .nodes import Directory, File, Node
 class VirtualFile(File):
     """Proxy for a file node."""
 
+    # Function 283: Initializes the class instance and its attributes.
     def __init__(
         self, name: str, path: str, fs: "FakeFilesystem", config: Optional[Dict[str, Any]] = None
     ):
@@ -21,6 +22,7 @@ class VirtualFile(File):
         self.path = path
         self.fs = fs
 
+    # Function 284: Performs operations related to content.
     @property
     def content(self) -> str:
         return self.fs.get_content(self.path)
@@ -29,6 +31,7 @@ class VirtualFile(File):
 class VirtualDirectory(Directory):
     """Proxy for a directory node."""
 
+    # Function 285: Initializes the class instance and its attributes.
     def __init__(
         self, name: str, path: str, fs: "FakeFilesystem", config: Optional[Dict[str, Any]] = None
     ):
@@ -37,6 +40,7 @@ class VirtualDirectory(Directory):
         self.path = path
         self.fs = fs
 
+    # Function 286: Performs operations related to lazy children.
     def _lazy_children(self) -> Dict[str, Node]:
         """Lazy-load children as needed by ls."""
         names = self.fs.list_dir(self.path)
@@ -48,6 +52,7 @@ class VirtualDirectory(Directory):
                 result[name] = node
         return result
 
+    # Function 287: Retrieves child data.
     def get_child(self, name: str) -> Optional[Node]:
         return self.children.get(name)
 
@@ -55,6 +60,7 @@ class VirtualDirectory(Directory):
 class FakeFilesystem:
     """Modern Simulated Linux filesystem using Template + Context model."""
 
+    # Function 288: Initializes the class instance and its attributes.
     def __init__(
         self,
         os_profile: Optional[str] = None,
@@ -83,6 +89,7 @@ class FakeFilesystem:
         self._generate_system_files()
         self._initialize_user_homes()
 
+    # Function 289: Performs operations related to generate system files.
     def _generate_system_files(self):
         """Generate /etc/passwd and /etc/group based on self.users."""
         passwd_lines = [
@@ -133,6 +140,7 @@ class FakeFilesystem:
             "perm": "-rw-r--r--",
         }
 
+    # Function 290: Performs operations related to initialize user homes.
     def _initialize_user_homes(self):
         """Automatically create /home/[user] for all configured users."""
         # First, ensure /home exists
@@ -148,6 +156,7 @@ class FakeFilesystem:
             else:
                 self.mkdir_p(f"/home/{username}")
 
+    # Function 291: Performs operations related to load profile.
     def _load_profile(self):
         """Load profile configuration via two-tier cache."""
         from .profile_loader import load as load_profile
@@ -165,6 +174,7 @@ class FakeFilesystem:
         for path, config in data.get("static", {}).items():
             self.static_manifest[self.resolve(path)] = config
 
+    # Function 292: Retrieves node data.
     def get_node(self, path: str) -> Optional[Node]:
         """Backward compatible node retrieval."""
         path = self.resolve(path)
@@ -196,6 +206,7 @@ class FakeFilesystem:
 
         return None
 
+    # Function 293: Performs operations related to exists.
     def exists(self, path: str) -> bool:
         path = self.resolve(path)
         if path in self.deleted_paths:
@@ -220,6 +231,7 @@ class FakeFilesystem:
                 return True
         return False
 
+    # Function 294: Checks condition: is dir.
     def is_dir(self, path: str) -> bool:
         path = self.resolve(path)
         if path in self.deleted_paths:
@@ -241,6 +253,7 @@ class FakeFilesystem:
                 return True
         return False
 
+    # Function 295: Checks condition: is file.
     def is_file(self, path: str) -> bool:
         path = self.resolve(path)
         if path in self.deleted_paths:
@@ -255,6 +268,7 @@ class FakeFilesystem:
             return False
         return not self.is_dir(path)
 
+    # Function 296: Performs operations related to list dir.
     def list_dir(self, path: str) -> List[str]:
         path = self.resolve(path)
         if path in self.deleted_paths or not self.is_dir(path):
@@ -277,6 +291,7 @@ class FakeFilesystem:
         # Remove deleted items that might have been added by parent logic
         return sorted([c for c in contents if posixpath.join(path, c) not in self.deleted_paths])
 
+    # Function 297: Retrieves content data.
     def get_content(self, path: str) -> str:
         path = self.resolve(path)
         if path in self.deleted_paths:
@@ -308,6 +323,7 @@ class FakeFilesystem:
 
         return ""
 
+    # Function 298: Performs operations related to mkfile.
     def mkfile(self, path: str, content="", owner="root", group="root", perm="-rw-r--r--"):
         path = self.resolve(path)
         parent_path = posixpath.dirname(path)
@@ -329,6 +345,7 @@ class FakeFilesystem:
             self.stats.on_file_op("write", path)
         return VirtualFile(posixpath.basename(path), path, self)
 
+    # Function 299: Performs operations related to mkdir p.
     def mkdir_p(self, path: str, owner="root", group="root", perm="drwxr-xr-x"):
         path = self.resolve(path)
         parts = [p for p in path.split("/") if p]
@@ -347,6 +364,7 @@ class FakeFilesystem:
                     self.deleted_paths.remove(current)
         return True
 
+    # Function 300: Performs operations related to remove.
     def remove(self, path: str) -> bool:
         path = self.resolve(path)
         if path == "/" or not self.exists(path):
@@ -362,6 +380,7 @@ class FakeFilesystem:
             self.stats.on_file_op("delete", path)
         return True
 
+    # Function 301: Performs operations related to resolve.
     def resolve(self, path: str) -> str:
         if not path:
             return "/"
@@ -371,6 +390,7 @@ class FakeFilesystem:
             res = "/" + res.lstrip("/")
         return res
 
+    # Function 302: Performs operations related to copy.
     def copy(self, src: str, dst: str, recursive: bool = False) -> bool:
         src = self.resolve(src)
         dst = self.resolve(dst)
@@ -401,6 +421,7 @@ class FakeFilesystem:
             self.mkfile(dst, content=content)
             return True
 
+    # Function 303: Performs operations related to move.
     def move(self, src: str, dst: str) -> bool:
         src = self.resolve(src)
         dst = self.resolve(dst)
@@ -413,6 +434,7 @@ class FakeFilesystem:
             return self.remove(src)
         return False
 
+    # Function 304: Performs operations related to render.
     def _render(self, content: str) -> str:
         if not self.context:
             return content

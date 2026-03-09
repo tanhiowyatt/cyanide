@@ -5,16 +5,19 @@ from cyanide.vfs.commands import COMMAND_MAP
 from cyanide.vfs.engine import FakeFilesystem
 
 
+# Function 398: Performs operations related to fs.
 @pytest.fixture
 def fs():
     return FakeFilesystem()
 
 
+# Function 399: Performs operations related to emulator.
 @pytest.fixture
 def emulator(fs):
     return ShellEmulator(fs, username="admin")
 
 
+# Function 400: Runs unit tests for the command_registry_smoke functionality.
 @pytest.mark.asyncio
 @pytest.mark.parametrize("cmd_name", COMMAND_MAP.keys())
 async def test_command_registry_smoke(emulator, cmd_name):
@@ -52,6 +55,7 @@ async def test_command_registry_smoke(emulator, cmd_name):
         pytest.fail(f"Command '{cmd_name}' failed with exception: {e}")
 
 
+# Function 401: Runs unit tests for the all_commands_covered functionality.
 @pytest.mark.asyncio
 async def test_all_commands_covered(emulator):
     """Verify that all files in src/cyanide/vfs/commands/ are in the registry."""

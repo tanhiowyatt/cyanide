@@ -33,6 +33,7 @@ from .vt_scanner import VTScanner
 
 
 class ServiceRegistry:
+    # Function 37: Initializes the class instance and its attributes.
     def __init__(
         self,
         session: "SessionManager",
@@ -49,6 +50,7 @@ class ServiceRegistry:
 class CyanideServer:
     """Main honeypot server orchestrating SSH, Telnet, and MySQL services."""
 
+    # Function 38: Initializes the class instance and its attributes.
     def __init__(self, config: Dict[str, Any]):
         """Initialize honeypot server with configuration."""
         self.config = config
@@ -152,11 +154,13 @@ class CyanideServer:
             self.profile = DEFAULT_METADATA.copy()
             self.resolved_profile_name = "ubuntu"
 
+    # Function 39: Performs operations related to active sessions.
     @property
     def active_sessions(self):
         """Compatibility property for old code."""
         return self.services.session.active_sessions
 
+    # Function 40: Performs operations related to analyze command.
     def _analyze_command(self, cmd, username, src_ip, session_id, protocol, is_bot=False):
         """Delegated to AnalyticsService."""
         with self.tracer.start_as_current_span("analyze_command") as span:
@@ -170,14 +174,17 @@ class CyanideServer:
                 cmd, username, src_ip, session_id, protocol, is_bot=is_bot
             )
 
+    # Function 41: Handles event logging and telemetry.
     async def log_geoip(self, session_id, ip, protocol):
         """Delegated to AnalyticsService."""
         await self.services.analytics.log_geoip(session_id, ip, protocol)
 
+    # Function 42: Performs operations related to load users.
     def _load_users(self, config_users):
         """Load user credentials from configuration."""
         return config_users
 
+    # Function 43: Checks condition: is valid user.
     def is_valid_user(self, username, password):
         """Validate user credentials against configured users."""
         for user in self.users:
@@ -185,6 +192,7 @@ class CyanideServer:
                 return True
         return False
 
+    # Function 44: Performs operations related to fs audit hook.
     def _fs_audit_hook(self, action, path, session_id="unknown", src_ip="unknown"):
         """Callback for filesystem auditing."""
         try:
@@ -220,9 +228,11 @@ class CyanideServer:
         except RuntimeError:
             pass
 
+    # Function 45: Retrieves filesystem data.
     def get_filesystem(self, session_id="unknown", src_ip="unknown"):
         """Create a fresh filesystem instance for a new session."""
 
+        # Function 46: Performs operations related to audit hook.
         def audit_hook(action, path):
             self._fs_audit_hook(action, path, session_id, src_ip)
 
@@ -243,6 +253,7 @@ class CyanideServer:
             # Absolute fallback
             return FakeFilesystem(audit_callback=audit_hook, stats=self.stats)
 
+    # Function 47: Handles event logging and telemetry.
     async def _scan_and_log(
         self, filename: str, content: bytes, session_id="unknown", src_ip="unknown"
     ):
@@ -273,6 +284,7 @@ class CyanideServer:
                 }
             )
 
+    # Function 48: Performs operations related to save quarantine file.
     def save_quarantine_file(
         self, filename: str, content: bytes, session_id="unknown", src_ip="unknown"
     ):
@@ -281,6 +293,7 @@ class CyanideServer:
             self.services.quarantine.save_file(filename, content, session_id, src_ip)
         )
 
+    # Function 49: Handles event logging and telemetry.
     def _log_tty(self, session_obj, direction: str, data: str):
         """Dual format logging: JSONL for reading + Timing/TS for scriptreplay."""
         if direction != "OUT" and not hasattr(session_obj, "tty_log_path_jsonl"):
@@ -321,6 +334,7 @@ class CyanideServer:
                     "system", "tty_error", {"message": f"Error saving scriptreplay TTY: {e}"}
                 )
 
+    # Function 50: Performs operations related to start metrics server.
     async def start_metrics_server(self):
         """Start a lightweight HTTP server for metrics and stats."""
         metrics_conf = self.config.get("metrics", {})
@@ -329,6 +343,7 @@ class CyanideServer:
 
         port = metrics_conf.get("port", 9090)
 
+        # Function 51: Handles incoming request events.
         async def handle_request(reader, writer):
             try:
                 # Read headers robustly
@@ -478,13 +493,21 @@ class CyanideServer:
                 "system", "metrics_server_error", {"message": f"Metrics Server Error: {e}"}
             )
 
+    # Function 52: Performs operations related to start.
     async def start(self):
         """Start all honeypot services and enter main event loop."""
         # Start Async Logger
         await self.async_logger.start()
 
-        # Generate SSH Host Key
-        ssh_key = asyncssh.generate_private_key("ssh-rsa")
+        # Generate or load SSH Host Key
+        ssh_key_path = "var/lib/cyanide/ssh_host_rsa_key"
+        if not os.path.exists(ssh_key_path):
+            os.makedirs(os.path.dirname(ssh_key_path), exist_ok=True)
+            ssh_key_obj = asyncssh.generate_private_key("ssh-rsa")
+            ssh_key_obj.write_private_key(ssh_key_path)
+            ssh_key = ssh_key_obj
+        else:
+            ssh_key = asyncssh.read_private_key(ssh_key_path)
 
         # Initialize VM Pool if needed
         self.vm_pool = VMPool(self.config)
@@ -600,6 +623,7 @@ class CyanideServer:
         except asyncio.CancelledError:
             await self.stop()
 
+    # Function 53: Performs operations related to stop.
     async def stop(self):
         """Stop all services."""
         self.logger.log_event("system", "system_status", {"message": "Stopping CyanideServer..."})
@@ -623,6 +647,7 @@ class CyanideServer:
         if hasattr(self, "_stop_event"):
             self._stop_event.set()
 
+    # Function 54: Handles event logging and telemetry.
     async def _stats_logging_loop(self):
         """Periodically log statistics to cyanide-stats.json."""
         while True:
@@ -636,6 +661,7 @@ class CyanideServer:
             # Log every 60 seconds (or 10 for demo/dev if needed, but 60 is standard)
             await asyncio.sleep(60)
 
+    # Function 55: Performs operations related to cleanup loop.
     async def _cleanup_loop(self):
         """Background task for automatic file cleanup."""
         # Initial delay to let things start
@@ -673,6 +699,7 @@ class CyanideServer:
 
             await asyncio.sleep(manager.interval)
 
+    # Function 56: Handles incoming telnet events.
     async def handle_telnet(self, reader, writer):
         """Deprecated. Use services.telnet.handle_connection."""
         await self.services.telnet.handle_connection(reader, writer)
@@ -681,6 +708,7 @@ class CyanideServer:
 class SSHServerFactory(asyncssh.SSHServer):
     """SSH server factory."""
 
+    # Function 57: Initializes the class instance and its attributes.
     def __init__(self, honeypot: CyanideServer):
         self.honeypot = honeypot
         self.src_ip = "unknown"
@@ -688,6 +716,7 @@ class SSHServerFactory(asyncssh.SSHServer):
         self.fs = None
         self.conn_id = str(uuid.uuid4())[:8]
 
+    # Function 58: Performs operations related to connection made.
     def connection_made(self, conn):
         self.src_ip = conn.get_extra_info("peername")[0]
         self.src_port = conn.get_extra_info("peername")[1]
@@ -714,6 +743,7 @@ class SSHServerFactory(asyncssh.SSHServer):
                 session_id="conn_" + self.conn_id, src_ip=self.src_ip
             )
 
+    # Function 59: Performs operations related to connection lost.
     def connection_lost(self, exc):
         # Transport level cleanup - handle leaks here
         self.honeypot.services.session.unregister_session(self.src_ip)
@@ -723,9 +753,11 @@ class SSHServerFactory(asyncssh.SSHServer):
             {"src_ip": self.src_ip, "active_sessions": self.honeypot.active_sessions},
         )
 
+    # Function 60: Performs operations related to password auth supported.
     def password_auth_supported(self):
         return True
 
+    # Function 61: Performs operations related to validate password.
     def validate_password(self, username, password):
         success = self.honeypot.is_valid_user(username, password)
         self.honeypot.stats.on_auth("ssh", self.src_ip, username, password, success)
@@ -744,9 +776,11 @@ class SSHServerFactory(asyncssh.SSHServer):
         )
         return success
 
+    # Function 62: Performs operations related to subsystem requested.
     def subsystem_requested(self, subsystem):  # type: ignore
         return super().subsystem_requested(subsystem)  # type: ignore
 
+    # Function 63: Performs operations related to session requested.
     def session_requested(self):
         return SSHSession(self.honeypot, self.fs, self.src_ip, self.src_port)
 
@@ -754,6 +788,7 @@ class SSHServerFactory(asyncssh.SSHServer):
 class SSHSession(asyncssh.SSHServerSession):
     """SSH session handler."""
 
+    # Function 64: Initializes the class instance and its attributes.
     def __init__(self, honeypot: CyanideServer, fs: FakeFilesystem, src_ip, src_port):
         self.honeypot = honeypot
         self.fs = fs
@@ -774,6 +809,7 @@ class SSHSession(asyncssh.SSHServerSession):
         self.bytes_in = 0
         self.bytes_out = 0
 
+    # Function 65: Performs operations related to connection made.
     def connection_made(self, channel):
         self.channel = channel
         conn = channel.get_connection()
@@ -788,7 +824,7 @@ class SSHSession(asyncssh.SSHServerSession):
         # SSH Fingerprinting
         # Extract negotiated algorithms (HASSH-like data)
         try:
-            # Helper for extraction
+            # Function 66: Retrieves val data.
             def get_val(key, internal_attr=None, decode=False):
                 val = conn.get_extra_info(key)
                 if val is not None:
@@ -857,6 +893,7 @@ class SSHSession(asyncssh.SSHServerSession):
         except Exception:
             pass
 
+    # Function 67: Performs operations related to connection lost.
     def connection_lost(self, exc):
         """Log session disconnect."""
         reason = "clean"
@@ -876,6 +913,7 @@ class SSHSession(asyncssh.SSHServerSession):
             )
         )
 
+    # Function 68: Performs operations related to terminal size changed.
     def terminal_size_changed(self, width, height, pixwidth, pixheight):
         """Log terminal resize events (SIGWINCH)."""
         asyncio.create_task(
@@ -893,8 +931,9 @@ class SSHSession(asyncssh.SSHServerSession):
             # Propagate
             pass
 
+    # Function 69: Performs operations related to shell requested.
     def shell_requested(self):
-        # Use shared FS
+        # Function 70: Performs operations related to q hook.
         def q_hook(f, c):
             self.honeypot.services.quarantine.save_file(f, c, self.session_id, self.src_ip)
 
@@ -903,6 +942,7 @@ class SSHSession(asyncssh.SSHServerSession):
         )
         return True
 
+    # Function 71: Performs operations related to get prompt.
     def _get_prompt(self):
         if not self.shell:
             return "$ "
@@ -916,12 +956,14 @@ class SSHSession(asyncssh.SSHServerSession):
             cwd = cwd.replace("/root", "~", 1)
         return f"{self.username}@server:{cwd}$ "
 
+    # Function 72: Performs operations related to session started.
     def session_started(self):
         self._ensure_tty_log()
         if self.shell:
             # self.channel.write(f"Welcome into {self.username} shell\r\n")
             self.channel.write(self._get_prompt())
 
+    # Function 73: Handles event logging and telemetry.
     def _ensure_tty_log(self):
         # Setup TTY logging (scriptreplay + JSONL)
         folder_name = f"ssh_{self.src_ip}_{self.session_id}"
@@ -938,9 +980,11 @@ class SSHSession(asyncssh.SSHServerSession):
         open(self.tty_log_path, "a").close()
         open(self.tty_timing_path, "a").close()
 
+    # Function 74: Handles event logging and telemetry.
     def _log_tty(self, direction: str, data: str):
         self.honeypot._log_tty(self, direction, data)
 
+    # Function 75: Performs operations related to env received.
     def env_received(self, name, value):
         """Log client environment variables."""
         # Convert bytes to str if needed
@@ -962,9 +1006,11 @@ class SSHSession(asyncssh.SSHServerSession):
         )
         return True
 
+    # Function 76: Performs operations related to data received.
     def data_received(self, data, datatype=None):
         asyncio.create_task(self._process_input(data))
 
+    # Function 77: Performs operations related to process input.
     async def _process_input(self, data):
         try:
             # Detect paste (multiple characters in one packet including newline)
@@ -1110,12 +1156,14 @@ class SSHSession(asyncssh.SSHServerSession):
                 self.session_id, "debug", {"message": f"process_input error: {e}"}
             )
 
+    # Function 78: Performs operations related to close session.
     async def _close_session(self):
         await asyncio.sleep(0.01)
         self.channel.write_eof()
         self.channel.exit(0)
         self.channel.close()
 
+    # Function 79: Performs operations related to exec requested.
     def exec_requested(self, command):
         self.honeypot.logger.log_event(
             self.session_id, "debug", {"message": f"exec_requested: {command}"}
@@ -1135,6 +1183,7 @@ class SSHSession(asyncssh.SSHServerSession):
         asyncio.create_task(self._async_exec(command))
         return True
 
+    # Function 80: Performs operations related to async exec.
     async def _async_exec(self, command):
         # Use Factory
         self._ensure_tty_log()
@@ -1165,6 +1214,7 @@ class SSHSession(asyncssh.SSHServerSession):
         self.channel.exit(rc)
         self.channel.close()
 
+    # Function 81: Performs operations related to session ended.
     def session_ended(self):
         duration = time.time() - self.start_time
 

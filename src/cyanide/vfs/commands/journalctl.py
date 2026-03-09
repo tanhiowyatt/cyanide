@@ -4,6 +4,7 @@ from .base import Command
 
 
 class JournalctlCommand(Command):
+    # Function 244: Executes the 'journalctl' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
         now = time.strftime("%b %d %H:%M:%S")
         return (

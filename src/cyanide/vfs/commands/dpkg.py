@@ -2,6 +2,7 @@ from .base import Command
 
 
 class DpkgCommand(Command):
+    # Function 225: Executes the 'dpkg' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         os_profile = getattr(self.fs, "os_profile", "ubuntu").lower()
         if os_profile not in ["ubuntu", "debian", "kali", "custom"]:

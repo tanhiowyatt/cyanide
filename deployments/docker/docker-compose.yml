@@ -44,7 +44,7 @@ services:
 
       # --- Honeypot Core ---
       - CYANIDE_CORE__HOSTNAME=server01
-      - CYANIDE_VFS__PROFILE=ubuntu_22_04 # Соответствует configs/profiles/ubuntu_22_04.yaml
+      - CYANIDE_VFS__PROFILE=ubuntu # Соответствует configs/profiles/ubuntu
 
       # --- Session & Resource Limits ---
       - CYANIDE_CORE__MAX_SESSIONS=100

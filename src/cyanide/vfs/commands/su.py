@@ -4,6 +4,7 @@ from .base import Command
 class SuCommand(Command):
     """Switch user ID or become superuser."""
 
+    # Function 266: Executes the 'su' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         target_user = "root"
         login_shell = False
@@ -30,6 +31,7 @@ class SuCommand(Command):
 
         return "Password: ", "", 0
 
+    # Function 267: Performs operations related to on password.
     async def _on_password(self, password: str) -> tuple[str, str, int]:
         # Realistic behavior: any non-empty password works, or strictly 'root'
         # Let's go with 'root' as the magic word, or anything if you want it to be easy.

@@ -6,11 +6,13 @@ from cyanide.vfs.commands.head import HeadCommand
 from cyanide.vfs.commands.tail import TailCommand
 
 
+# Function 354: Performs operations related to shell.
 @pytest.fixture
 def shell(mock_fs):
     return ShellEmulator(mock_fs, username="root")
 
 
+# Function 355: Runs unit tests for the cat functionality.
 @pytest.mark.asyncio
 async def test_cat(shell, mock_fs):
     cmd = CatCommand(shell)
@@ -34,6 +36,7 @@ async def test_cat(shell, mock_fs):
     assert "content2" in stdout
 
 
+# Function 356: Runs unit tests for the head functionality.
 @pytest.mark.asyncio
 async def test_head(shell, mock_fs):
     cmd = HeadCommand(shell)
@@ -55,6 +58,7 @@ async def test_head(shell, mock_fs):
     assert len(lines) == 5
 
 
+# Function 357: Runs unit tests for the tail functionality.
 @pytest.mark.asyncio
 async def test_tail(shell, mock_fs):
     cmd = TailCommand(shell)

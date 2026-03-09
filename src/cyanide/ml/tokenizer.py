@@ -9,6 +9,7 @@ class CharacterLevelTokenizer:
     Maps characters to integers.
     """
 
+    # Function 140: Initializes the class instance and its attributes.
     def __init__(self, max_length=512):
         self.max_length = max_length
         self.char_map = {}
@@ -20,6 +21,7 @@ class CharacterLevelTokenizer:
         # Initialize with standard ASCII
         self._build_vocab()
 
+    # Function 141: Performs operations related to build vocab.
     def _build_vocab(self):
         # Basic ASCII printable + some common extras
         chars = "".join([chr(i) for i in range(32, 127)])
@@ -29,6 +31,7 @@ class CharacterLevelTokenizer:
         self.index_map = {i: c for i, c in enumerate(self.vocab)}
         self.vocab_size = len(self.vocab)
 
+    # Function 142: Performs operations related to encode.
     def encode(self, text):
         """
         Encodes text to a list of integers with padding/truncation.
@@ -46,6 +49,7 @@ class CharacterLevelTokenizer:
 
         return tokens
 
+    # Function 143: Performs operations related to decode.
     def decode(self, tokens):
         """
         Decodes a list of integers back to text.
@@ -57,6 +61,7 @@ class CharacterLevelTokenizer:
             chars.append(self.index_map.get(t, ""))
         return "".join(chars)
 
+    # Function 144: Performs operations related to save.
     def save(self, path):
         with open(path, "wb") as f:
             # nosemgrep: python.lang.security.deserialization.pickle.avoid-pickle
@@ -69,6 +74,7 @@ class CharacterLevelTokenizer:
                 f,
             )
 
+    # Function 145: Performs operations related to load.
     def load(self, path):
         with open(path, "rb") as f:
             # nosemgrep: python.lang.security.deserialization.pickle.avoid-pickle

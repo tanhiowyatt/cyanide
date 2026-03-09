@@ -4,6 +4,7 @@ from .base import Command
 class CdCommand(Command):
     """Change the current working directory."""
 
+    # Function 217: Executes the 'cd' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the cd command.
 

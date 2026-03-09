@@ -6,6 +6,7 @@ from .base import Command
 class WhoCommand(Command):
     """Show who is logged on."""
 
+    # Function 277: Executes the 'who' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the who command.
 

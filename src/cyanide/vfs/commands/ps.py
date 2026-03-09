@@ -4,6 +4,7 @@ from .base import Command
 class PsCommand(Command):
     """Report a snapshot of the current processes."""
 
+    # Function 257: Executes the 'ps' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the ps command.
 

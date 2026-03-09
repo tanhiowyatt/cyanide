@@ -9,9 +9,11 @@ from cyanide.vfs.commands.base import Command
 class MockCommand(Command):
     """Mock command for testing shell orchestration."""
 
+    # Function 466: Initializes the class instance and its attributes.
     def __init__(self, emulator):
         self.emulator = emulator
 
+    # Function 467: Executes the 'test_shell_emulator' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
         if args and args[0] == "fail":
             return "", "command failed\n", 1
@@ -29,6 +31,7 @@ class MockCommand(Command):
 # --- Fixtures ---
 
 
+# Function 468: Performs operations related to mock command map.
 @pytest.fixture
 def mock_command_map(mocker):
     """Patch the global COMMAND_MAP with our mock command."""
@@ -37,6 +40,7 @@ def mock_command_map(mocker):
     return mock_map
 
 
+# Function 469: Performs operations related to shell.
 @pytest.fixture
 def shell(mock_fs, mock_command_map):
     """Return a ShellEmulator instance with mocked commands."""
@@ -46,6 +50,7 @@ def shell(mock_fs, mock_command_map):
 # --- Tests ---
 
 
+# Function 470: Runs unit tests for the parse_chain_simple functionality.
 @pytest.mark.asyncio
 async def test_parse_chain_simple(shell):
     """Test parsing a simple command."""
@@ -55,6 +60,7 @@ async def test_parse_chain_simple(shell):
     assert nodes[0].operator is None
 
 
+# Function 471: Runs unit tests for the parse_chain_complex functionality.
 @pytest.mark.asyncio
 async def test_parse_chain_complex(shell):
     """Test parsing multiple operators."""
@@ -75,6 +81,7 @@ async def test_parse_chain_complex(shell):
     assert nodes[3].operator is None
 
 
+# Function 472: Runs unit tests for the parse_chain_quotes functionality.
 @pytest.mark.asyncio
 async def test_parse_chain_quotes(shell):
     """Test that operators inside quotes are ignored."""
@@ -86,6 +93,7 @@ async def test_parse_chain_quotes(shell):
     assert nodes[0].operator == "&&"
 
 
+# Function 473: Runs unit tests for the execute_basic functionality.
 @pytest.mark.asyncio
 async def test_execute_basic(shell):
     """Test basic execution."""
@@ -94,6 +102,7 @@ async def test_execute_basic(shell):
     assert rc == 0
 
 
+# Function 474: Runs unit tests for the execute_and_operator functionality.
 @pytest.mark.asyncio
 async def test_execute_and_operator(shell):
     """Test && operator logic."""
@@ -111,6 +120,7 @@ async def test_execute_and_operator(shell):
     assert rc == 1
 
 
+# Function 475: Runs unit tests for the execute_or_operator functionality.
 @pytest.mark.asyncio
 async def test_execute_or_operator(shell):
     """Test || operator logic."""
@@ -125,6 +135,7 @@ async def test_execute_or_operator(shell):
     assert "executed 2" not in stdout
 
 
+# Function 476: Runs unit tests for the execute_semicolon functionality.
 @pytest.mark.asyncio
 async def test_execute_semicolon(shell):
     """Test ; operator logic."""
@@ -134,6 +145,7 @@ async def test_execute_semicolon(shell):
     assert "executed 2" in stdout
 
 
+# Function 477: Runs unit tests for the redirection_overwrite functionality.
 @pytest.mark.asyncio
 async def test_redirection_overwrite(shell, mock_fs):
     """Test > redirection."""
@@ -146,6 +158,7 @@ async def test_redirection_overwrite(shell, mock_fs):
     assert "executed content" in content
 
 
+# Function 478: Runs unit tests for the redirection_append functionality.
 @pytest.mark.asyncio
 async def test_redirection_append(shell, mock_fs):
     """Test >> redirection."""
@@ -159,6 +172,7 @@ async def test_redirection_append(shell, mock_fs):
     assert "executed append" in content
 
 
+# Function 479: Runs unit tests for the pipe functionality.
 @pytest.mark.asyncio
 async def test_pipe(shell):
     """Test | pipe logic."""
@@ -170,6 +184,7 @@ async def test_pipe(shell):
     assert "executed receiver with input: executed origin" in stdout
 
 
+# Function 480: Runs unit tests for the resolve_path functionality.
 @pytest.mark.asyncio
 async def test_resolve_path(shell):
     """Test path resolution."""
@@ -178,6 +193,7 @@ async def test_resolve_path(shell):
     assert shell.resolve_path("../parent") == "/home/parent"
 
 
+# Function 481: Runs unit tests for the permissions_root functionality.
 @pytest.mark.asyncio
 async def test_permissions_root(mock_fs):
     """Test root permissions."""
@@ -190,6 +206,7 @@ async def test_permissions_root(mock_fs):
     assert shell.check_permission("/etc/shadow", "w") is True
 
 
+# Function 482: Runs unit tests for the permissions_user functionality.
 @pytest.mark.asyncio
 async def test_permissions_user(mock_fs):
     """Test regular user permissions."""
@@ -213,6 +230,7 @@ async def test_permissions_user(mock_fs):
     assert shell.check_permission("/home/user/private", "r") is True
 
 
+# Function 483: Runs unit tests for the unknown_command functionality.
 @pytest.mark.asyncio
 async def test_unknown_command(shell):
     """Test execution of unknown command."""

@@ -54,12 +54,13 @@ class AsyncLogger:
                 try:
                     async with aiofiles.open(filepath, mode) as f:
                         await f.write(content)
-                except Exception as e:
-                    print(f"AsyncLogger Error writing to {filepath}: {e}")
+                except Exception:
+                    # Silent fail for logger itself to avoid loop
+                    pass
                 finally:
                     self.queue.task_done()
 
             except asyncio.TimeoutError:
                 continue
-            except Exception as e:
-                print(f"AsyncLogger Worker Error: {e}")
+            except Exception:
+                pass

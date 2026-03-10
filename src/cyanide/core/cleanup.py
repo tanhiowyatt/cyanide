@@ -66,8 +66,8 @@ class CleanupManager:
                                 file_path.unlink()
                             stats["deleted"] += 1
                             stats["bytes_freed"] += size
-                    except Exception as e:
+                    except Exception:
+                        # TODO: Log error to a proper service
                         stats["errors"] += 1
-                        print(f"Error deleting {file_path}: {e}")
 
         return stats

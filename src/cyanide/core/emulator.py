@@ -351,7 +351,6 @@ class ShellEmulator:
         Returns (clean_cmd, target_file, is_append)
         """
         # Very simple naive parser, assumes redirection is at the end or separated by spaces
-        # TODO: Handle quotes properly
 
         parts = shlex.split(cmd)
         target = None

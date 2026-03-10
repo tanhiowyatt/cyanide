@@ -14,8 +14,6 @@ class SessionManager:
         self.max_sessions_per_ip = config.get("max_sessions_per_ip", 5)
         self.session_timeout = config.get("session_timeout", 300)
 
-        self.session_timeout = config.get("session_timeout", 300)
-
         # Rate Limiting
         self.max_connections_per_minute = config.get("rate_limit", {}).get(
             "max_connections_per_minute", 60

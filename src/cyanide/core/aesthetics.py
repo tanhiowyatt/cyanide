@@ -17,6 +17,7 @@ def print_startup_banner(config, resolved_profile: str = ""):
 
     # 1. Read Logo ASCII
     logo_lines = []
+    logo_raw = []
     if logo_path.exists():
         try:
             # Wrap logo in color
@@ -57,8 +58,8 @@ def print_startup_banner(config, resolved_profile: str = ""):
     print()  # Leading newline
     max_h = max(len(logo_lines), len(info_fields))
     # Calculate width based on raw logo lines (without ANSI codes)
-    raw_logo_lines = logo_path.read_text().splitlines()
-    logo_width = max(len(line) for line in raw_logo_lines) + 4
+    # Use the already loaded logo_raw instead of re-reading from disk
+    logo_width = max(len(line) for line in logo_raw) + 4 if logo_raw else 0
 
     for i in range(max_h):
         r_part = info_fields[i] if i < len(info_fields) else ""
@@ -66,7 +67,7 @@ def print_startup_banner(config, resolved_profile: str = ""):
         # When padding l_part, we need to account for hidden ANSI characters
         # Or just pad the raw line and then wrap in color?
         # Let's pad the raw line for correct alignment
-        raw_l = raw_logo_lines[i] if i < len(raw_logo_lines) else ""
+        raw_l = logo_raw[i] if i < len(logo_raw) else ""
         padded_raw_l = f"{raw_l:<{logo_width}}"
         # Wrap the whole padded part in logo color
         colored_l = f"{CLR_LOGO}{padded_raw_l}{RESET}"

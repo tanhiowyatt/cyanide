@@ -102,8 +102,6 @@ class CommandAutoencoder(nn.Module):
         else:
             score = 1.0 if is_anomaly else 0.0
 
-        pass
-
         return is_anomaly, score, error
 
     # Function 130: Performs operations related to save.

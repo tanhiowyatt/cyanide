@@ -735,7 +735,10 @@ class SSHServerFactory(asyncssh.SSHServer):
         self.honeypot.logger.log_event(
             "system",
             "ssh_connection_lost",
-            {"src_ip": self.src_ip, "active_sessions": self.honeypot.services.session.active_sessions},
+            {
+                "src_ip": self.src_ip,
+                "active_sessions": self.honeypot.services.session.active_sessions,
+            },
         )
 
     # Function 60: Performs operations related to password auth supported.

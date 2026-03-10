@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import requests
 
@@ -17,7 +17,7 @@ class Plugin(OutputPlugin):
         self.authkey = config.get("authkey", "")
         self.batch_size = config.get("batch_size", 50)
         self.url = config.get("url", "https://isc.sans.edu/api/submit/file")
-        self.buffer = []
+        self.buffer: List[str] = []
 
     def write(self, event: Dict[str, Any]):
         if not self.userid or not self.authkey:

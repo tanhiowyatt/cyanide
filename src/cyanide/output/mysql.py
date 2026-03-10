@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import mysql.connector
 
@@ -21,7 +21,7 @@ class Plugin(OutputPlugin):
         self.password = config.get("password", "")
         self.database = config.get("database", "cyanide")
         self.table = config.get("table", "events")
-        self.conn = None
+        self.conn: Optional[mysql.connector.MySQLConnection] = None
         self._connect()
 
     def _connect(self):
@@ -33,18 +33,19 @@ class Plugin(OutputPlugin):
                 password=self.password,
                 database=self.database,
             )
-            cursor = self.conn.cursor()
-            cursor.execute(f"""
-                CREATE TABLE IF NOT EXISTS {self.table} (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    timestamp VARCHAR(255),
-                    session VARCHAR(255),
-                    eventid VARCHAR(255),
-                    data JSON
-                )
-            """)
-            self.conn.commit()
-            cursor.close()
+            if self.conn:
+                cursor = self.conn.cursor()
+                cursor.execute(f"""
+                    CREATE TABLE IF NOT EXISTS {self.table} (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        timestamp VARCHAR(255),
+                        session VARCHAR(255),
+                        eventid VARCHAR(255),
+                        data JSON
+                    )
+                """)
+                self.conn.commit()
+                cursor.close()
         except Exception as e:
             logging.error(f"[MySQL] Connection failed: {e}")
             self.conn = None

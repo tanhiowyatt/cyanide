@@ -945,7 +945,8 @@ class SSHServerFactory(asyncssh.SSHServer):
         return True
 
     # Function 62.2: Handles remote port forwarding requests (-R).
-    def connection_requested(self, dest_host, dest_port):
+    def connection_requested(self, dest_host, dest_port, orig_host, orig_port):
+
         self.honeypot.logger.log_event(
             "conn_" + self.conn_id,
             "remote_forward.request",

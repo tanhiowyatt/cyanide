@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import psycopg
 
@@ -21,24 +21,25 @@ class Plugin(OutputPlugin):
         self.password = config.get("password", "")
         self.database = config.get("database", "cyanide")
         self.table = config.get("table", "events")
-        self.conn = None
+        self.conn: Optional[psycopg.Connection] = None
         self._connect()
 
     def _connect(self):
         try:
             conn_str = f"host={self.host} port={self.port} dbname={self.database} user={self.user} password={self.password}"
             self.conn = psycopg.connect(conn_str)
-            with self.conn.cursor() as cursor:
-                cursor.execute(f"""
-                    CREATE TABLE IF NOT EXISTS {self.table} (
-                        id SERIAL PRIMARY KEY,
-                        timestamp VARCHAR(255),
-                        session VARCHAR(255),
-                        eventid VARCHAR(255),
-                        data JSONB
-                    )
-                """)
-            self.conn.commit()
+            if self.conn:
+                with self.conn.cursor() as cursor:
+                    cursor.execute(f"""
+                        CREATE TABLE IF NOT EXISTS {self.table} (
+                            id SERIAL PRIMARY KEY,
+                            timestamp VARCHAR(255),
+                            session VARCHAR(255),
+                            eventid VARCHAR(255),
+                            data JSONB
+                        )
+                    """)
+                self.conn.commit()
         except Exception as e:
             logging.error(f"[PostgreSQL] Connection failed: {e}")
             self.conn = None

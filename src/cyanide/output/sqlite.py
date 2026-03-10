@@ -2,7 +2,7 @@ import json
 import logging
 import sqlite3
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from .base import OutputPlugin
 
@@ -16,7 +16,7 @@ class Plugin(OutputPlugin):
         super().__init__(config)
         self.db_path = config.get("path", "var/log/cyanide/events.sqlite")
         self.table = config.get("table", "events")
-        self.conn = None
+        self.conn: Optional[sqlite3.Connection] = None
         self._init_db()
 
     def _init_db(self):

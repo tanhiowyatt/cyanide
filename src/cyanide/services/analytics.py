@@ -99,8 +99,9 @@ class AnalyticsService:
         is_bot: bool = False,
     ):
         """Run command through ML pipeline and alert if anomaly."""
-        if not self.ml_enabled or not getattr(self, "ml_pipeline", None):
+        if not self.ml_enabled or self.ml_pipeline is None:
             return
+
 
         try:
             # Analyze command
@@ -145,8 +146,9 @@ class AnalyticsService:
     # Function 184: Performs operations related to analyze file.
     def analyze_file(self, filename: str, content: bytes, session_id: str, src_ip: str):
         """Analyze uploaded file content and filename via ML."""
-        if not self.ml_enabled or not getattr(self, "ml_pipeline", None):
+        if not self.ml_enabled or self.ml_pipeline is None:
             return
+
 
         try:
             # Combine filename and snippet of content for analysis

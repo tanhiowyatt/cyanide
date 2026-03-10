@@ -20,7 +20,6 @@ sys.path.append(os.getcwd())
 
 from cyanide.vfs.engine import FakeFilesystem
 
-# Configure logging to stdout as json
 logging.basicConfig(
     level=logging.INFO, format="%(message)s", handlers=[logging.StreamHandler(sys.stdout)]
 )

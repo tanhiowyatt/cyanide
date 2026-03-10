@@ -28,7 +28,7 @@ ROOT_DIR = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 PID_FILE = os.path.join(ROOT_DIR, "var/run/cyanide.pid")
 STDOUT_LOG = os.path.join(ROOT_DIR, "var/log/cyanide/cyanide.out")
 STDERR_LOG = os.path.join(ROOT_DIR, "var/log/cyanide/cyanide.err")
-CONFIG_FILE = os.path.join(ROOT_DIR, "config/cyanide.cfg")
+CONFIG_FILE = os.path.join(ROOT_DIR, "configs/app.yaml")
 SRC_DIR = os.path.join(ROOT_DIR, "src")
 
 # Ensure src is in path
@@ -195,11 +195,10 @@ def import_fs(args):
         if name.startswith('fs.'):
             name = name[3:]
     
-    dest_filename = f"fs.{name}.yaml"
-    dest_path = Path(ROOT_DIR) / "config/fs-config" / dest_filename
+    dest_path = Path(ROOT_DIR) / "configs/profiles" / name / "base.yaml"
     
     if dest_path.exists() and not args.force:
-        confirm = input(f"[?] File {dest_filename} already exists. Overwrite? [y/N] ")
+        confirm = input(f"[?] Profile '{name}' already exists. Overwrite? [y/N] ")
         if confirm.lower() != 'y':
             print("Aborted.")
             return

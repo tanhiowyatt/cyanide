@@ -699,11 +699,6 @@ class CyanideServer:
 
             await asyncio.sleep(manager.interval)
 
-    # Function 56: Handles incoming telnet events.
-    async def handle_telnet(self, reader, writer):
-        """Deprecated. Use services.telnet.handle_connection."""
-        await self.services.telnet.handle_connection(reader, writer)
-
 
 class SSHServerFactory(asyncssh.SSHServer):
     """SSH server factory."""

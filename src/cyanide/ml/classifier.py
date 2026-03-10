@@ -1,4 +1,5 @@
 import json
+import logging
 import pickle
 from pathlib import Path
 
@@ -7,6 +8,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 from cyanide.core import security
+
+logger = logging.getLogger(__name__)
 
 
 class KnowledgeBase:
@@ -43,7 +46,7 @@ class KnowledgeBase:
     def load_data(self, kb_dir: Path):
         """Loads all KB data from JSONL files."""
         kb_dir = Path(kb_dir)
-        print(f"[*] Loading KB data from {kb_dir}...")
+        logger.info(f"[*] Loading KB data from {kb_dir}...")
 
         # 1. Load command mappings (Atomic Red Team + Manual)
         for filename in ["atomic_red_team_mapping.jsonl", "manual_mappings.jsonl"]:
@@ -93,7 +96,7 @@ class KnowledgeBase:
             with open(rel_file, "r") as f:
                 self.relationships = json.load(f)
 
-        print(
+        logger.info(
             f"[*] Loaded KB data: {len(self.command_corpus)} commands, {len(self.technique_db)} techniques."
         )
 
@@ -113,13 +116,13 @@ class KnowledgeBase:
     def build_index(self):
         """Builds TF-IDF index."""
         if not self.command_corpus:
-            print("[!] No commands to index.")
+            logger.warning("[!] No commands to index.")
             return
 
-        print("[*] Building TF-IDF index...")
+        logger.info("[*] Building TF-IDF index...")
         self.tfidf_matrix = self.vectorizer.fit_transform(self.command_corpus)
         self.is_built = True
-        print(f"[+] Index built: {self.tfidf_matrix.shape}")
+        logger.info(f"[+] Index built: {self.tfidf_matrix.shape}")
 
     # Function 113: Performs operations related to search.
     def search(self, query_command, top_k=5):
@@ -307,7 +310,7 @@ class KnowledgeBase:
                 },
                 f,
             )
-        print(f"[+] KB saved to {path}")
+        logger.info(f"[+] KB saved to {path}")
 
     # Function 121: Performs operations related to load.
     def load(self, path):
@@ -316,6 +319,6 @@ class KnowledgeBase:
                 # nosemgrep: python.lang.security.deserialization.pickle.avoid-pickle
                 data = security.load(f)
                 self.__dict__.update(data)
-            print(f"[*] KB loaded from {path}")
+            logger.info(f"[*] KB loaded from {path}")
         except Exception as e:
-            print(f"[!] Failed to load KB: {e}")
+            logger.error(f"[!] Failed to load KB: {e}")

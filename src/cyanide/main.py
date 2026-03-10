@@ -43,7 +43,7 @@ async def async_main():
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, lambda: sys.exit(0))
 
-    print("[*] Starting Cyanide Honeypot...")
+    logging.info("[*] Starting Cyanide Honeypot...")
     await server.start()
 
 
@@ -53,9 +53,9 @@ def main():
     try:
         asyncio.run(async_main())
     except (KeyboardInterrupt, SystemExit):
-        print("\n[*] Honeypot stopped.")
+        logging.info("\\n[*] Honeypot stopped.")
     except Exception as e:
-        print(f"[!] Unexpected error: {e}")
+        logging.error(f"[!] Unexpected error: {e}")
 
 
 if __name__ == "__main__":

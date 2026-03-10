@@ -3,6 +3,7 @@ Advanced SSH/Telnet Honeypot Server Implementation.
 """
 
 import asyncio
+import logging
 import json
 import os
 import random
@@ -54,28 +55,42 @@ class CyanideServer:
     def __init__(self, config: Dict[str, Any]):
         """Initialize honeypot server with configuration."""
         self.config = config
-        try:
-            self.stats = StatsManager()
-            self.tracer = setup_telemetry("cyanide-honeypot", config.get("otel", {}), "1.0.0")
-            print("[*] CyanideServer: Telemetry initialized.")
-        except Exception as e:
-            print(f"[!] CyanideServer: Failed to initialize Telemetry: {e}")
-            raise
 
-        # --- Initialize Logger ---
+        # --- 1. Initialize Logger First ---
         try:
             log_dir = config.get("logging", {}).get("directory", "var/log/cyanide")
             self.logger = CyanideLogger(log_dir)
-            print("[*] CyanideServer: Logger initialized.")
+            self.logger.log_event(
+                "system", "service_init_status", {"message": "Logger initialized"}
+            )
         except Exception as e:
-            print(f"[!] CyanideServer: Failed to initialize Logger: {e}")
+            # Last resort print if logger fails
+            logging.error(f"[!] CyanideServer: Failed to initialize Logger: {e}")
+            raise
+
+        # --- 2. Stats & Telemetry ---
+        try:
+            self.stats = StatsManager()
+            self.tracer = setup_telemetry("cyanide-honeypot", config.get("otel", {}), "1.0.0")
+            self.logger.log_event(
+                "system", "service_init_status", {"message": "Telemetry initialized"}
+            )
+        except Exception as e:
+            self.logger.log_event(
+                "system", "service_init_error", {"service": "Telemetry", "error": str(e)}
+            )
+            # We might not want to crash just because telemetry failed, but Telemetry returns a proxy
+            # and may have already logged via standard logging.
+            # However, the previous logic raised, so we stay consistent.
             raise
 
         # --- Initialize Services ---
         # 1. Session Manager
         try:
             session_mgr = SessionManager(config)
-            print("[*] CyanideServer: SessionManager initialized.")
+            self.logger.log_event(
+                "system", "service_init_status", {"message": "SessionManager initialized"}
+            )
         except Exception as e:
             self.logger.log_event(
                 "system", "service_init_error", {"service": "SessionManager", "error": str(e)}
@@ -88,7 +103,7 @@ class CyanideServer:
             # Pass VTScanner to QuarantineService
             # VirusTotal
             vt_key = config.get("virustotal", {}).get("api_key", "")
-            self.vt_scanner = VTScanner(vt_key)
+            self.vt_scanner = VTScanner(vt_key, self.logger)
             quarantine_svc.set_scanner(self.vt_scanner)
             self.logger.log_event(
                 "system", "service_init_status", {"message": "QuarantineService initialized"}

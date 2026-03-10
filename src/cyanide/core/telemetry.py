@@ -6,6 +6,9 @@ from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExport
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+import logging
+
+logger = logging.getLogger("cyanide.telemetry")
 
 
 # Function 94: Sets up initial configuration and state.
@@ -28,13 +31,13 @@ def setup_telemetry(service_name: str, config: dict, version: str = "1.0.0"):
         exporter: "Any" = OTLPSpanExporter(endpoint=otlp_endpoint)
         processor = BatchSpanProcessor(exporter)
         provider.add_span_processor(processor)
-        print(f"[*] Telemetry: OTLP Exporter enabled ({otlp_endpoint})")
+        logger.info(f"Telemetry: OTLP Exporter enabled ({otlp_endpoint})")
     elif os.getenv("CYANIDE_DEBUG_TRACE"):
         # Fallback to Console for debugging if env var set
         exporter = ConsoleSpanExporter()
         processor = BatchSpanProcessor(exporter)
         provider.add_span_processor(processor)
-        print("[*] Telemetry: Console Exporter enabled")
+        logger.info("Telemetry: Console Exporter enabled")
 
     # Only set global provider if not already set (prevents warnings in tests)
     from opentelemetry.trace import ProxyTracerProvider

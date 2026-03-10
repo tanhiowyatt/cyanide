@@ -11,8 +11,9 @@ class VTScanner:
     """
 
     # Function 98: Initializes the class instance and its attributes.
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, logger=None):
         self.api_key = api_key
+        self.logger = logger
         self.base_url = "https://www.virustotal.com/api/v3"
         self.headers = {"x-apikey": self.api_key}
         self.enabled = bool(api_key and api_key != "YOUR_API_KEY")
@@ -92,18 +93,30 @@ class VTScanner:
                                 result["error"] = f"Upload failed: {upload_resp.status}"
                                 return result
                     elif resp.status == 401:
-                        print("[!] VT Error: Unauthorized (Invalid API Key)")
+                        if self.logger:
+                            self.logger.log_event(
+                                "system", "vt_error", {"status": 401, "message": "Unauthorized"}
+                            )
                         self.enabled = False  # Disable invalid key
                         return None
                     elif resp.status == 429:
-                        print("[!] VT Error: Quota Exceeded")
+                        if self.logger:
+                            self.logger.log_event(
+                                "system", "vt_error", {"status": 429, "message": "Quota Exceeded"}
+                            )
                         return None
                     else:
-                        print(f"[!] VT Error: {resp.status}")
+                        if self.logger:
+                            self.logger.log_event(
+                                "system",
+                                "vt_error",
+                                {"status": resp.status, "message": "Other error"},
+                            )
                         return None
 
         except Exception as e:
-            print(f"[!] VT Exception: {e}")
+            if self.logger:
+                self.logger.log_event("system", "vt_exception", {"error": str(e)})
             return None
 
         return result

@@ -27,7 +27,7 @@ logging.basicConfig(
 logger = logging.getLogger("ssh_proxy")
 
 
-class HoneypotSSHClientConnection(asyncssh.SSHClientConnection):
+class CyanideSSHClientConnection(asyncssh.SSHClientConnection):
     """Connection from Proxy to Backend.
 
     Manages the SSH connection between the proxy and the backend honeypot/server.
@@ -59,7 +59,7 @@ class HoneypotSSHClientConnection(asyncssh.SSHClientConnection):
         pass
 
 
-class HoneypotSSHServer(asyncssh.SSHServer):
+class CyanideSSHServer(asyncssh.SSHServer):
     """SSH Proxy Server implementation.
 
     Accepts connections from attackers and bridges them to the backend
@@ -375,7 +375,7 @@ async def main():
 
     key = generate_private_key("ssh-rsa")
 
-    print(f"Starting SSH Proxy on 0.0.0.0:{listen_port} -> {dst_host}:{dst_port}...")
+    logger.info(f"Starting SSH Proxy on 0.0.0.0:{listen_port} -> {dst_host}:{dst_port}...")
 
     fs = FakeFilesystem()
 
@@ -383,7 +383,7 @@ async def main():
 
     # Function 176: Performs operations related to factory.
     def factory():
-        return HoneypotSSHServer(dst_host, dst_port, fs)
+        return CyanideSSHServer(dst_host, dst_port, fs)
 
     await asyncssh.create_server(factory, "0.0.0.0", listen_port, server_host_keys=[key])
 

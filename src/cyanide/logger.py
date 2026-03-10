@@ -1,31 +1,29 @@
 import datetime
 import json
 import logging
-import os
+
+
+from pathlib import Path
 
 
 class CyanideLogger:
     # Function 100: Initializes the class instance and its attributes.
     def __init__(self, log_dir):
-        self.log_dir = log_dir
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
+        self.log_dir = Path(log_dir)
+        if not self.log_dir.exists():
+            self.log_dir.mkdir(parents=True, exist_ok=True)
 
         # 1. Server Log - System events, errors, lifecycle
-        self.server_log = self._setup_logger(
-            "cyanide_server", os.path.join(log_dir, "cyanide-server.json")
-        )
+        self.server_log = self._setup_logger("cyanide_server", self.log_dir / "cyanide-server.json")
 
         # 2. FS Log - Hacker activity: commands, auth, file uploads, TTY
-        self.fs_log = self._setup_logger("cyanide_fs", os.path.join(log_dir, "cyanide-fs.json"))
+        self.fs_log = self._setup_logger("cyanide_fs", self.log_dir / "cyanide-fs.json")
 
         # 3. ML Log - Detailed ML verdicts and thoughts
-        self.ml_log = self._setup_logger("cyanide_ml", os.path.join(log_dir, "cyanide-ml.json"))
+        self.ml_log = self._setup_logger("cyanide_ml", self.log_dir / "cyanide-ml.json")
 
         # 4. Stats Log - Periodic snapshots
-        self.stats_log = self._setup_logger(
-            "cyanide_stats", os.path.join(log_dir, "cyanide-stats.json")
-        )
+        self.stats_log = self._setup_logger("cyanide_stats", self.log_dir / "cyanide-stats.json")
 
     # Function 101: Sets up initial configuration and state.
     def _setup_logger(self, name, path):
@@ -71,7 +69,7 @@ class CyanideLogger:
     def log_event(self, session_id, event_type, data):
         """Log a generic event in structured JSON, routed to proper file."""
         entry = {
-            "timestamp": datetime.datetime.now().isoformat(),
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "session": session_id,
             "eventid": event_type,
         }

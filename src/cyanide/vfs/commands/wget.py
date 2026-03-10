@@ -34,7 +34,6 @@ class WgetCommand(Command):
         # Security: Validate URL
         is_valid, error, resolved_ip = self.validate_url(parsed.url)
         if not is_valid:
-            print(f"URL validation failed: {error}")  # Debug/Log
             return "", f"wget: error: {error}\n", 1
 
         url = parsed.url

@@ -1,4 +1,3 @@
-import os
 import time
 from pathlib import Path
 from typing import Optional
@@ -57,24 +56,24 @@ class CleanupManager:
             if not base_path.exists():
                 continue
 
-            for root, dirs, files in os.walk(base_path):
-                for name in files:
-                    file_path = Path(root) / name
-                    try:
-                        mtime = file_path.stat().st_mtime
-                        if mtime < cutoff_time:
-                            size = file_path.stat().st_size
-                            if not dry_run:
-                                file_path.unlink()
-                            stats["deleted"] += 1
-                            stats["bytes_freed"] += size
-                    except Exception as e:
-                        if self.logger:
-                            self.logger.log_event(
-                                "system",
-                                "cleanup_error",
-                                {"path": str(file_path), "message": str(e)},
-                            )
-                        stats["errors"] += 1
+            for file_path in base_path.rglob("*"):
+                if not file_path.is_file():
+                    continue
+                try:
+                    mtime = file_path.stat().st_mtime
+                    if mtime < cutoff_time:
+                        size = file_path.stat().st_size
+                        if not dry_run:
+                            file_path.unlink()
+                        stats["deleted"] += 1
+                        stats["bytes_freed"] += size
+                except Exception as e:
+                    if self.logger:
+                        self.logger.log_event(
+                            "system",
+                            "cleanup_error",
+                            {"path": str(file_path), "message": str(e)},
+                        )
+                    stats["errors"] += 1
 
         return stats

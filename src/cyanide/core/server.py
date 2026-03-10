@@ -551,14 +551,30 @@ class CyanideServer:
                     "system", "system_status", {"message": f"SSH Banner: {chosen_version}"}
                 )
 
-                self.ssh_server = await asyncssh.listen(
-                    "0.0.0.0",
-                    ssh_port,
-                    server_host_keys=[ssh_key],
-                    server_factory=lambda: SSHServerFactory(self),
-                    reuse_address=True,
-                    server_version=chosen_version,
-                )
+                # Build algorithm lists if configured
+                ssh_opts = {
+                    "server_host_keys": [ssh_key],
+                    "server_factory": lambda: SSHServerFactory(self),
+                    "reuse_address": True,
+                    "server_version": chosen_version,
+                }
+
+                # Map user config keys to asyncssh.listen kwargs
+                algo_map = {
+                    "kex_algs": "kex_algs",
+                    "ciphers": "encryption_algs",
+                    "macs": "mac_algs",
+                    "compression": "compression_algs",
+                    "host_key_algs": "host_key_algs",
+                    "public_key_algs": "signature_algs",
+                }
+
+                for cfg_key, opt_key in algo_map.items():
+                    val = ssh_conf.get(cfg_key)
+                    if val:
+                        ssh_opts[opt_key] = val
+
+                self.ssh_server = await asyncssh.listen("0.0.0.0", ssh_port, **ssh_opts)
                 self.logger.log_event(
                     "system", "service_started", {"service": "ssh_emulated", "port": ssh_port}
                 )
@@ -803,19 +819,135 @@ class SSHServerFactory(asyncssh.SSHServer):
 
     # Function 63: Performs operations related to session requested.
     def session_requested(self):
-        return SSHSession(self.honeypot, self.fs, self.src_ip, self.src_port)
+        return SSHSession(self.honeypot, self.fs, self.src_ip, self.src_port, self.conn_id)
+
+    # Function 62.1: Handles direct-tcpip requests (-L).
+    def direct_tcpip_requested(self, dest_host, dest_port, src_host, src_port):
+        self.honeypot.logger.log_event(
+            "conn_" + self.conn_id,
+            "local_forward.request",
+            {
+                "src_ip": self.src_ip,
+                "dest_host": dest_host,
+                "dest_port": dest_port,
+                "src_host": src_host,
+                "src_port": src_port,
+            },
+        )
+        ssh_conf = self.honeypot.config.get("ssh", {})
+        if not ssh_conf.get("forwarding_enabled", False):
+            return False
+        return True
+
+    # Function 62.2: Handles remote port forwarding requests (-R).
+    def connection_requested(self, dest_host, dest_port):
+        self.honeypot.logger.log_event(
+            "conn_" + self.conn_id,
+            "remote_forward.request",
+            {
+                "src_ip": self.src_ip,
+                "dest_host": dest_host,
+                "dest_port": dest_port,
+            },
+        )
+        ssh_conf = self.honeypot.config.get("ssh", {})
+        if not ssh_conf.get("forwarding_enabled", False):
+            return False
+        return True
+
+    # Function 62.3: Implements actual port forwarding proxy logic.
+    async def direct_tcpip(self, chan, dest_host, dest_port, src_host, src_port):
+        ssh_conf = self.honeypot.config.get("ssh", {})
+        target_host = dest_host
+        target_port = dest_port
+        mode = "allowed"
+
+        # Policy Router
+        port_str = str(dest_port)
+        if ssh_conf.get("forward_redirect_enabled"):
+            rules = ssh_conf.get("forward_redirect_rules", {})
+            if port_str in rules:
+                target_str = rules[port_str]
+                if ":" in target_str:
+                    target_host, p_str = target_str.split(":", 1)
+                    target_port = int(p_str)
+                else:
+                    target_host = target_str
+                mode = "redirect"
+
+        if ssh_conf.get("forward_tunnel_enabled"):
+            rules = ssh_conf.get("forward_tunnel_rules", {})
+            if port_str in rules:
+                target_str = rules[port_str]
+                if ":" in target_str:
+                    target_host, p_str = target_str.split(":", 1)
+                    target_port = int(p_str)
+                else:
+                    target_host = target_str
+                mode = "tunnel"
+
+        self.honeypot.logger.log_event(
+            "conn_" + self.conn_id,
+            "forward.connect",
+            {
+                "src_ip": self.src_ip,
+                "requested_host": dest_host,
+                "requested_port": dest_port,
+                "target_host": target_host,
+                "target_port": target_port,
+                "mode": mode,
+            },
+        )
+
+        try:
+            target_reader, target_writer = await asyncio.open_connection(target_host, target_port)
+
+            async def chan_to_target():
+                while not chan.at_eof():
+                    try:
+                        data = await chan.read()
+                        if not data:
+                            break
+                        target_writer.write(data)
+                        await target_writer.drain()
+                    except Exception:
+                        break
+                target_writer.close()
+                try:
+                    await target_writer.wait_closed()
+                except Exception:
+                    pass
+
+            async def target_to_chan():
+                while True:
+                    try:
+                        data = await target_reader.read(4096)
+                        if not data:
+                            break
+                        chan.write(data)
+                        await chan.drain()
+                    except Exception:
+                        break
+                chan.write_eof()
+
+            await asyncio.gather(chan_to_target(), target_to_chan())
+        except Exception as e:
+            self.honeypot.logger.log_event(
+                "conn_" + self.conn_id, "forward.error", {"message": f"Forward Error: {e}"}
+            )
+            chan.close()
 
 
 class SSHSession(asyncssh.SSHServerSession):
     """SSH session handler."""
 
     # Function 64: Initializes the class instance and its attributes.
-    def __init__(self, honeypot: CyanideServer, fs: FakeFilesystem, src_ip, src_port):
+    def __init__(self, honeypot: CyanideServer, fs: FakeFilesystem, src_ip, src_port, conn_id: str):
         self.honeypot = honeypot
         self.fs = fs
         self.src_ip = src_ip
         self.src_port = src_port
-        self.session_id = str(uuid.uuid4())[:8]
+        self.session_id = "conn_" + conn_id
         self.commands: List[str] = []
         self.start_time = time.time()
         self.client_version = "unknown"

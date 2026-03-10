@@ -6,9 +6,26 @@ from pydantic import BaseModel, ConfigDict, Field
 class SSHConfig(BaseModel):
     enabled: bool = True
     port: int = 2222
+    version: Optional[str] = None
+    rsa_keying: bool = True
     backend_mode: str = Field(default="emulated", pattern="^(emulated|proxy|pool)$")
     target_host: Optional[str] = "127.0.0.1"
     target_port: Optional[int] = 22222
+
+    # Algorithm negotiation
+    ciphers: Optional[List[str]] = None
+    macs: Optional[List[str]] = None
+    compression: Optional[List[str]] = None
+    kex_algs: Optional[List[str]] = None
+    host_key_algs: Optional[List[str]] = None
+    public_key_algs: Optional[List[str]] = None
+
+    # Port Forwarding
+    forwarding_enabled: bool = False
+    forward_redirect_enabled: bool = False
+    forward_redirect_rules: Dict[str, str] = Field(default_factory=dict)
+    forward_tunnel_enabled: bool = False
+    forward_tunnel_rules: Dict[str, str] = Field(default_factory=dict)
 
 
 class TelnetConfig(BaseModel):

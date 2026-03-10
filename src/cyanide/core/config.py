@@ -150,12 +150,28 @@ def load_config(path: Path = Path("configs/app.yaml")):
         "quarantine_max_size_mb": get_val(
             "honeypot", "quarantine_max_size_mb", "QUARANTINE_MAX_SIZE_MB", 500, int
         ),
+        "dns_cache_ttl": get_val("honeypot", "dns_cache_ttl", "DNS_CACHE_TTL", 60, int),
+        "allow_local_network": get_val("honeypot", "allow_local_network", "ALLOW_LOCAL", False, bool),
+        "fs_yaml": get_val("honeypot", "fs_yaml", "FS_YAML", None),
         "ssh": {
             "port": get_val("ssh", "listen_port", "SSH_PORT", 2222, int),
             "enabled": get_val("ssh", "enabled", "SSH_ENABLED", True, bool),
             "backend_mode": get_val("ssh", "backend_mode", "SSH_BACKEND", "emulated"),
             "target_host": get_val("ssh", "target_host", "SSH_TARGET_HOST", "127.0.0.1"),
             "target_port": get_val("ssh", "target_port", "SSH_TARGET_PORT", 22222, int),
+            "rsa_keying": get_val("ssh", "rsa_keying", "SSH_RSA_KEYING", True, bool),
+            "version": get_val("ssh", "version", "SSH_VERSION", None),
+            "ciphers": get_val("ssh", "ciphers", "SSH_CIPHERS", []),
+            "macs": get_val("ssh", "macs", "SSH_MACS", []),
+            "compression": get_val("ssh", "compression", "SSH_COMPRESSION", []),
+            "kex_algs": get_val("ssh", "kex_algs", "SSH_KEX_ALGS", []),
+            "host_key_algs": get_val("ssh", "host_key_algs", "SSH_HOST_KEY_ALGS", []),
+            "public_key_algs": get_val("ssh", "public_key_algs", "SSH_PUBLIC_KEY_ALGS", []),
+            "forwarding_enabled": get_val("ssh", "forwarding_enabled", "SSH_FORWARDING_ENABLED", False, bool),
+            "forward_redirect_enabled": get_val("ssh", "forward_redirect_enabled", "SSH_FORWARD_REDIRECT_ENABLED", False, bool),
+            "forward_redirect_rules": get_val("ssh", "forward_redirect_rules", "SSH_FORWARD_REDIRECT_RULES", {}),
+            "forward_tunnel_enabled": get_val("ssh", "forward_tunnel_enabled", "SSH_FORWARD_TUNNEL_ENABLED", False, bool),
+            "forward_tunnel_rules": get_val("ssh", "forward_tunnel_rules", "SSH_FORWARD_TUNNEL_RULES", {}),
         },
         "telnet": {
             "port": get_val("telnet", "listen_port", "TELNET_PORT", 2323, int),

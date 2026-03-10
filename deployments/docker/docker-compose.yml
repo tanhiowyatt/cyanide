@@ -5,120 +5,62 @@ services:
       dockerfile: deployments/docker/Dockerfile
     container_name: cyanide
     restart: unless-stopped
-
     ports:
-      - "2222:2222" # SSH
-      - "2223:2223" # Telnet  
-      # - "2525:2525" # SMTP
-      - "9090:9090" # Metrics / API
-
+      - "2222:2222"
+      - "2223:2223"
+      - "9090:9090"
     volumes:
-      # Пути адаптированы под Enterprise структуру
       - ../../var/log:/app/var/log
       - ../../var/lib/cyanide:/app/var/lib/cyanide
       - ../../configs/app.yaml:/app/configs/app.yaml
-      - ../../configs/profiles:/app/configs/profiles:ro # Профили ОС только для чтения
+      - ../../configs/profiles:/app/configs/profiles:ro
       - ../../src:/app/src
-
-    # 🔒 SECURITY (Hardened Mode)
     read_only: true
     tmpfs:
       - /tmp
       - /var/run
-      - /app/var/run # Для PID файлов и сокетов
+      - /app/var/run
     cap_drop:
       - ALL
     cap_add:
-      - NET_BIND_SERVICE # Позволяет биндиться на порты < 1024 внутри контейнера
+      - NET_BIND_SERVICE
     security_opt:
-      - no-new-privileges:true # Блокирует попытки повышения привилегий
-
+      - no-new-privileges:true
     deploy:
       resources:
         limits:
           cpus: '0.50'
           memory: 512M
-
     environment:
       - PYTHONUNBUFFERED=1
-
-      # --- Honeypot Core ---
       - CYANIDE_HONEYPOT_HOSTNAME=server01
-      - CYANIDE_SERVER_OS_PROFILE=ubuntu # Matches configs/profiles/ubuntu
-
-      # --- Session & Resource Limits ---
+      - CYANIDE_SERVER_OS_PROFILE=ubuntu
       - CYANIDE_SERVER_MAX_SESSIONS=100
       - CYANIDE_SERVER_MAX_SESSIONS_PER_IP=5
       - CYANIDE_SERVER_SESSION_TIMEOUT=300
       - CYANIDE_HONEYPOT_QUARANTINE_MAX_SIZE_MB=500
-
-      # --- Services (SSH / Telnet) ---
       - CYANIDE_SSH_ENABLED=true
       - CYANIDE_SSH_LISTEN_PORT=2222
       - CYANIDE_TELNET_ENABLED=true
       - CYANIDE_TELNET_LISTEN_PORT=2223
-
-      # --- Machine Learning (CyanideML) ---
       - CYANIDE_ML_ENABLED=true
       - CYANIDE_ML_RETRAINING_INTERVAL_DAYS=7
-
-      # --- Maintenance & Cleanup ---
       - CYANIDE_CLEANUP_ENABLED=true
       - CYANIDE_CLEANUP_INTERVAL=3600
       - CYANIDE_CLEANUP_RETENTION_DAYS=7
-
-      # --- Observability (Tracing & Metrics) ---
       - CYANIDE_OTEL_ENABLED=true
       - CYANIDE_METRICS_ENABLED=true
       - CYANIDE_METRICS_PORT=9090
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
-
-      # --- Integrations ---
       - CYANIDE_VIRUSTOTAL_ENABLED=false
-      # - CYANIDE_VIRUSTOTAL_API_KEY=your_api_key_here
-
-      # --- Output Plugins  ---
-      # Examples on how to enable and configure outputs dynamically:
-      # - CYANIDE_OUTPUT_POSTGRESQL_ENABLED=true
-      # - CYANIDE_OUTPUT_POSTGRESQL_HOST=db-host
-      # - CYANIDE_OUTPUT_POSTGRESQL_PASSWORD=supersecret
-      # - CYANIDE_OUTPUT_SLACK_ENABLED=true
-      # - CYANIDE_OUTPUT_SLACK_WEBHOOK_URL=https://hooks.slack.com/...
-
-      # --- SMTP Proxy Settings ---
       - CYANIDE_SMTP_ENABLED=true
       - CYANIDE_SMTP_LISTEN_PORT=2525
       - CYANIDE_SMTP_TARGET_HOST=mailhog
       - CYANIDE_SMTP_TARGET_PORT=1025
-
-      # --- Auth / Users ---
       - 'CYANIDE_USERS=[{"user": "root", "pass": "admin"}, {"user": "admin", "pass": "admin"}]'
-
     healthcheck:
-      # Путь изменен на deployments/docker/healthcheck.py
       test: [ "CMD", "python3", "/app/deployments/docker/healthcheck.py" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
-  # Вспомогательные сервисы закомментированы по умолчанию (User choice)
-
-  # mailhog:
-  #   image: mailhog/mailhog
-  #   platform: linux/amd64
-  #   container_name: mailhog
-  #   ports:
-  #     - "1025:1025" # SMTP
-  #     - "8025:8025" # Web UI
-  #   restart: unless-stopped
-
-  # jaeger:
-  #   image: jaegertracing/all-in-one:latest
-  #   container_name: jaeger
-  #   ports:
-  #     - "16686:16686" # Web UI
-  #     - "4317:4317" # OTLP gRPC
-  #     - "4318:4318" # OTLP HTTP
-  #   environment:
-  #     - COLLECTOR_OTLP_ENABLED=true
-  #   restart: unless-stopped

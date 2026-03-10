@@ -11,6 +11,14 @@ The `app.yaml` file controls the core behavior of the honeypot.
 - **`telnet.port`**: Port to listen for Telnet (default: 2223).
 - **`backend_mode`**: Either `emulator` (simulated shell) or `proxy` (forwarding to a real server).
 
+### SSH Fingerprinting & Forwarding
+- **`ssh.ciphers`**: List of allowed encryption algorithms.
+- **`ssh.macs`**: List of allowed MAC algorithms.
+- **`ssh.kex_algs`**: List of allowed Key Exchange algorithms.
+- **`ssh.forwarding_enabled`**: Enable or disable SSH port forwarding (`-L` / `-R`).
+- **`ssh.forward_redirect_enabled`**: Enable rules-based redirection for forwarded traffic.
+- **`ssh.forward_redirect_rules`**: Mapping of port -> target host:port.
+
 ### Detection Engine (ML)
 - **`enabled`**: Toggle the hybrid detection engine.
 - **`threshold`**: The anomaly score above which a command is flagged as malicious.

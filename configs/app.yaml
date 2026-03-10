@@ -1,24 +1,15 @@
 honeypot:
-  # Hostname reported by the honeypot
   hostname: server01
-  
-  # Quarantine max size in MB
   quarantine_max_size_mb: 500
+  dns_cache_ttl: 60
+  allow_local_network: false
+  fs_yaml: ""
 
 server:
-  # IP address to bind to
   host: 0.0.0.0
-  
-  # OS Consistency Profile
   os_profile: random
-  
-  # Maximum total concurrent sessions
   max_sessions: 100
-  
-  # Maximum concurrent sessions per IP
   max_sessions_per_ip: 5
-  
-  # Session timeout in seconds
   session_timeout: 300
 
 users:
@@ -44,6 +35,19 @@ ssh:
   listen_port: 2222
   rsa_keying: true
   backend_mode: emulated
+  ciphers: []
+  macs: []
+  compression: []
+  kex_algs: []
+  host_key_algs: []
+  public_key_algs: []
+  forwarding_enabled: false
+  forward_redirect_enabled: false
+  forward_redirect_rules:
+    "80": "127.0.0.1:8080"
+  forward_tunnel_enabled: false
+  forward_tunnel_rules:
+    "3306": "mysql-sandbox:3306"
 
 telnet:
   enabled: true
@@ -51,20 +55,16 @@ telnet:
   backend_mode: emulated
 
 smtp:
-  enabled: true
+  enabled: false
   listen_port: 2525
   target_host: 127.0.0.1
   target_port: 25255
 
 output:
-  # Output Plugins 
-  # Note: `pip install .[outputs]` is required if running directly outside of Docker.
-  
   sqlite:
-    enabled: true
+    enabled: false
     path: var/log/cyanide/events.sqlite
     table: events
-  
   postgresql:
     enabled: false
     host: 127.0.0.1
@@ -73,13 +73,11 @@ output:
     password: password
     database: cyanide
     table: events
-
   elasticsearch:
     enabled: false
     hosts: 
       - http://127.0.0.1:9200
     index: cyanide-events
-
   splunk_hec:
     enabled: false
     url: https://127.0.0.1:8088/services/collector/event
@@ -87,22 +85,18 @@ output:
     source: cyanide
     sourcetype: _json
     verify_ssl: false
-
   graylog:
     enabled: false
     host: 127.0.0.1
     port: 12201
-
   syslog:
     enabled: false
     address: /dev/log
     facility: user
-  
   slack:
     enabled: false
     webhook_url: ""
     username: "Cyanide Honeypot"
-
   hpfeeds:
     enabled: false
     host: hpfeeds.honeycloud.net
@@ -110,14 +104,12 @@ output:
     ident: ""
     secret: ""
     channel: cyanide.events
-
   dshield:
     enabled: false
     userid: ""
     authkey: ""
     batch_size: 50
     url: "https://isc.sans.edu/api/submit/file"
-
   mysql:
     enabled: false
     host: 127.0.0.1
@@ -126,13 +118,11 @@ output:
     password: password
     database: cyanide
     table: events
-
   mongodb:
     enabled: false
     uri: "mongodb://127.0.0.1:27017/"
     database: cyanide
     collection: events
-
   rethinkdb:
     enabled: false
     host: 127.0.0.1
@@ -141,7 +131,7 @@ output:
     table: events
 
 cleanup:
-  enabled: true
+  enabled: false
   interval: 3600
   retention_days: 7
 
@@ -150,6 +140,6 @@ virustotal:
   api_key: ""  
 
 otel:
-  enabled: true
+  enabled: false
   exporter: otlp
   endpoint: http://localhost:4318/v1/traces

@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Any
 
@@ -6,7 +7,6 @@ from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExport
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
-import logging
 
 logger = logging.getLogger("cyanide.telemetry")
 

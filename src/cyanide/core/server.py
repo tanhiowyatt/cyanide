@@ -3,8 +3,8 @@ Advanced SSH/Telnet Honeypot Server Implementation.
 """
 
 import asyncio
-import logging
 import json
+import logging
 import os
 import random
 import time
@@ -535,23 +535,21 @@ class CyanideServer:
         for ktype in key_types:
             # Filename based on type (e.g., host_key_ssh-rsa)
             key_path = data_dir / f"host_key_{ktype}"
-            
+
             if key_path.exists():
                 try:
                     key = asyncssh.read_private_key(str(key_path))
                     loaded_keys.append(key)
                 except Exception as e:
                     self.logger.log_event(
-                        "system", 
-                        "key_error", 
-                        {"message": f"Failed to load {ktype}: {e}"}
+                        "system", "key_error", {"message": f"Failed to load {ktype}: {e}"}
                     )
             else:
                 try:
                     self.logger.log_event(
-                        "system", 
-                        "key_gen", 
-                        {"message": f"Generating new persistent {ktype} host key"}
+                        "system",
+                        "key_gen",
+                        {"message": f"Generating new persistent {ktype} host key"},
                     )
                     key = asyncssh.generate_private_key(ktype)
                     key.write_private_key(str(key_path))
@@ -560,15 +558,13 @@ class CyanideServer:
                     loaded_keys.append(key)
                 except Exception as e:
                     self.logger.log_event(
-                        "system", 
-                        "key_error", 
-                        {"message": f"Failed to generate {ktype}: {e}"}
+                        "system", "key_error", {"message": f"Failed to generate {ktype}: {e}"}
                     )
 
         if not loaded_keys:
             # Emergency fallback: generate a non-persistent RSA key
             return [asyncssh.generate_private_key("ssh-rsa")]
-            
+
         return loaded_keys
 
     # Function 52: Performs operations related to start.
@@ -603,11 +599,15 @@ class CyanideServer:
 
                 # Helper for rekey limit parsing
                 def parse_rekey(limit: str) -> int:
-                    if not limit: return 1024**3 # 1G
+                    if not limit:
+                        return 1024**3  # 1G
                     limit = str(limit).upper()
-                    if limit.endswith("G"): return int(limit[:-1]) * 1024**3
-                    if limit.endswith("M"): return int(limit[:-1]) * 1024**2
-                    if limit.endswith("K"): return int(limit[:-1]) * 1024
+                    if limit.endswith("G"):
+                        return int(limit[:-1]) * 1024**3
+                    if limit.endswith("M"):
+                        return int(limit[:-1]) * 1024**2
+                    if limit.endswith("K"):
+                        return int(limit[:-1]) * 1024
                     return int(limit)
 
                 # Build algorithm lists if configured
@@ -618,7 +618,6 @@ class CyanideServer:
                     "server_version": chosen_version,
                     # Cowrie-grade security limits
                     "login_timeout": ssh_conf.get("login_timeout", 60),
-                    "max_auth_tries": ssh_conf.get("auth_tries", 3),
                     "rekey_bytes": parse_rekey(ssh_conf.get("rekey_limit", "1G")),
                 }
 
@@ -628,7 +627,6 @@ class CyanideServer:
                     "ciphers": "encryption_algs",
                     "macs": "mac_algs",
                     "compression": "compression_algs",
-                    "host_key_algs": "host_key_algs",
                     "public_key_algs": "signature_algs",
                 }
 
@@ -809,11 +807,15 @@ class SSHServerFactory(asyncssh.SSHServer):
 
     # Function 57: Initializes the class instance and its attributes.
     def __init__(self, honeypot: CyanideServer):
+        super().__init__()
         self.honeypot = honeypot
         self.src_ip = "unknown"
         self.src_port = 0
         self.fs = None
         self.conn_id = str(uuid.uuid4())[:8]
+        # Set max auth tries (Cowrie style)
+        ssh_conf = self.honeypot.config.get("ssh", {})
+        self._max_auth_tries = ssh_conf.get("auth_tries", 3)
 
     # Function 58: Performs operations related to connection made.
     def connection_made(self, conn):
@@ -822,11 +824,11 @@ class SSHServerFactory(asyncssh.SSHServer):
 
         # Log connection details (Cowrie-style KEXINIT analysis)
         client_version = conn.get_extra_info("client_version", "unknown")
-        
-        # Negotiated algorithms are available after handshake, 
+
+        # Negotiated algorithms are available after handshake,
         # but for now we log those that the transport already established.
         algos = conn.get_extra_info("algorithms") or {}
-        
+
         self.honeypot.logger.log_event(
             "conn_" + self.conn_id,
             "ssh.connect",
@@ -838,8 +840,8 @@ class SSHServerFactory(asyncssh.SSHServer):
                 "key_alg": algos.get("host_key_algo"),
                 "cipher": algos.get("encryption_algo"),
                 "mac": algos.get("mac_algo"),
-                "compression": algos.get("compression_algo")
-            }
+                "compression": algos.get("compression_algo"),
+            },
         )
 
         with self.honeypot.tracer.start_as_current_span("ssh_connection_setup") as span:
@@ -891,16 +893,11 @@ class SSHServerFactory(asyncssh.SSHServer):
         """Log public key attempt and always fail to force password auth (Cowrie behavior)."""
         fingerprint = key.get_fingerprint()
         raw_key = key.export_public_key().decode()
-        
+
         self.honeypot.logger.log_event(
             "conn_" + self.conn_id,
             "auth.publickey",
-            {
-                "username": username,
-                "fingerprint": fingerprint,
-                "key": raw_key,
-                "success": False
-            }
+            {"username": username, "fingerprint": fingerprint, "key": raw_key, "success": False},
         )
         return False
 

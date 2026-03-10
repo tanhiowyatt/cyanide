@@ -1,11 +1,11 @@
 import json
+import logging
 import os
 import sys
 from pathlib import Path
 from typing import Any
 
 import yaml
-import logging
 from dotenv import load_dotenv
 from pydantic import ValidationError
 
@@ -40,51 +40,54 @@ def load_config(path: Path = Path("configs/app.yaml")):
     def apply_env_overrides(data: dict, prefix: str = "CYANIDE_") -> dict:
         """Deeply override configuration dictionary using single-underscore environment variables."""
         import json
-        
+
         def parse_val(v):
             vl = str(v).lower()
-            if vl in ("true", "1", "yes", "on"): return True
-            if vl in ("false", "0", "no", "off"): return False
-            if str(v).isdigit(): return int(v)
+            if vl in ("true", "1", "yes", "on"):
+                return True
+            if vl in ("false", "0", "no", "off"):
+                return False
+            if str(v).isdigit():
+                return int(v)
             if str(v).startswith("[") or str(v).startswith("{"):
                 try:
                     return json.loads(v)
-                except:
+                except (json.JSONDecodeError, ValueError, TypeError):
                     pass
             return v
 
         for env_key, env_val in os.environ.items():
             if not env_key.startswith(prefix):
                 continue
-            
-            remainder = env_key[len(prefix):].lower()
-            
+
+            remainder = env_key[len(prefix) :].lower()
+
             # 1. Exact top-level match (e.g., CYANIDE_USERS)
             if remainder in data:
                 data[remainder] = parse_val(env_val)
                 continue
-                
+
             # 2. Schema-guided nested match
             mapped = False
             for top_key, top_val in data.items():
                 if remainder.startswith(top_key + "_"):
                     if not isinstance(top_val, dict):
                         continue
-                        
-                    sub_remainder = remainder[len(top_key)+1:]
-                    
+
+                    sub_remainder = remainder[len(top_key) + 1 :]
+
                     # 2a. Direct match (e.g. CYANIDE_SSH_ENABLED -> data['ssh']['enabled'])
                     # OR match with sub_key (e.g. CYANIDE_OUTPUT_SQLITE_ENABLED)
                     if sub_remainder in top_val:
                         top_val[sub_remainder] = parse_val(env_val)
                         mapped = True
                         break
-                        
+
                     # 2b. Third level match (e.g., CYANIDE_OUTPUT_SLACK_ENABLED)
                     for sub_key, sub_val in top_val.items():
                         if sub_remainder.startswith(sub_key + "_"):
                             if isinstance(sub_val, dict):
-                                final_key = sub_remainder[len(sub_key)+1:]
+                                final_key = sub_remainder[len(sub_key) + 1 :]
                                 sub_val[final_key] = parse_val(env_val)
                                 mapped = True
                                 break
@@ -106,9 +109,7 @@ def load_config(path: Path = Path("configs/app.yaml")):
         if val is None:
             if section in config_data and isinstance(config_data[section], dict):
                 val = config_data[section].get(key)
-        
-        # print(f"DEBUG: get_val({section}, {key}) => {val} (raw)")
-        
+
         if val is None:
             return default
 
@@ -151,7 +152,9 @@ def load_config(path: Path = Path("configs/app.yaml")):
             "honeypot", "quarantine_max_size_mb", "QUARANTINE_MAX_SIZE_MB", 500, int
         ),
         "dns_cache_ttl": get_val("honeypot", "dns_cache_ttl", "DNS_CACHE_TTL", 60, int),
-        "allow_local_network": get_val("honeypot", "allow_local_network", "ALLOW_LOCAL", False, bool),
+        "allow_local_network": get_val(
+            "honeypot", "allow_local_network", "ALLOW_LOCAL", False, bool
+        ),
         "fs_yaml": get_val("honeypot", "fs_yaml", "FS_YAML", None),
         "ssh": {
             "port": get_val("ssh", "listen_port", "SSH_PORT", 2222, int),
@@ -161,26 +164,58 @@ def load_config(path: Path = Path("configs/app.yaml")):
             "target_port": get_val("ssh", "target_port", "SSH_TARGET_PORT", 22222, int),
             "rsa_keying": get_val("ssh", "rsa_keying", "SSH_RSA_KEYING", True, bool),
             "version": get_val("ssh", "version", "SSH_VERSION", None),
-            "ciphers": get_val("ssh", "ciphers", "SSH_CIPHERS", [
-                "aes256-gcm@openssh.com", "aes128-gcm@openssh.com", "chacha20-poly1305@openssh.com"
-            ]),
-            "macs": get_val("ssh", "macs", "SSH_MACS", [
-                "hmac-sha2-512-etm@openssh.com", "hmac-sha2-256-etm@openssh.com"
-            ]),
-            "compression": get_val("ssh", "compression", "SSH_COMPRESSION", ["none", "zlib@openssh.com"]),
+            "ciphers": get_val(
+                "ssh",
+                "ciphers",
+                "SSH_CIPHERS",
+                [
+                    "aes256-gcm@openssh.com",
+                    "aes128-gcm@openssh.com",
+                    "chacha20-poly1305@openssh.com",
+                ],
+            ),
+            "macs": get_val(
+                "ssh",
+                "macs",
+                "SSH_MACS",
+                ["hmac-sha2-512-etm@openssh.com", "hmac-sha2-256-etm@openssh.com"],
+            ),
+            "compression": get_val(
+                "ssh", "compression", "SSH_COMPRESSION", ["none", "zlib@openssh.com"]
+            ),
             "kex_algs": get_val("ssh", "kex_algs", "SSH_KEX_ALGS", ["curve25519-sha256"]),
-            "host_key_algs": get_val("ssh", "host_key_algs", "SSH_HOST_KEY_ALGS", ["ssh-ed25519", "rsa-sha2-512", "rsa-sha2-256"]),
-            "public_key_algs": get_val("ssh", "public_key_algs", "SSH_PUBLIC_KEY_ALGS", ["ssh-ed25519", "rsa-sha2-512", "rsa-sha2-256"]),
+            "host_key_algs": get_val(
+                "ssh",
+                "host_key_algs",
+                "SSH_HOST_KEY_ALGS",
+                ["ssh-ed25519", "rsa-sha2-512", "rsa-sha2-256"],
+            ),
+            "public_key_algs": get_val(
+                "ssh",
+                "public_key_algs",
+                "SSH_PUBLIC_KEY_ALGS",
+                ["ssh-ed25519", "rsa-sha2-512", "rsa-sha2-256"],
+            ),
             "data_path": get_val("ssh", "data_path", "SSH_DATA_PATH", "var/lib/cyanide/keys"),
             "auth_tries": get_val("ssh", "auth_tries", "SSH_AUTH_TRIES", 3, int),
             "login_timeout": get_val("ssh", "login_timeout", "SSH_LOGIN_TIMEOUT", 60, int),
             "idle_timeout": get_val("ssh", "idle_timeout", "SSH_IDLE_TIMEOUT", 3600, int),
             "rekey_limit": get_val("ssh", "rekey_limit", "SSH_REKEY_LIMIT", "1G"),
-            "forwarding_enabled": get_val("ssh", "forwarding_enabled", "SSH_FORWARDING_ENABLED", False, bool),
-            "forward_redirect_enabled": get_val("ssh", "forward_redirect_enabled", "SSH_FORWARD_REDIRECT_ENABLED", False, bool),
-            "forward_redirect_rules": get_val("ssh", "forward_redirect_rules", "SSH_FORWARD_REDIRECT_RULES", {}),
-            "forward_tunnel_enabled": get_val("ssh", "forward_tunnel_enabled", "SSH_FORWARD_TUNNEL_ENABLED", False, bool),
-            "forward_tunnel_rules": get_val("ssh", "forward_tunnel_rules", "SSH_FORWARD_TUNNEL_RULES", {}),
+            "forwarding_enabled": get_val(
+                "ssh", "forwarding_enabled", "SSH_FORWARDING_ENABLED", False, bool
+            ),
+            "forward_redirect_enabled": get_val(
+                "ssh", "forward_redirect_enabled", "SSH_FORWARD_REDIRECT_ENABLED", False, bool
+            ),
+            "forward_redirect_rules": get_val(
+                "ssh", "forward_redirect_rules", "SSH_FORWARD_REDIRECT_RULES", {}
+            ),
+            "forward_tunnel_enabled": get_val(
+                "ssh", "forward_tunnel_enabled", "SSH_FORWARD_TUNNEL_ENABLED", False, bool
+            ),
+            "forward_tunnel_rules": get_val(
+                "ssh", "forward_tunnel_rules", "SSH_FORWARD_TUNNEL_RULES", {}
+            ),
         },
         "telnet": {
             "port": get_val("telnet", "listen_port", "TELNET_PORT", 2323, int),

@@ -29,6 +29,21 @@ Cyanide wykorzystuje 3-warstwowy silnik do identyfikacji zagrożeń:
 
 ---
 
+## 📚 Dokumentacja Techniczna
+
+Projekt Cyanide posiada rozbudowaną dokumentację techniczną podzieloną na moduły funkcjonalne. Zapraszamy do naszego **[Centrum Dokumentacji (Documentation Hub)](../index.md)**.
+
+| Sekcja | Opis |
+|:---|:---|
+| 🏛️ **[Architektura Rdzenia](../core/index.md)** | Mechanika silnika, [konfiguracja](../core/configuration.md) i skalowanie. |
+| 📁 **[Silnik VFS](../vfs/index.md)** | Warstwa wirtualnego systemu plików i mapowanie profili OS. |
+| 🌐 **[Sieć i Proxy](../networking/index.md)** | Architektura MiTM-proxy i sieciowa anty-forensyka. |
+| 🧠 **[Analityka i ML](../ml-analytics/index.md)** | Wewnętrzne działanie systemu wykrywania zagrożeń. |
+| 🧪 **[Testy](../tests/index.md)** | Opis stosu testowego i metryki pokrycia kodu. |
+| 🔧 **[Utrzymanie](../tooling/index.md)** | Forensyka, odtwarzacz TTY i skrypty monitorujące. |
+
+---
+
 ## 🚀 Wdrożenie
 
 **Zaleca się uruchamianie jako kontener Docker.**

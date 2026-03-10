@@ -25,7 +25,7 @@ Certain system paths require computationally generated string output that cannot
 ## 4. Caching System
 
 Because parsing thousands of lines of `static.yaml` across active attacker sessions incurs overwhelming computational overhead, the VFS utilizes a **two-tier profile caching engine**. 
-- See the dedicated **[VFS Profile Caching Architecture](caching.md)** design doc for how Cyanide mitigates this via MessagePack and SHA-256 auto-invalidation.
+- See the dedicated **[VFS Profile Caching Architecture](../core/caching.md)** design doc for how Cyanide mitigates this via MessagePack and SHA-256 auto-invalidation.
 
 ## 5. Command Implementation (`src/cyanide/vfs/commands/`)
 

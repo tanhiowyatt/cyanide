@@ -1,8 +1,6 @@
 import datetime
 import json
 import logging
-
-
 from pathlib import Path
 
 
@@ -35,7 +33,7 @@ class CyanideLogger:
         for plugin_name, plugin_cfg in self.output_config.items():
             if not isinstance(plugin_cfg, dict) or not plugin_cfg.get("enabled", False):
                 continue
-                
+
             try:
                 module = importlib.import_module(f"cyanide.output.{plugin_name}")
                 plugin_class = getattr(module, "Plugin")
@@ -44,10 +42,12 @@ class CyanideLogger:
                 plugins.append(plugin_instance)
                 logging.info(f"Loaded output plugin: {plugin_name}")
             except ImportError as e:
-                logging.error(f"Failed to load output plugin {plugin_name}: {e}. Try installing extras with pip install .[outputs]")
+                logging.error(
+                    f"Failed to load output plugin {plugin_name}: {e}. Try installing extras with pip install .[outputs]"
+                )
             except Exception as e:
                 logging.error(f"Failed to load output plugin {plugin_name}: {e}")
-                
+
         return plugins
 
     # Function 101: Sets up initial configuration and state.
@@ -105,7 +105,7 @@ class CyanideLogger:
 
         logger = self._get_target_logger(event_type)
         logger.info(json.dumps(entry))
-        
+
         for plugin in self.plugins:
             # We copy the entry to prevent one plugin from accidentally mutating it
             plugin.emit(entry.copy())

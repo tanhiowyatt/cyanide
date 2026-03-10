@@ -7,8 +7,8 @@
 ---
 
 ### 🌐 Translations
-*   🇷🇺 [Russian (Русский)](docs/README.RU.md)
-*   🇵🇱 [Polish (Polski)](docs/README.PL.md)
+*   🇷🇺 [Russian (Русский)](docs/translations/readme-ru.md)
+*   🇵🇱 [Polish (Polski)](docs/translations/readme-pl.md)
 
 ---
 
@@ -39,13 +39,16 @@ Cyanide employs a 3-layer detection engine to identify malicious intent:
 
 ## 📚 Documentation Suite
 
-For detailed technical guides, please refer to our specialized documentation:
+For detailed technical guides, please refer to our **[Documentation Hub](docs/index.md)** or follow these direct links:
 
-| Document | Description |
-|----------|-------------|
-| 🏛️ [**Architecture**](docs/ARCHITECTURE.md) | Deep dive into the Engine, Shell Emulator, and VFS model. |
-| 🔧 [**Development**](docs/DEVELOPMENT.md) | Setup, testing protocols, and how to contribute code. |
-| 📊 [**Operations**](docs/OPERATIONS.md) | Logging, Monitoring, Forensics, and Replay tools. |
+| Section | Key Document |
+|:---|:---|
+| 🏛️ **[Core Architecture](docs/core/index.md)** | Engine mechanics, [configuration](docs/core/configuration.md), and scale. |
+| 📁 **[VFS Engine](docs/vfs/index.md)** | Virtual filesystem layer and OS profile mapping. |
+| 🌐 **[Networking](docs/networking/index.md)** | MiTM proxying, protocols, and MitM logic. |
+| 🧠 **[Analytics](docs/ml-analytics/index.md)** | ML detection and security rule engine internals. |
+| 🧪 **[Testing & CI](docs/tests/index.md)** | Test suite structure and coverage metrics. |
+| 🔧 **[Operations](docs/tooling/index.md)** | Forensics, TTY playback, and script monitoring. |
 
 ---
 

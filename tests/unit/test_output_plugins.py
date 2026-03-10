@@ -155,6 +155,11 @@ def test_individual_plugin_instantiation_safety():
 def test_splunk_plugin_payload_format():
     """Verify Splunk plugin correctly formats its HEC payload."""
     with patch("requests.post") as mock_post:
+        # Provide a successful mock response
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_post.return_value = mock_response
+
         from cyanide.output.splunk_hec import Plugin as SplunkPlugin
 
         config = {"enabled": True, "url": "http://splunk", "token": "abc"}

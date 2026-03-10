@@ -40,7 +40,7 @@ A full state-machine that simulates a Linux shell environment.
 
 ## 2. Virtual Filesystem (VFS)
 
-Detailed technical implementation available in **[VFS Architecture](vfs.md)**.
+Detailed technical implementation available in **[VFS Architecture](../vfs/vfs.md)**.
 
 The VFS is a declarative, profile-based system that mirrors a real Linux disk without touching the host's filesystem.
 
@@ -60,7 +60,7 @@ Found in `/proc`, these nodes call **Providers** to generate data on the fly, su
 
 ## 3. Detection Engine (`src/cyanide/ml`)
 
-Detailed technical implementation available in **[Detection Engine Architecture](ml.md)**.
+Detailed technical implementation available in **[Detection Engine Architecture](../ml-analytics/ml.md)**.
 
 Cyanide uses a **Hybrid Detection System** that combines deterministic rules with probabilistic ML models.
 
@@ -77,7 +77,7 @@ Analyzes the *targets* of commands. Accessing sensitive files like `/etc/shadow`
 
 ## 4. Network & Proxy (`src/cyanide/network`)
 
-Detailed technical implementation available in **[Network & Proxy Architecture](network.md)**.
+Detailed technical implementation available in **[Network & Proxy Architecture](../networking/network.md)**.
 
 - **TCP Proxy**: Generic forwarder for non-emulated services (e.g., SMTP).
 - **SSH Proxy**: Advanced MitM module that allows decrypting and logging sessions heading to real backends.

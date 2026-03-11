@@ -1,4 +1,4 @@
-# Shell Emulator Architecture (`src/cyanide/core/shell_emulator.py`)
+# Shell Emulator Architecture (`src/cyanide/core/emulator.py`)
 
 The `ShellEmulator` represents the highly convincing simulated Linux shell environment presented to the attacker when they successfully authenticate in an `emulated` backend mode. It does not spawn a real underlying OS process, preventing container escapes by design.
 

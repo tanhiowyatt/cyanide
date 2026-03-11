@@ -138,6 +138,13 @@ class CyanideLogger:
             "tty.input",
             "client_fingerprint",
             "client_geo",
+            "rsync_exec_detected",
+            "rsync_handshake",
+            "rsync_filelist",
+            "rsync_denied",
+            "rsync_error",
+            "scp_op",
+            "sftp_op",
         ]:
             return self.fs_log
         # ML Logic

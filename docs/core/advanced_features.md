@@ -11,6 +11,8 @@ Cyanide has built-in honeytokens—files that no regular user or automated bot s
 - `/home/admin/flag.txt`
 - `/etc/shadow`
 - `/var/spool/cron/crontabs/root`
+- `/root/flag.txt`
+- `/root/secret.conf`
 - `/root/.ssh/id_rsa`
 
 Any `read` or `write` operation on these paths is flagged immediately, providing a high-fidelity signal of a manual, sophisticated attacker.
@@ -40,7 +42,7 @@ Beyond the standard stats dashboard, Cyanide exposes a professional-grade monito
 ### Endpoints:
 - **`/metrics`**: Full Prometheus-formatted metrics (Total sessions, unique IPs, DNS cache hits, file operation rates, etc.).
 - **`/health`**: JSON status check for the SSH and Telnet services, used for automated uptime monitoring (e.g., K8s liveness probes).
-- **`/stats`**: The raw JSON data used by the `stats.py` CLI tool.
+- **`/stats`**: The raw JSON data used by the `cyanide stats` CLI command.
 
 ## 5. Persistence & Mimicry Stability
 

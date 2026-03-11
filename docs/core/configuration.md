@@ -7,9 +7,11 @@ Cyanide is highly customizable through YAML-based configuration files and enviro
 The `app.yaml` file controls the core behavior of the honeypot.
 
 ### Networking & Services
-- **`ssh.port`**: Port to listen for SSH (default: 2222).
-- **`telnet.port`**: Port to listen for Telnet (default: 2223).
-- **`backend_mode`**: Either `emulator` (simulated shell), `proxy` (forwarding to a real server), or `pool` (Libvirt VM orchestration).
+- **`ssh.listen_port`**: Port to listen for SSH (default: 2222).
+- **`telnet.listen_port`**: Port to listen for Telnet (default: 2223).
+- **`ssh.backend_mode` / `telnet.backend_mode`**: Select `emulated` (simulated shell), `proxy` (forwarding to a real server), or `pool` (Libvirt VM orchestration).
+- **`server.max_sessions`**: Global limit for concurrent sessions (default: 100).
+- **`server.os_profile`**: Global OS masquerade choice (`ubuntu`, `debian`, `centos`, or `random`).
 
 ### Logging & Rotation
 Unified rotation policy for `cyanide-server.json`, `cyanide-fs.json`, `cyanide-ml.json` and `cyanide-stats.json`.
@@ -100,7 +102,7 @@ Cyanide utilizes a robust, dynamic environment variable override system. **Every
 4. Some deep mappings (like logging rotation) use double underscores for specific disambiguation depending on the schema (e.g., `CYANIDE_LOGGING_ROTATION_STRATEGY`).
 
 **Examples:**
-- Override the main OS profile (`honeypot.os_profile` -> `CYANIDE_HONEYPOT_OS_PROFILE=ubuntu`)
+- Override the main OS profile (`server.os_profile` -> `CYANIDE_SERVER_OS_PROFILE=ubuntu`)
 - Override the ML anomaly threshold (`ml.threshold` -> `CYANIDE_ML_THRESHOLD=0.95`)
 - Enable PostgreSQL output (`output.postgresql.enabled` -> `CYANIDE_OUTPUT_POSTGRESQL_ENABLED=true`)
 - Override Telnet Backend Mode (`telnet.backend_mode` -> `CYANIDE_TELNET_BACKEND_MODE=proxy`)

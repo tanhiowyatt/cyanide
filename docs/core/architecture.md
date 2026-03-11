@@ -24,7 +24,7 @@ graph TD
 
 Detailed technical implementation available in **[Core Orchestration Architecture](core.md)**.
 
-### `HoneypotServer`
+### `CyanideServer`
 The central brain of the system. It initializes all sub-services and manages the lifecycle of attacker sessions.
 - **Service Management**: Starts the SSH/Telnet handlers, Metrics server, and Logging infrastructure.
 - **Backend Routing**: Decides whether a session should be handled by the **Emulator** (default) or forwarded to a real backend via **Proxy Mode**.

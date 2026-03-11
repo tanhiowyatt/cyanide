@@ -399,18 +399,21 @@ class CyanideServer:
                         break
 
                 if not header_data:
-                    writer.close()  # Added writer.close() here for consistency with original logic
+                    writer.close()
+                    await writer.wait_closed()
                     return
 
                 try:
                     request_line = header_data.decode("utf-8").splitlines()[0]
                     parts = request_line.split()
                     if len(parts) < 2:
-                        writer.close()  # Added writer.close() here for consistency with original logic
+                        writer.close()
+                        await writer.wait_closed()
                         return
                     path = parts[1]
                 except (IndexError, UnicodeDecodeError):
-                    writer.close()  # Added writer.close() here for consistency with original logic
+                    writer.close()
+                    await writer.wait_closed()
                     return
 
                 if path == "/metrics":
@@ -1015,8 +1018,8 @@ class SSHServerFactory(asyncssh.SSHServer):
         # Set max auth tries (Cyanide style)
         ssh_conf = self.honeypot.config.get("ssh", {})
         self._max_auth_tries = ssh_conf.get("auth_tries", 3)
-        self.sessions = {}
-        self.background_tasks = []
+        self.sessions: dict[str, Any] = {}
+        self.background_tasks: list[asyncio.Task] = []
         self.username = "root"
         self.client_version = "unknown"
 

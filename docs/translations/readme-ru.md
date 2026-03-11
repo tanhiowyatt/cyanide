@@ -87,7 +87,7 @@ docker-compose -f deployments/docker/docker-compose.yml down
 
 | Скрипт | Команда | Описание |
 |--------|---------|----------|
-| **Stats** | `python3 scripts/management/stats.py` | Показать статистику в реальном времени (аптайм, сессии). |
+| **Stats** | `python3 scripts/management/cyanide stats` | Показать статистику в реальном времени (аптайм, сессии). |
 | **Replay** | `scriptreplay <timing> <log>` | Воспроизвести TTY сессию (файлы в `var/log/cyanide/tty/`). |
 
 ---

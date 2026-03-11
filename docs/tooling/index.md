@@ -6,7 +6,7 @@ This section is dedicated to the scripts in `scripts/management/` and the workfl
 Running a production honeypot requires robust monitoring and forensic toolsets. Cyanide provides built-in utilities for real-time traffic visualization and replaying attacker session data exactly as it was typed.
 
 ## 🛠️ How it Works
-Cyanide's tools interact directly with the log files (`cyanide-fs.json`) and TTY capture files using Python-based parsers. The `stats.py` dashboard provides immediate situational awareness, while `scriptreplay` is used for in-depth forensic investigation.
+Cyanide's tools interact directly with the log files (`cyanide-fs.json`) and TTY capture files using Python-based parsers. The `cyanide stats` command provides immediate situational awareness, while `scriptreplay` is used for in-depth forensic investigation.
 
 ## ⚙️ Configuration
 Diagnostic tools usually rely on default log paths (`var/log/cyanide/`). If you've modified these in `app.yaml`, make sure to pass the custom paths to the tools via CLI flags or by updating their internal constants.

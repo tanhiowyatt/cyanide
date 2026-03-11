@@ -74,7 +74,7 @@ static:
    - Add a `/bin/busybox` source link.
 4. **Test it**:
    ```bash
-   export CYANIDE_HONEYPOT_OS_PROFILE=iot_camera
+   export CYANIDE_SERVER__OS_PROFILE=iot_camera
    python3 -m cyanide.main
    ```
 5. **Verify**: Connect via Telnet and run `cat /etc/issue` or `uname -a`.

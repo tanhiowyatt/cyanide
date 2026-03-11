@@ -34,7 +34,7 @@ Cyanide currently includes a wide variety of native output plugins:
 
 ### SIEM & Analytics
 - **ElasticSearch**: High-performance indexing and search (`elasticsearch.py`).
-- **Splunk / HEC**: HTTP Event Collector support (`splunk.py`).
+- **Splunk / HEC**: HTTP Event Collector support (`splunk_hec.py`).
 - **Graylog / GELF**: GELF-formatted logging over UDP/TCP (`graylog.py`).
 - **Syslog**: Standard UNIX syslog or remote syslog forwarding (`syslog.py`).
 

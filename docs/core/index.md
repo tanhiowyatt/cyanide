@@ -9,7 +9,7 @@ Cyanide's core handles the transition between incoming network connections and t
 The core utilizes a central `CyanideServer` class built on top of `asyncio`. It starts multiple protocol-specific listeners and coordinates access to shared resources like the Virtual Filesystem (VFS) and the Statistics Manager.
 
 ## ⚙️ Configuration
-The primary configuration for the core resides in `configs/app.yaml`. Global parameters such as `auth_tries`, `login_timeout`, and `data_path` are defined here. For detailed options, see the **[Configuration Guide](configuration.md)**.
+The primary configuration for the core resides in `configs/app.yaml`. Session limits and listening IP are set under `server:`. Protocol settings such as `auth_tries` and `login_timeout` are located under `ssh:`. For detailed options, see the **[Configuration Guide](configuration.md)**.
 
 ## 📑 Detailed Documents
 

@@ -1,4 +1,4 @@
-# Network & Proxy (`src/cyanide/network`)
+# Network & Proxy (`src/cyanide/network` & `src/cyanide/core`)
 
 This module brokers the physical connections between literal attacker IP addresses and the emulated services inside Cyanide. It acts as both the listener layer and the security proxy protecting backend systems.
 
@@ -6,17 +6,17 @@ This module brokers the physical connections between literal attacker IP address
 
 Attackers do not interact with native unshielded daemons (like `sshd` or `telnetd`). Instead, they communicate with entirely synthetic, asynchronous Python listeners constructed specifically for honeypot data extraction.
 
-### SSH Handler (`ssh_handler.py`):
+### SSH Handler (`src/cyanide/core/server.py`):
 - Runs entirely in the asyncio event loop via `asyncssh`.
 - **Key Collection:** Presents configurable host keys derived directly from the loaded profile manifest, making fingerprints identical to specific real-world Ubuntu/Debian releases.
 - **PTY Handshaking:** Fully implements the PTY setup, window resizing, and VT100 control codes to support interactive usage (e.g., launching `nano`, updating passwords).
 - **Authentication Hooks:** Allows Cyanide to capture usernames, password combinations, and pubkeys before optionally granting access into the `ShellEmulator`.
 
-### Telnet Handler (`telnet_handler.py`):
+### Telnet Handler (`src/cyanide/services/telnet_handler.py`):
 - An explicit, raw TCP socket parser tracking Telnet Negotiation protocols (DO, DONT, WILL, WONT).
 - Simulates legacy login workflows common on old IoT devices, dropping the attacker into an identical `ShellEmulator` instance once standard text-based authentication criteria are met.
 
-## 2. Proxy Dispatch (`src/cyanide/network/proxy.py`)
+## 2. Proxy Dispatch (`src/cyanide/network/tcp_proxy.py`)
 
 If the honeypot is configured in Proxy or Pool Mode, the Network layer conditionally routes attacker traffic directly at the TCP stream level rather than trapping it in an emulator.
 

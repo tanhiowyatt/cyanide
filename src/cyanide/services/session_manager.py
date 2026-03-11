@@ -49,7 +49,11 @@ class SessionManager:
 
         if len(history) >= self.max_connections_per_minute:
             self.banned_ips[ip] = now + self.ban_duration
-            self.logger.log_event("system", "ip_banned", {"src_ip": ip, "ban_duration": self.ban_duration, "reason": "rate_limit_exceeded"})
+            self.logger.log_event(
+                "system",
+                "ip_banned",
+                {"src_ip": ip, "ban_duration": self.ban_duration, "reason": "rate_limit_exceeded"},
+            )
             return False, "rate_limit_exceeded (banned)"
 
         # Record attempt (optimistic)

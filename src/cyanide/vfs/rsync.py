@@ -1,19 +1,24 @@
 import asyncio
-import traceback
-from typing import Any, Dict, Optional
+import shlex
+import struct
+from typing import Any, Dict, List, Optional
 
 
 class RsyncHandler:
     """
-    Handler for rsync requests (rsync --server).
-    Provides realistic logging and minimal handshake.
-    Works with both legacy SSHSession.channel and new process_factory SSHServerProcess.
+    Enhanced rsync-over-SSH server protocol implementation.
+    Parses the initial file list during 'push' (upload) to log attacker intentions
+    before realistically denying the transfer.
     """
 
     def __init__(self, session: Any, process=None):
         self.session = session
         self.process = process  # SSHServerProcess (from process_factory)
         self.honeypot = session.honeypot
+        self.fs = getattr(session, "fs", None)
+        if not self.fs:
+            self.fs = self.honeypot.get_filesystem(session.src_ip)
+
         self.src_ip = session.src_ip
         self.username = session.username
         self.session_id = (
@@ -22,76 +27,219 @@ class RsyncHandler:
             else getattr(session, "session_id", "unknown")
         )
         self.logger = self.honeypot.logger
+        self.protocol_version = 31
+
+        # Stats tracking
+        self.bytes_read = 0
+        self.bytes_written = 0
 
     def _write(self, data: bytes):
-        """Write bytes to the correct output stream."""
         if self.process is not None:
-            # process_factory: stdout is a StreamWriter, write bytes directly via channel
             self.process.channel.write(data)
         else:
             self.session.channel.write(data)
+        self.bytes_written += len(data)
 
-    async def _read(self, n: int, timeout: float = 5.0) -> bytes:
-        """Read bytes from the correct input stream."""
-        if self.process is not None:
-            try:
+    async def _read(self, n: int, timeout: float = 10.0) -> bytes:
+        if n <= 0:
+            return b""
+        try:
+            if self.process is not None:
                 data = await asyncio.wait_for(self.process.stdin.read(n), timeout=timeout)
-                return data if data else b""
-            except asyncio.TimeoutError:
-                return b""
-        else:
-            try:
+            else:
                 data = await asyncio.wait_for(self.session.channel.read(n), timeout=timeout)
-                return data if data else b""
-            except asyncio.TimeoutError:
-                return b""
 
-    def _log_op(self, op: str, command: str, success: bool = True, extra: Optional[Dict] = None):
+            if not data:
+                return b""
+            if isinstance(data, str):
+                data = data.encode()
+            self.bytes_read += len(data)
+            return data
+        except (asyncio.TimeoutError, Exception):
+            return b""
+
+    async def _read_int(self) -> int:
+        """Read a 4-byte little-endian integer."""
+        data = await self._read(4)
+        if len(data) < 4:
+            return -1
+        return struct.unpack("<i", data)[0]
+
+    async def _read_byte(self) -> int:
+        data = await self._read(1)
+        return data[0] if data else -1
+
+    async def _read_varint(self) -> int:
+        """Read rsync-style variable length integer."""
+        b = await self._read_byte()
+        if b == -1:
+            return -1
+        if b != 0xFF:
+            return b
+
+        data = await self._read(4)
+        if len(data) < 4:
+            return -1
+        return struct.unpack("<I", data)[0]
+
+    def _log_event(self, eventid: str, extra: Optional[Dict] = None):
         log_data = {
             "protocol": "rsync",
             "src_ip": self.src_ip,
             "username": self.username,
-            "op": op,
-            "command": command,
-            "success": success,
+            "session_id": self.session_id,
         }
         if extra:
             log_data.update(extra)
-        self.logger.log_event(self.session_id, "rsync_op", log_data)
+        self.logger.log_event(self.session_id, eventid, log_data)
 
     async def handle(self, command: str) -> int:
-        """
-        Detects and logs rsync server attempts.
-        Returns the exit code.
-        """
+        """Main rsync loop."""
         is_sender = "--sender" in command
+        try:
+            parts = shlex.split(command)
+            dest_path = parts[-1] if parts else "."
+        except Exception:
+            dest_path = "."
 
-        self._log_op("server_mode_request", command, extra={"is_sender": is_sender})
+        self._log_event(
+            "rsync_exec_detected",
+            {
+                "command": command,
+                "direction": "download" if is_sender else "upload",
+                "path": dest_path,
+            },
+        )
+
+        ssh_cfg = self.honeypot.config.get("ssh", {})
+        rsync_cfg = ssh_cfg.get("rsync", {})
+        if not rsync_cfg.get("enabled", True):
+            self._log_event("rsync_denied", {"reason": "disabled"})
+            return 1
 
         try:
-            # Send rsync protocol version greeting: "@RSYNCD: 31.0\n"
-            # Real rsync sends a text greeting first
-            self._write(b"@RSYNCD: 31.0\n")
+            # 1. Handshake
+            self._write(struct.pack("<i", self.protocol_version))
+            client_version = await self._read_int()
+            if client_version == -1:
+                return 1
 
-            # Read client greeting
-            try:
-                client_hello = await self._read(64, timeout=5.0)
-                client_version = client_hello.decode("utf-8", "ignore").strip()
-            except Exception:
-                client_version = "unknown"
+            self._write(struct.pack("<i", 12345678))  # Checksum seed
+            self._log_event(
+                "rsync_handshake",
+                {"client_version": client_version, "server_version": self.protocol_version},
+            )
 
-            self._log_op("handshake", command, extra={"client_hello": client_version})
-
-            await asyncio.sleep(0.3)
-
-            # Send a realistic rsync error to terminate gracefully
-            # "@ERROR: access denied to root from ..." is a realistic honeypot response
-            error_msg = f"@ERROR: access denied to root from {self.src_ip} (Permission denied)\n"
-            self._write(error_msg.encode())
-
-            return 1
+            # 2. Modes
+            if is_sender:
+                return await self._handle_pull(dest_path)
+            else:
+                return await self._handle_push(dest_path)
 
         except Exception as e:
-            traceback.print_exc()
-            self._log_op("error", command, success=False, extra={"error": str(e)})
+            self._log_event("rsync_error", {"error": str(e)})
             return 1
+
+    async def _handle_push(self, dest_path: str) -> int:
+        """Attacker pushed files TO honeypot. Parse file list for intelligence."""
+        ssh_cfg = self.honeypot.config.get("ssh", {})
+        rsync_cfg = ssh_cfg.get("rsync", {})
+
+        # Read file list
+        files = []
+        try:
+            files = await self._read_file_list()
+            if files:
+                self._log_event(
+                    "rsync_filelist",
+                    {
+                        "count": len(files),
+                        "files": files[:50],  # Log first 50 files
+                        "path": dest_path,
+                    },
+                )
+        except Exception as e:
+            self._log_event("rsync_error", {"op": "file_list_parsing", "error": str(e)})
+
+        # Realistically deny after getting the list
+        if not rsync_cfg.get("allow_upload", True):
+            self._log_event("rsync_denied", {"direction": "upload", "reason": "upload_disabled"})
+        else:
+            # We don't implement the actual transfer, so we deny it anyway as "not implemented"
+            # but we wait long enough to look like we are thinking
+            await asyncio.sleep(0.5)
+            self._log_event("rsync_denied", {"direction": "upload", "reason": "target_readonly"})
+
+        # rsync error output to stderr
+        err_msg = f"rsync: [receiver] push to {dest_path} failed: Permission denied (13)\n"
+        if self.process:
+            self.process.channel.write_stderr(err_msg.encode())
+        else:
+            self.session.channel.write_stderr(err_msg.encode())
+
+        return 13  # EACCES
+
+    async def _read_file_list(self) -> List[Dict[str, Any]]:
+        """
+        Minimal rsync 31.x file list parser.
+        Structure (simplified): flags(byte), [l1(byte), l2(byte)], name, size, mtime, mode...
+        """
+        files = []
+        last_name = ""
+
+        while True:
+            flags = await self._read_byte()
+            if flags <= 0:  # 0 is end of list
+                break
+
+            # rsync name compression:
+            # if flags & 0x04 (SAME_NAME), l1 is inherited from previous
+            # if flags & 0x20 (XMIT_NAME_LONG), l1 is 2 bytes
+
+            l1 = 0
+            if flags & 0x04:  # SAME_NAME
+                l1 = await self._read_byte()
+
+            l2 = await self._read_byte()
+            if l2 == -1:
+                break
+
+            # Name
+            name_suffix_bytes = await self._read(l2)
+            name_suffix = name_suffix_bytes.decode("utf-8", "ignore")
+            name = last_name[:l1] + name_suffix
+            last_name = name
+
+            # Size
+            size = await self._read_varint()
+
+            # Mtime
+            mtime = 0
+            if not (flags & 0x08):  # if NOT XMIT_SAME_TIME
+                mtime = await self._read_int()
+
+            # Mode
+            mode = 0
+            if not (flags & 0x10):  # if NOT XMIT_SAME_MODE
+                mode = await self._read_int()
+
+            files.append({"name": name, "size": size, "mode": mode, "mtime": mtime})
+
+            if len(files) > 1000:  # Safety break
+                break
+
+        return files
+
+    async def _handle_pull(self, src_path: str) -> int:
+        """Attacker pulls files FROM honeypot."""
+        self._log_event(
+            "rsync_denied",
+            {"direction": "download", "path": src_path, "reason": "download_disabled"},
+        )
+
+        err_msg = f"rsync: [sender] slice of {src_path} failed: Permission denied (13)\n"
+        if self.process:
+            self.process.channel.write_stderr(err_msg.encode())
+        else:
+            self.session.channel.write_stderr(err_msg.encode())
+        return 13

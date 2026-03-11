@@ -12,6 +12,11 @@ Cyanide generates high-fidelity JSON logs in `var/log/cyanide/`.
 - **`cyanide-ml.json`**: Detection engine output (command anomaly scores and classifier results).
 - **`cyanide-stats.json`**: Periodic metric aggregates.
 - **`tty/`**: Session recordings compatible with `scriptreplay`.
+- **`rsync_exec_detected`**: Capture of raw `rsync` command string and intended direction.
+- **`rsync_handshake`**: Negotiated protocol versions.
+- **`rsync_filelist`**: Detailed list of intended files (names, sizes, modes) extracted from the binary stream.
+- **`rsync_denied`**: Reason for rejecting the transfer (e.g. `target_readonly`).
+- **`rsync_error`**: Binary protocol parsing failures.
 
 ### Log Rotation Policy (logtype)
 Cyanide supports built-in rotation logic controlled by `app.yaml` (`logging.logtype`).

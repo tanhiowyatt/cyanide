@@ -37,16 +37,19 @@ def mock_process():
 @pytest.mark.asyncio
 async def test_rsync_handshake_and_error(mock_session, mock_process):
     # Test RsyncHandler in process_factory mode
-    mock_process.stdin.read.return_value = b"@RSYNCD: 31.0\n"
+    import struct
+
+    # Server sends our version (31) and we read client version (31)
+    mock_process.stdin.read.return_value = struct.pack("<i", 31)
 
     handler = RsyncHandler(mock_session, process=mock_process)
     rc = await handler.handle("rsync --server . /tmp/test")
 
-    # Needs to return 1 (error code) for honeypot behavior
-    assert rc == 1
+    # Return 13 (EACCES) for realistic permission denied behavior
+    assert rc == 13
 
-    # Should have sent @RSYNCD: 31.0\n greeting
-    mock_process.channel.write.assert_any_call(b"@RSYNCD: 31.0\n")
+    # Should have sent binary version greeting
+    mock_process.channel.write.assert_any_call(struct.pack("<i", 31))
 
     # Should log operations
     mock_session.honeypot.logger.log_event.assert_called()

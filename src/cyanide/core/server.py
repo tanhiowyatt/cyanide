@@ -24,18 +24,18 @@ from cyanide.services.quarantine import QuarantineService
 from cyanide.services.session_manager import SessionManager
 from cyanide.services.telnet_handler import TelnetHandler
 from cyanide.vfs.engine import FakeFilesystem
+from cyanide.vfs.rsync import RsyncHandler
+
+# Protocol Handlers
+from cyanide.vfs.scp import SCPHandler
 
 from .async_logger import AsyncLogger
+from .config import _CONFIG_EVENTS
 from .defaults import DEFAULT_METADATA
 from .stats import StatsManager
 from .telemetry import setup_telemetry
 from .vm_pool import VMPool
 from .vt_scanner import VTScanner
-from .config import _CONFIG_EVENTS
-
-# Protocol Handlers
-from cyanide.vfs.scp import SCPHandler
-from cyanide.vfs.rsync import RsyncHandler
 
 
 class ServiceRegistry:
@@ -71,11 +71,11 @@ class CyanideServer:
             self.logger.log_event(
                 "system", "service_init_status", {"message": "Logger initialized"}
             )
-            
+
             # Flush buffered config events
             for ev in _CONFIG_EVENTS:
                 self.logger.log_event("system", ev["action"], ev["data"])
-                
+
         except Exception as e:
             # Last resort print if logger fails
             logging.error(f"[!] CyanideServer: Failed to initialize Logger: {e}")
@@ -596,18 +596,24 @@ class CyanideServer:
         if self.config.get("pool", {}).get("enabled", False):
             self.logger.log_event("system", "service_starting", {"service": "vm_pool"})
             self.vm_pool = VMPool(self.config)
-            
+
             try:
                 self.background_tasks.append(asyncio.create_task(self.vm_pool.start()))
-                self.logger.log_event("system", "service_started", {
-                    "service": "vm_pool",
-                    "mode": self.config.get("pool", {}).get("mode"),
-                    "max_vms": self.config.get("pool", {}).get("max_vms")
-                })
+                self.logger.log_event(
+                    "system",
+                    "service_started",
+                    {
+                        "service": "vm_pool",
+                        "mode": self.config.get("pool", {}).get("mode"),
+                        "max_vms": self.config.get("pool", {}).get("max_vms"),
+                    },
+                )
             except Exception as e:
-                self.logger.log_event("system", "service_error", {"service": "vm_pool", "error": str(e)})
+                self.logger.log_event(
+                    "system", "service_error", {"service": "vm_pool", "error": str(e)}
+                )
         else:
-            self.vm_pool = VMPool(self.config) # Create dummy or disabled logic
+            self.vm_pool = VMPool(self.config)  # Create dummy or disabled logic
             self.background_tasks.append(asyncio.create_task(self.vm_pool.start()))
 
         # Start SSH Server
@@ -655,6 +661,7 @@ class CyanideServer:
 
                 if ssh_conf.get("sftp_enabled", True):
                     from cyanide.vfs.sftp import CyanideSFTPHandler
+
                     ssh_opts["sftp_factory"] = CyanideSFTPHandler
 
                 # process_factory handles exec/shell requests (correct asyncssh API).
@@ -666,6 +673,7 @@ class CyanideServer:
                     """Route exec/shell to our honeypot handlers."""
                     import sys
                     import traceback
+
                     try:
                         conn = process.channel.get_connection()
                         # Retrieve the per-connection factory that SSHServerFactory stores
@@ -675,7 +683,10 @@ class CyanideServer:
                             return
 
                         command = process.command  # None for shell, str for exec
-                        print(f"DEBUG process_factory: command={command!r} pid={id(process)}", flush=True)
+                        print(
+                            f"DEBUG process_factory: command={command!r} pid={id(process)}",
+                            flush=True,
+                        )
 
                         if command is None:
                             # Shell request — delegate to SSHSession shell handler
@@ -707,6 +718,7 @@ class CyanideServer:
                         # SCP interception
                         if command.startswith("scp ") and ssh_conf_ref.get("scp_enabled", True):
                             from cyanide.vfs.scp import SCPHandler
+
                             scp = SCPHandler(factory, process=process)
                             rc = await scp.handle(command)
                             process.exit(rc)
@@ -715,6 +727,7 @@ class CyanideServer:
                         # rsync interception
                         if command.startswith("rsync ") and ssh_conf_ref.get("rsync_enabled", True):
                             from cyanide.vfs.rsync import RsyncHandler
+
                             rsync = RsyncHandler(factory, process=process)
                             rc = await rsync.handle(command)
                             process.exit(rc)
@@ -724,7 +737,9 @@ class CyanideServer:
                         fs = factory.fs or honeypot_ref.get_filesystem(factory.src_ip)
 
                         def q_hook(f, c):
-                            honeypot_ref.save_quarantine_file(f, c, "conn_" + factory.conn_id, factory.src_ip)
+                            honeypot_ref.save_quarantine_file(
+                                f, c, "conn_" + factory.conn_id, factory.src_ip
+                            )
 
                         shell = ShellEmulator(
                             fs,
@@ -734,9 +749,13 @@ class CyanideServer:
                         )
                         stdout, stderr, rc = await shell.execute(command)
                         print(f"DEBUG process_factory exec done rc={rc} out={stdout!r}", flush=True)
-                        process.stdout.write(stdout.encode("utf-8") if isinstance(stdout, str) else stdout)
+                        process.stdout.write(
+                            stdout.encode("utf-8") if isinstance(stdout, str) else stdout
+                        )
                         if stderr:
-                            process.stderr.write(stderr.encode("utf-8") if isinstance(stderr, str) else stderr)
+                            process.stderr.write(
+                                stderr.encode("utf-8") if isinstance(stderr, str) else stderr
+                            )
                         process.exit(rc)
 
                     except Exception as exc:
@@ -770,15 +789,17 @@ class CyanideServer:
                     "system", "service_started", {"service": "ssh_emulated", "port": ssh_port}
                 )
                 self.logger.log_event(
-                    "system", "ssh_listen_started", {
+                    "system",
+                    "ssh_listen_started",
+                    {
                         "port": ssh_port,
                         "server_version": chosen_version,
                         "kex_algs": actual_algs.get("kex_algs"),
                         "encryption_algs": actual_algs.get("encryption_algs"),
                         "mac_algs": actual_algs.get("mac_algs"),
                         "compression_algs": actual_algs.get("compression_algs"),
-                        "signature_algs": actual_algs.get("signature_algs")
-                    }
+                        "signature_algs": actual_algs.get("signature_algs"),
+                    },
                 )
             elif backend_mode == "proxy" or backend_mode == "pool":
                 # Use TCP Proxy for pure SSH monitoring (simplest approach for "Pure Proxy" request)
@@ -797,7 +818,15 @@ class CyanideServer:
                     pool=self.vm_pool if backend_mode == "pool" else None,
                 )
                 await ssh_proxy.start()
-                self.logger.log_event("system", "service_started", {"service": "ssh_proxy", "listen_port": ssh_port, "target": f"{t_host}:{t_port}"})
+                self.logger.log_event(
+                    "system",
+                    "service_started",
+                    {
+                        "service": "ssh_proxy",
+                        "listen_port": ssh_port,
+                        "target": f"{t_host}:{t_port}",
+                    },
+                )
 
         # Start Telnet Server
         telnet_conf = self.config.get("telnet", {})
@@ -829,7 +858,15 @@ class CyanideServer:
                     pool=self.vm_pool if backend_mode == "pool" else None,
                 )
                 await telnet_proxy.start()
-                self.logger.log_event("system", "service_started", {"service": "telnet_proxy", "listen_port": telnet_port, "target": f"{t_host}:{t_port}"})
+                self.logger.log_event(
+                    "system",
+                    "service_started",
+                    {
+                        "service": "telnet_proxy",
+                        "listen_port": telnet_port,
+                        "target": f"{t_host}:{t_port}",
+                    },
+                )
 
         # Start SMTP Proxy (Forwarding)
         smtp_conf = self.config.get("smtp", {})
@@ -843,7 +880,15 @@ class CyanideServer:
                     protocol_name="smtp",
                 )
                 await smtp_proxy.start()
-                self.logger.log_event("system", "service_started", {"service": "smtp_proxy", "listen_port": int(smtp_conf.get("listen_port", 25)), "target": f"{smtp_conf.get('target_host', '127.0.0.1')}:{smtp_conf.get('target_port', 2525)}"})
+                self.logger.log_event(
+                    "system",
+                    "service_started",
+                    {
+                        "service": "smtp_proxy",
+                        "listen_port": int(smtp_conf.get("listen_port", 25)),
+                        "target": f"{smtp_conf.get('target_host', '127.0.0.1')}:{smtp_conf.get('target_port', 2525)}",
+                    },
+                )
             except Exception as e:
                 self.logger.log_event(
                     "system", "smtp_proxy_error", {"message": f"Failed to start SMTP Proxy: {e}"}
@@ -892,7 +937,9 @@ class CyanideServer:
     # Function 54: Handles event logging and telemetry.
     async def _stats_logging_loop(self):
         """Periodically log statistics to cyanide-stats.json."""
-        self.logger.log_event("system", "service_started", {"service": "stats_loop", "interval_seconds": 60})
+        self.logger.log_event(
+            "system", "service_started", {"service": "stats_loop", "interval_seconds": 60}
+        )
         while True:
             try:
                 # Log current stats
@@ -925,8 +972,16 @@ class CyanideServer:
                 "message": f"Cleanup: Enabled (Every {manager.interval}s, older than {manager.retention_days}d)"
             },
         )
-        
-        self.logger.log_event("system", "service_started", {"service": "cleanup_loop", "interval": manager.interval, "retention_days": manager.retention_days})
+
+        self.logger.log_event(
+            "system",
+            "service_started",
+            {
+                "service": "cleanup_loop",
+                "interval": manager.interval,
+                "retention_days": manager.retention_days,
+            },
+        )
 
         while True:
             try:
@@ -971,17 +1026,16 @@ class SSHServerFactory(asyncssh.SSHServer):
         conn.cyanide_factory = self
         self.src_ip = conn.get_extra_info("peername")[0]
         self.src_port = conn.get_extra_info("peername")[1]
-        
+
         # Initialize session filesystem
         self.fs = self.honeypot.get_filesystem(self.src_ip)
 
         self.client_version = conn.get_extra_info("client_version", "unknown")
-        
+
         self.honeypot.logger.log_event(
-            "conn_" + self.conn_id, "ssh_conn_open", {
-                "src_ip": self.src_ip,
-                "src_port": self.src_port
-            }
+            "conn_" + self.conn_id,
+            "ssh_conn_open",
+            {"src_ip": self.src_ip, "src_port": self.src_port},
         )
 
         # Negotiated algorithms are available after handshake,
@@ -1013,13 +1067,17 @@ class SSHServerFactory(asyncssh.SSHServer):
                 span.set_attribute("error", True)
                 span.set_attribute("rejection_reason", reason)
                 self.honeypot.logger.log_event(
-                    "system", "connection_rejected", {
+                    "system",
+                    "connection_rejected",
+                    {
                         "protocol": "ssh",
-                        "src_ip": self.src_ip, 
+                        "src_ip": self.src_ip,
                         "reason": reason,
                         "active_sessions": self.honeypot.services.session.active_sessions,
-                        "per_ip_sessions": self.honeypot.services.session.sessions_per_ip.get(self.src_ip, 0)
-                    }
+                        "per_ip_sessions": self.honeypot.services.session.sessions_per_ip.get(
+                            self.src_ip, 0
+                        ),
+                    },
                 )
                 conn.close()
                 return
@@ -1234,8 +1292,6 @@ class SSHSession(asyncssh.SSHServerSession):
         self.bytes_in = 0
         self.bytes_out = 0
 
-
-
     # Function 65: Performs operations related to connection made.
     def connection_made(self, channel):
         self.channel = channel
@@ -1317,7 +1373,7 @@ class SSHSession(asyncssh.SSHServerSession):
                     "client_version": self.client_version,
                 },
             )
-            
+
             self.honeypot.logger.log_event(
                 self.session_id,
                 "ssh_negotiated",
@@ -1330,7 +1386,7 @@ class SSHSession(asyncssh.SSHServerSession):
                     "compression_in": compression,
                     "compression_out": compression,
                     "host_key_alg": key_algo,
-                }
+                },
             )
         except Exception:
             pass
@@ -1619,8 +1675,9 @@ class SSHSession(asyncssh.SSHServerSession):
             )
         except Exception as e:
             print(f"DEBUG exec_requested LOGGING ERROR: {e}", flush=True)
-            import traceback
             import sys
+            import traceback
+
             traceback.print_exc(file=sys.stdout)
             sys.stdout.flush()
 
@@ -1638,8 +1695,9 @@ class SSHSession(asyncssh.SSHServerSession):
                 return True
         except Exception as e:
             print(f"DEBUG exec_requested INTERCEPT ERROR: {e}", flush=True)
-            import traceback
             import sys
+            import traceback
+
             traceback.print_exc(file=sys.stdout)
             sys.stdout.flush()
 
@@ -1683,7 +1741,7 @@ class SSHSession(asyncssh.SSHServerSession):
             self._ensure_tty_log()
             fs = self.fs
             if not fs:
-                 fs = self.honeypot.get_filesystem(self.src_ip)
+                fs = self.honeypot.get_filesystem(self.src_ip)
 
             def q_hook(f, c):
                 self.honeypot.save_quarantine_file(f, c, self.session_id, self.src_ip)
@@ -1716,6 +1774,7 @@ class SSHSession(asyncssh.SSHServerSession):
         except Exception as e:
             print(f"DEBUG _async_exec EXCEPTION: {e}", flush=True)
             import sys
+
             traceback.print_exc(file=sys.stdout)
             sys.stdout.flush()
             try:

@@ -36,6 +36,11 @@ When `backend_mode` is set to `pool`, Cyanide can automatically manage backend V
 - **`ssh.forwarding_enabled`**: Enable or disable SSH port forwarding (`-L` / `-R`).
 - **`ssh.forward_redirect_enabled`**: Enable rules-based redirection for forwarded traffic.
 - **`ssh.forward_redirect_rules`**: Mapping of port -> target host:port.
+- **`ssh.rsync.enabled`**: Toggle rsync support (default: true).
+- **`ssh.rsync.allow_upload`**: Permit rsync push attempts (default: true).
+- **`ssh.rsync.allow_download`**: Permit rsync pull attempts (default: true).
+- **`ssh.rsync.max_file_size_mb`**: Max size per file (default: 50).
+- **`ssh.rsync.max_total_mb_per_session`**: Max aggregate transfer (default: 200).
 
 ### Detection Engine (ML)
 - **`enabled`**: Toggle the hybrid detection engine.

@@ -1,6 +1,6 @@
 import asyncio
-import re
 import os
+import re
 import traceback
 from typing import Any, Dict, Optional
 
@@ -79,11 +79,13 @@ class SCPHandler:
             return buf
         else:
             try:
-                data = await asyncio.wait_for(
-                    self.session.channel.readuntil(sep), timeout=timeout
-                )
+                data = await asyncio.wait_for(self.session.channel.readuntil(sep), timeout=timeout)
                 return data if isinstance(data, bytes) else data.encode() if data else b""
-            except (asyncio.TimeoutError, asyncio.IncompleteReadError, asyncssh.misc.ConnectionLost):
+            except (
+                asyncio.TimeoutError,
+                asyncio.IncompleteReadError,
+                asyncssh.misc.ConnectionLost,
+            ):
                 return b""
 
     def _log_op(self, op: str, path: str, success: bool = True, extra: Optional[Dict] = None):

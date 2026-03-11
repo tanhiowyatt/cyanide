@@ -81,6 +81,16 @@ class SSHConfig(BaseModel):
     allow_download: bool = True
     allow_upload: bool = True
 
+    rsync: Dict[str, Any] = Field(
+        default_factory=lambda: {
+            "enabled": True,
+            "allow_upload": True,
+            "allow_download": True,
+            "max_file_size_mb": 50,
+            "max_total_mb_per_session": 200,
+        }
+    )
+
     # Port Forwarding
     forwarding_enabled: bool = False
     forward_redirect_enabled: bool = False

@@ -32,13 +32,15 @@ class TelnetHandler:
         accepted, reason = self.services.session.can_accept(src_ip)
         if not accepted:
             self.logger.log_event(
-                "system", "connection_rejected", {
+                "system",
+                "connection_rejected",
+                {
                     "protocol": "telnet",
-                    "src_ip": src_ip, 
+                    "src_ip": src_ip,
                     "reason": reason,
                     "active_sessions": self.services.session.active_sessions,
-                    "per_ip_sessions": self.services.session.sessions_per_ip.get(src_ip, 0)
-                }
+                    "per_ip_sessions": self.services.session.sessions_per_ip.get(src_ip, 0),
+                },
             )
             writer.close()
             return
@@ -94,7 +96,7 @@ class TelnetHandler:
 
             bytes_in = 0
             bytes_out = 0
-            
+
             # --- /etc/issue pre-login banner (read from VFS, just like a real Linux host) ---
             try:
                 from cyanide.vfs.nodes import File as VFSFile
@@ -143,7 +145,7 @@ class TelnetHandler:
             # Auth Check
             success = self.server.is_valid_user(username, password)
             self.stats.on_auth("telnet", src_ip, username, password, success)
-            
+
             self.logger.log_event(
                 session_id,
                 "auth_attempt",
@@ -151,10 +153,10 @@ class TelnetHandler:
                     "protocol": "telnet",
                     "username": username,
                     "password_len": len(password),
-                    "success": success
-                }
+                    "success": success,
+                },
             )
-            
+
             self.logger.log_event(
                 session_id,
                 "auth",
@@ -174,15 +176,11 @@ class TelnetHandler:
                 await writer.drain()
                 writer.close()
                 return
-                
+
             self.logger.log_event(
                 session_id,
                 "session_start",
-                {
-                    "protocol": "telnet",
-                    "src_ip": src_ip,
-                    "session_id": session_id
-                }
+                {"protocol": "telnet", "src_ip": src_ip, "session_id": session_id},
             )
 
             # Function 197: Performs operations related to quarantine hook.

@@ -55,10 +55,15 @@ Secure Copy (SCP) is supported via the standard RCP-based wire protocol.
 - **Interception:** Cyanide intercepts `scp -t` (to) and `scp -f` (from) execution requests.
 - **Realistic Protocol:** The honeypot engages in the expected ACK-based handshake, supporting both file and directory uploads.
 
-### rsync Monitoring
-While the full rsync delta-transfer algorithm is complex, Cyanide provides a realistic "Server Mode" monitor.
-- **Command Dissection:** The honeypot captures and logs the exact rsync command line, revealing the attacker's intentions (e.g., `-avz`, `--delete`).
-- **Handshake Emulation:** Cyanide performs the initial rsync 3.x protocol handshake before realistically "aborting" with a connection error that mimics a server-side misconfiguration, ensuring the attempt is logged without needing a full rsync binary on the host.
+### rsync Monitoring & Intent Capture
+Cyanide provides a high-fidelity rsync "Server Mode" monitor that performs active protocol analysis of incoming synchronization requests.
+
+- **Binary Handshake (v31.x)**: Performs the native binary protocol handshake (4-byte LE integers) to prevent client-side "protocol version mismatch" errors.
+- **Intent Capture (File List Parsing)**: Unlike simple simulators, Cyanide implements a minimal rsync 31.x file list parser. It actively reads the binary stream sent by the client to reconstruct:
+    - **Filenames**: The exact names of files the attacker intends to upload/download.
+    - **Metadata**: Reported file sizes and permission modes.
+- **Intelligent Denial**: After extracting the file list (capturing the attacker's "inventory"), Cyanide realistically terminates the session with an `EACCES (13)` error and a standard `Permission denied` message on `stderr`. This emulates a Read-Only filesystem while providing maximum forensic data.
+- **Audit Logging**: Captures `rsync_exec_detected`, `rsync_handshake`, and `rsync_filelist` events.
 
 ### Security Limits
 To prevent the honeypot from being used as a storage drop:

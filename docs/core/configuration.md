@@ -9,7 +9,15 @@ The `app.yaml` file controls the core behavior of the honeypot.
 ### Networking & Services
 - **`ssh.port`**: Port to listen for SSH (default: 2222).
 - **`telnet.port`**: Port to listen for Telnet (default: 2223).
-- **`backend_mode`**: Either `emulator` (simulated shell) or `proxy` (forwarding to a real server).
+- **`backend_mode`**: Either `emulator` (simulated shell), `proxy` (forwarding to a real server), or `pool` (Libvirt VM orchestration).
+
+### VM Pool Orchestration (Libvirt)
+When `backend_mode` is set to `pool`, Cyanide can automatically manage backend VMs.
+- **`pool.enabled`**: Enable the orchestration pool (default: false).
+- **`pool.mode`**: Set to `libvirt` for full lifecycle management.
+- **`pool.max_vms`**: Maximum concurrently running VMs.
+- **`pool.recycle_period`**: How often to recycle VMs (in seconds).
+- **`pool.libvirt_uri`**: Connection URI (e.g., `qemu:///system`).
 
 ### SSH Fingerprinting & Forwarding
 - **`ssh.ciphers`**: List of allowed encryption algorithms.

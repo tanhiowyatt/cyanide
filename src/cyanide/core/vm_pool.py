@@ -1,18 +1,17 @@
 import random
+import logging
+
+logger = logging.getLogger("cyanide.vm_pool")
+
+try:
+    from cyanide.core.libvirt_pool import LibvirtPool, Lease
+except ImportError:
+    LibvirtPool = None
+    Lease = None
 
 
-class VMPool:
-    """
-    Manages a pool of backend VM addresses (e.g., QEMU instances).
-    Provides targets for the proxy services.
-    """
-
-    # Function 95: Initializes the class instance and its attributes.
+class SimplePool:
     def __init__(self, config):
-        """
-        Initialize the pool from config.
-        Expects config['pool']['targets'] to be a comma-separated list of "host:port".
-        """
         self.targets = []
         pool_conf = config.get("pool", {})
         target_str = pool_conf.get("targets", "")
@@ -23,22 +22,79 @@ class VMPool:
                 if len(pass_parts) == 2:
                     self.targets.append((pass_parts[0], int(pass_parts[1])))
                 elif len(pass_parts) == 1:
-                    # Default port? Assume SSH 22 or passed in context.
-                    # For simplicity, require port or use default 22
                     self.targets.append((pass_parts[0], 22))
 
-    # Function 96: Retrieves target data.
-    def get_target(self):
-        """
-        Get a target (host, port) from the pool.
-        Strategies: Random, Round-Robin.
-        Currently: Random.
-        """
+    async def start(self):
+        pass
+
+    async def stop(self):
+        pass
+
+    async def reserve_target(self, session_id: str, protocol: str):
         if not self.targets:
             return None
-        return random.choice(self.targets)
+        target = random.choice(self.targets)
+        if Lease is not None:
+            return Lease(host=target[0], port=target[1], vm_id="simple", protocol=protocol, session_id=session_id, timestamp=0.0)
+        else:
+            return target
 
-    # Function 97: Performs operations related to report failure.
+    async def release_target(self, lease):
+        pass
+
+
+class VMPool:
+    """
+    Manages a pool of backend VM addresses (e.g., QEMU instances).
+    Provides targets for the proxy services.
+    """
+
+    def __init__(self, config):
+        self.config = config
+        pool_mode = config.get("pool", {}).get("mode", "libvirt")
+        self.backend = None
+
+        if pool_mode == "libvirt":
+            if LibvirtPool is not None:
+                try:
+                    self.backend = LibvirtPool(config)
+                except Exception as e:
+                    logger.error(f"Failed to load LibvirtPool: {e}. Falling back to SimplePool.")
+                    self.backend = SimplePool(config)
+            else:
+                logger.warning("libvirt_pool module not loaded. Falling back to SimplePool.")
+                self.backend = SimplePool(config)
+        else:
+            self.backend = SimplePool(config)
+
+    async def start(self):
+        await self.backend.start()
+
+    async def stop(self):
+        await self.backend.stop()
+
+    async def reserve_target(self, session_id: str, protocol: str):
+        """
+        Reserve a VM target. Returns a Lease object (or tuple for SimplePool if imported without dataclass).
+        """
+        return await self.backend.reserve_target(session_id, protocol)
+
+    async def release_target(self, lease):
+        """
+        Release a leased VM target.
+        """
+        await self.backend.release_target(lease)
+
+    def get_target(self):
+        """
+        Legacy GET. Not recommended if using libvirt.
+        """
+        if isinstance(self.backend, SimplePool):
+            if not self.backend.targets:
+                return None
+            return random.choice(self.backend.targets)
+        return None
+
     def report_failure(self, host, port):
         """
         Report a failed backend. Could disable it temporarily.

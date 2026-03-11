@@ -150,9 +150,10 @@ async def test_server_rekey_limit_parsing(tmp_path):
         patch("cyanide.services.session_manager.SessionManager"),
         patch("cyanide.services.quarantine.QuarantineService"),
         patch("cyanide.services.analytics.AnalyticsService"),
-        patch("cyanide.core.server.VMPool"),
+        patch("cyanide.core.server.VMPool") as mock_vm_pool_cls,
     ):
 
+        mock_vm_pool_cls.return_value.start = AsyncMock()
         server = CyanideServer(conf)
         server.async_logger = AsyncMock()
         server._get_host_keys = MagicMock(return_value=[])

@@ -198,3 +198,23 @@
       - CYANIDE_HONEYPOT_FS_YAML=/app/configs/custom_manifest.yaml
       - CYANIDE_HONEYPOT_DNS_CACHE_TTL=60
       - CYANIDE_HONEYPOT_ALLOW_LOCAL_NETWORK=false
+
+      # =======================================================================
+      # L. VM POOL (LIBVIRT) ORCHESTRATION
+      # =======================================================================
+      - CYANIDE_POOL_ENABLED=false
+      - CYANIDE_POOL_MODE=libvirt
+      - CYANIDE_POOL_MAX_VMS=5
+      - CYANIDE_POOL_RECYCLE_PERIOD=1500
+      - CYANIDE_POOL_VM_UNUSED_TIMEOUT=600
+      - CYANIDE_POOL_SHARE_GUESTS=true
+      - CYANIDE_POOL_LIBVIRT_URI=qemu:///system
+      - CYANIDE_POOL_GUEST_CONFIG=configs/pool/default_guest.xml
+      - CYANIDE_POOL_GUEST_TAG=ubuntu18.04
+      - CYANIDE_POOL_GUEST_SSH_PORT=22
+      - CYANIDE_POOL_GUEST_TELNET_PORT=23
+      - CYANIDE_POOL_USE_NAT=true
+      - CYANIDE_POOL_NAT_PUBLIC_IP=192.168.1.40
+      - CYANIDE_POOL_SAVE_SNAPSHOTS=false
+      - CYANIDE_POOL_SNAPSHOT_PATH=var/lib/cyanide/snapshots
+      - CYANIDE_POOL_TARGETS=""

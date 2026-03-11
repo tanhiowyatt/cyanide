@@ -11,6 +11,7 @@ class SSHConfig(BaseModel):
     backend_mode: str = Field(default="emulated", pattern="^(emulated|proxy|pool)$")
     target_host: Optional[str] = "127.0.0.1"
     target_port: Optional[int] = 22222
+    pool_protocol: str = "ssh"
 
     # Algorithm negotiation
     ciphers: List[str] = Field(
@@ -85,6 +86,7 @@ class TelnetConfig(BaseModel):
     backend_mode: str = Field(default="emulated", pattern="^(emulated|proxy|pool)$")
     target_host: Optional[str] = "127.0.0.1"
     target_port: Optional[int] = 23
+    pool_protocol: str = "telnet"
     banner: Optional[str] = None
 
 
@@ -121,6 +123,25 @@ class UserConfig(BaseModel):
     password: str = Field(alias="pass")
 
 
+class PoolConfig(BaseModel):
+    enabled: bool = False
+    mode: str = Field(default="libvirt", pattern="^(simple|libvirt)$")
+    max_vms: int = 5
+    recycle_period: int = 1500
+    vm_unused_timeout: int = 600
+    share_guests: bool = True
+    libvirt_uri: str = "qemu:///system"
+    guest_config: str = "configs/pool/default_guest.xml"
+    guest_tag: str = "ubuntu18.04"
+    guest_ssh_port: int = 22
+    guest_telnet_port: int = 23
+    use_nat: bool = True
+    nat_public_ip: str = "192.168.1.40"
+    save_snapshots: bool = False
+    snapshot_path: str = "var/lib/cyanide/snapshots"
+    targets: str = ""
+
+
 class CyanideConfig(BaseModel):
     # ML
     ml: Dict[str, Any] = Field(default_factory=dict)
@@ -151,6 +172,7 @@ class CyanideConfig(BaseModel):
     ssh: SSHConfig = Field(default_factory=lambda: SSHConfig())
     telnet: TelnetConfig = Field(default_factory=lambda: TelnetConfig())
     metrics: MetricsConfig = Field(default_factory=lambda: MetricsConfig())
+    pool: PoolConfig = Field(default_factory=lambda: PoolConfig())
     smtp: SMTPConfig = Field(default_factory=lambda: SMTPConfig())
     otel: TelemetryConfig = Field(default_factory=lambda: TelemetryConfig())
     virustotal: VirusTotalConfig = Field(default_factory=lambda: VirusTotalConfig())

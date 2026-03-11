@@ -12,6 +12,24 @@ server:
   max_sessions_per_ip: 5
   session_timeout: 300
 
+pool:
+  enabled: false
+  mode: libvirt
+  max_vms: 5
+  recycle_period: 1500
+  vm_unused_timeout: 600
+  share_guests: true
+  libvirt_uri: qemu:///system
+  guest_config: configs/pool/default_guest.xml
+  guest_tag: ubuntu18.04
+  guest_ssh_port: 22
+  guest_telnet_port: 23
+  use_nat: true
+  nat_public_ip: 192.168.1.40
+  save_snapshots: false
+  snapshot_path: var/lib/cyanide/snapshots
+  targets: ""
+
 users:
   - user: root
     pass: admin

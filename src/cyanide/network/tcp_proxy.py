@@ -19,14 +19,14 @@ class TCPProxy:
         target_host=None,
         target_port=None,
         protocol_name="tcp",
-        target_selector=None,
+        pool=None,
     ):
         self.listen_host = listen_host
         self.listen_port = listen_port
         self.target_host = target_host
         self.target_port = target_port
         self.protocol_name = protocol_name
-        self.target_selector = target_selector  # Callable returning (host, port)
+        self.pool = pool
         self.server = None
 
     # Function 178: Performs operations related to start.
@@ -58,19 +58,28 @@ class TCPProxy:
             )
         )
 
+        import uuid
+        session_id = str(uuid.uuid4())
+        lease = None
+
         try:
             # Determine target
-            if self.target_selector:
-                res = self.target_selector()
-                if res:
-                    tgt_host, tgt_port = res
+            if self.pool:
+                lease = await self.pool.reserve_target(session_id, self.protocol_name)
+                if lease:
+                    if hasattr(lease, "host"):
+                        tgt_host, tgt_port = lease.host, lease.port
+                    else:
+                        tgt_host, tgt_port = lease[0], lease[1]
                 else:
                     logger.error(
                         f"{self.protocol_name.upper()} Proxy: No target available from pool."
                     )
                     client_writer.close()
                     return
-            # Determine target
+            else:
+                tgt_host, tgt_port = self.target_host, self.target_port
+                
             logger.debug(f"Proxying {src_ip} -> {tgt_host}:{tgt_port}")
             target_reader, target_writer = await asyncio.open_connection(tgt_host, tgt_port)
         except Exception as e:
@@ -78,28 +87,32 @@ class TCPProxy:
             client_writer.close()
             return
 
-        # Create tasks for bidirectional forwarding
-        client_to_target = asyncio.create_task(
-            self.forward(client_reader, target_writer, "client_to_target")
-        )
-        target_to_client = asyncio.create_task(
-            self.forward(target_reader, client_writer, "target_to_client")
-        )
+        try:
+            # Create tasks for bidirectional forwarding
+            client_to_target = asyncio.create_task(
+                self.forward(client_reader, target_writer, "client_to_target")
+            )
+            target_to_client = asyncio.create_task(
+                self.forward(target_reader, client_writer, "target_to_client")
+            )
 
-        # Wait for either to finish
-        done, pending = await asyncio.wait(
-            [client_to_target, target_to_client], return_when=asyncio.FIRST_COMPLETED
-        )
+            # Wait for either to finish
+            done, pending = await asyncio.wait(
+                [client_to_target, target_to_client], return_when=asyncio.FIRST_COMPLETED
+            )
 
-        # Cancel pending
-        for task in pending:
-            task.cancel()
-
-        # Close connections
-        target_writer.close()
-        client_writer.close()
-        await target_writer.wait_closed()
-        await client_writer.wait_closed()
+            # Cancel pending
+            for task in pending:
+                task.cancel()
+        finally:
+            # Close connections
+            target_writer.close()
+            client_writer.close()
+            await target_writer.wait_closed()
+            await client_writer.wait_closed()
+            
+            if self.pool and lease:
+                await self.pool.release_target(lease)
 
     # Function 180: Performs operations related to forward.
     async def forward(self, reader, writer, direction):

@@ -578,6 +578,7 @@ class CyanideServer:
 
         # Initialize VM Pool if needed
         self.vm_pool = VMPool(self.config)
+        self.background_tasks.append(asyncio.create_task(self.vm_pool.start()))
 
         # Start SSH Server
         ssh_conf = self.config.get("ssh", {})
@@ -645,17 +646,13 @@ class CyanideServer:
                 # The user asked for "pure telnet and ssh proxy with monitoring"
                 # Our TCPProxy monitors data.
                 # If pool, use selector.
-                selector = self.vm_pool.get_target if backend_mode == "pool" else None
-                t_host = ssh_conf.get("target_host", "127.0.0.1")
-                t_port = int(ssh_conf.get("target_port", 22222))
-
                 ssh_proxy = TCPProxy(
                     "0.0.0.0",
                     ssh_port,
                     target_host=t_host,
                     target_port=t_port,
                     protocol_name="ssh_proxy",
-                    target_selector=selector,
+                    pool=self.vm_pool if backend_mode == "pool" else None,
                 )
                 await ssh_proxy.start()
 
@@ -677,7 +674,6 @@ class CyanideServer:
                     "system", "service_started", {"service": "telnet_emulated", "port": telnet_port}
                 )
             elif backend_mode == "pool" or backend_mode == "proxy":
-                selector = self.vm_pool.get_target if backend_mode == "pool" else None
                 t_host = telnet_conf.get("target_host", "127.0.0.1")
                 t_port = int(telnet_conf.get("target_port", 2323))
 
@@ -687,7 +683,7 @@ class CyanideServer:
                     target_host=t_host,
                     target_port=t_port,
                     protocol_name="telnet_proxy",
-                    target_selector=selector,
+                    pool=self.vm_pool if backend_mode == "pool" else None,
                 )
                 await telnet_proxy.start()
 

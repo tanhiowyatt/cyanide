@@ -94,8 +94,8 @@ def test_proxy_basic_coverage():
     from cyanide.network.ssh_proxy import CyanideSSHServer
 
     # Just init to hit lines
-    ssh_p = CyanideSSHServer("127.0.0.1", 22, MagicMock())
-    assert ssh_p.dst_host == "127.0.0.1"
+    ssh_p = CyanideSSHServer(None, "127.0.0.1", 22, MagicMock())
+    assert ssh_p.target_host == "127.0.0.1"
 
 
 def test_stats_manager_coverage():

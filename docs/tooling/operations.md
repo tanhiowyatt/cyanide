@@ -50,6 +50,13 @@ scriptreplay var/log/cyanide/tty/<session_id>/timing var/log/cyanide/tty/<sessio
 
 ## 🛡️ Forensics & Malware Handling
 
+### Libvirt VM Pool Operations
+When using Cyanide in `pool` mode with `libvirt`:
+1. Ensure `libvirt-python` is installed in your python environment or docker container.
+2. The Honeypot must have privileges to reach the `qemu:///system` URI (e.g., matching groups or socket permissions).
+3. Base XML configurations for guests (`configs/pool/default_guest.xml`) are used to provision new VMs dynamically.
+4. If a guest hangs or receives heavy traffic, Cyanide automatically recycles it based on your configured `recycle_period` and unused timeout policies.
+
 ### Quarantine Service
 Any file downloaded by an attacker (via `wget` or `curl`) is automatically:
 1.  **Intercepted**: The actual file is moved to `var/quarantine/`.

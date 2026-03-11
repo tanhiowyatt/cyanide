@@ -66,16 +66,18 @@ class CyanideSSHServer(asyncssh.SSHServer):
     """
 
     # Function 149: Initializes the class instance and its attributes.
-    def __init__(self, dst_host, dst_port, fs):
+    def __init__(self, pool, target_host, target_port, fs):
         """Initialize SSH Proxy Server.
 
         Args:
-            dst_host: Backend host to forward to.
-            dst_port: Backend port to forward to.
+            pool: VMPool instance (optional).
+            target_host: Backend host to forward to (used if pool is None).
+            target_port: Backend port to forward to.
             fs: FakeFilesystem instance.
         """
-        self.dst_host = dst_host
-        self.dst_port = dst_port
+        self.pool = pool
+        self.target_host = target_host
+        self.target_port = target_port
         self.fs = fs
 
     # Function 150: Performs operations related to connection made.
@@ -126,7 +128,7 @@ class CyanideSSHServer(asyncssh.SSHServer):
 
         # We return the Session object directly
         return ProxyServerSession(
-            self.dst_host, self.dst_port, self.session_id, self.src_ip, self.fs
+            self.pool, self.target_host, self.target_port, self.session_id, self.src_ip, self.fs
         )
 
 
@@ -138,24 +140,27 @@ class ProxyServerSession(asyncssh.SSHServerSession):
     """
 
     # Function 156: Initializes the class instance and its attributes.
-    def __init__(self, dst_host, dst_port, session_id, src_ip, fs):
+    def __init__(self, pool, target_host, target_port, session_id, src_ip, fs):
         """Initialize proxy server session.
 
         Args:
-            dst_host: Backend host.
-            dst_port: Backend port.
+            pool: VMPool instance.
+            target_host: Backend host.
+            target_port: Backend port.
             session_id: Unique session ID.
             src_ip: Attacker's source IP.
             fs: FakeFilesystem instance.
         """
-        self.dst_host = dst_host
-        self.dst_port = dst_port
+        self.pool = pool
+        self.target_host = target_host
+        self.target_port = target_port
         self.session_id = session_id
         self.src_ip = src_ip
         self.fs = fs
         self.backend_conn = None
         self.backend_channel = None
         self.buffer = []
+        self.lease = None
         self.send_task = None
         self._chan = None
         self.request_event = asyncio.Event()
@@ -170,9 +175,24 @@ class ProxyServerSession(asyncssh.SSHServerSession):
     # Function 158: Performs operations related to connect backend.
     async def _connect_backend(self):
         """Establish connection to backend server and bridge channels."""
+        if self.pool:
+            self.lease = await self.pool.reserve_target(self.session_id, "ssh")
+            if self.lease:
+                if hasattr(self.lease, "host"):
+                    tgt_host, tgt_port = self.lease.host, self.lease.port
+                else:
+                    tgt_host, tgt_port = self.lease[0], self.lease[1]
+            else:
+                logger.error("No target available from pool")
+                if self._chan:
+                    self._chan.close()
+                return
+        else:
+            tgt_host, tgt_port = self.target_host, self.target_port
+
         try:
             self.backend_conn = await asyncssh.connect(
-                self.dst_host, self.dst_port, username="root", password="password", known_hosts=None
+                tgt_host, tgt_port, username="root", password="password", known_hosts=None
             )
 
             if not self._chan:
@@ -267,6 +287,9 @@ class ProxyServerSession(asyncssh.SSHServerSession):
             self.send_task.cancel()
         if self.backend_conn:
             self.backend_conn.close()
+            
+        if self.pool and self.lease:
+            asyncio.create_task(self.pool.release_target(self.lease))
 
     # Function 168: Performs operations related to send loop.
     async def _send_loop(self):
@@ -382,7 +405,7 @@ async def main():
 
     # Function 176: Performs operations related to factory.
     def factory():
-        return CyanideSSHServer(dst_host, dst_port, fs)
+        return CyanideSSHServer(pool=None, target_host=dst_host, target_port=dst_port, fs=fs)
 
     await asyncssh.create_server(factory, "0.0.0.0", listen_port, server_host_keys=[key])
 

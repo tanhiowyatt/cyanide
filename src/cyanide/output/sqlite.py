@@ -16,6 +16,13 @@ class Plugin(OutputPlugin):
         super().__init__(config)
         self.db_path = config.get("path", "var/log/cyanide/events.sqlite")
         self.table = config.get("table", "events")
+
+        # Security: Validate table name to prevent SQL Injection in f-string queries
+        import re
+
+        if not re.match(r"^[a-zA-Z0-9_]+$", self.table):
+            raise ValueError(f"Invalid table name (must be alphanumeric/underscore): {self.table}")
+
         self.conn: Optional[sqlite3.Connection] = None
         self._init_db()
 

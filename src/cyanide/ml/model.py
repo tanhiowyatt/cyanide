@@ -103,10 +103,9 @@ class CommandAutoencoder(nn.Module):
         torch.save(
             {
                 "model_state": self.state_dict(),
-                "threshold": self.threshold,
-                "input_dim": self.input_dim,
-                "latent_dim": self.latent_dim,
-                "tokenizer": self.tokenizer,
+                "threshold": float(self.threshold),
+                "input_dim": int(self.input_dim),
+                "latent_dim": int(self.latent_dim),
             },
             path,
         )
@@ -116,7 +115,26 @@ class CommandAutoencoder(nn.Module):
     @staticmethod
     def load(path):
         try:
-            checkpoint = torch.load(path, map_location=torch.device("cpu"), weights_only=False)
+            # Security: Allow numpy scalars if present in old checkpoints
+            try:
+                import numpy as np
+
+                if hasattr(torch.serialization, "add_safe_globals"):
+                    # Use modern numpy path if available to avoid DeprecationWarning
+                    # numpy.core is moved to numpy._core in 2.x
+                    scalar_type = None
+                    if hasattr(np, "_core") and hasattr(np._core, "multiarray"):
+                        scalar_type = np._core.multiarray.scalar
+                    elif hasattr(np, "core") and hasattr(np.core, "multiarray"):
+                        scalar_type = np.core.multiarray.scalar
+
+                    if scalar_type:
+                        torch.serialization.add_safe_globals([scalar_type])
+            except ImportError:
+                pass
+
+            # Secure load with weights_only=True
+            checkpoint = torch.load(path, map_location=torch.device("cpu"), weights_only=True)
 
             model = CommandAutoencoder(
                 input_dim=checkpoint.get("input_dim", 512),
@@ -124,8 +142,9 @@ class CommandAutoencoder(nn.Module):
             )
             model.load_state_dict(checkpoint["model_state"])
             model.threshold = checkpoint.get("threshold", 0.05)
-            if "tokenizer" in checkpoint:
-                model.tokenizer = checkpoint["tokenizer"]
+
+            # Tokenizer is recreated in __init__ using input_dim (max_length)
+            # which is the current design of CharacterLevelTokenizer.
 
             model.to(model.device)
             model.eval()

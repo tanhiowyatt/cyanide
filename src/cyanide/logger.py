@@ -40,8 +40,31 @@ class CyanideLogger:
         plugins = []
         import importlib
 
+        # Whitelist of allowed output plugins based on existing files in cyanide.output
+        VALID_PLUGINS = {
+            "dshield",
+            "elasticsearch",
+            "graylog",
+            "hpfeeds",
+            "mongodb",
+            "mysql",
+            "postgresql",
+            "rethinkdb",
+            "slack",
+            "splunk_hec",
+            "sqlite",
+            "syslog",
+            # Testing/Mocking
+            "mock_plugin",
+            "failer",
+        }
+
         for plugin_name, plugin_cfg in self.output_config.items():
             if not isinstance(plugin_cfg, dict) or not plugin_cfg.get("enabled", False):
+                continue
+
+            if plugin_name not in VALID_PLUGINS:
+                logging.warning(f"Prevented loading of untrusted output plugin: {plugin_name}")
                 continue
 
             try:

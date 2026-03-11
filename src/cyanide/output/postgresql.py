@@ -21,6 +21,13 @@ class Plugin(OutputPlugin):
         self.password = config.get("password", "")
         self.database = config.get("database", "cyanide")
         self.table = config.get("table", "events")
+
+        # Security: Validate table name to prevent SQL Injection in f-string queries
+        import re
+
+        if not re.match(r"^[a-zA-Z0-9_]+$", self.table):
+            raise ValueError(f"Invalid table name (must be alphanumeric/underscore): {self.table}")
+
         self.conn: Optional[psycopg.Connection] = None
         self._connect()
 

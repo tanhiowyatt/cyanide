@@ -96,8 +96,8 @@ telnet:
   backend_mode: emulated
 
 smtp:
-  enabled: false
-  port: 25
+  enabled: true
+  port: 2525
   target_host: 127.0.0.1
   target_port: 25255
 

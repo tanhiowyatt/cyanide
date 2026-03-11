@@ -116,7 +116,8 @@ class MetricsConfig(BaseModel):
 
 class SMTPConfig(BaseModel):
     enabled: bool = False
-    port: int = 25
+    port: int = 2525
+    backend_mode: str = Field(default="emulated", pattern="^(emulated|proxy)$")
     target_host: str = "127.0.0.1"
     target_port: int = 25255
 

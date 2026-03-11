@@ -20,6 +20,7 @@ from cyanide.network.tcp_proxy import TCPProxy
 from cyanide.services.analytics import AnalyticsService
 from cyanide.services.quarantine import QuarantineService
 from cyanide.services.session_manager import SessionManager
+from cyanide.services.smtp_handler import SMTPHandler
 from cyanide.services.telnet_handler import TelnetHandler
 from cyanide.vfs.engine import FakeFilesystem
 from cyanide.vfs.rsync import RsyncHandler
@@ -166,6 +167,7 @@ class CyanideServer:
 
         self.ssh_server: Any = None
         self.telnet_server: Any = None
+        self.smtp_server: Any = None
         self.metrics_server: Any = None
         self.background_tasks: List[asyncio.Task] = []
 
@@ -813,30 +815,47 @@ class CyanideServer:
                     },
                 )
 
-        # Start SMTP Proxy (Forwarding)
+        # Start SMTP Server
         smtp_conf = self.config.get("smtp", {})
         if smtp_conf.get("enabled", False):
+            smtp_port = int(smtp_conf.get("port", 25))
+            backend_mode = smtp_conf.get("backend_mode", "emulated")
+
             try:
-                smtp_proxy = TCPProxy(
-                    "0.0.0.0",
-                    int(smtp_conf.get("port", 25)),
-                    smtp_conf.get("target_host", "127.0.0.1"),
-                    int(smtp_conf.get("target_port", 25255)),
-                    protocol_name="smtp",
-                )
-                await smtp_proxy.start()
-                self.logger.log_event(
-                    "system",
-                    "service_started",
-                    {
-                        "service": "smtp_proxy",
-                        "listen_port": int(smtp_conf.get("port", 25)),
-                        "target": f"{smtp_conf.get('target_host', '127.0.0.1')}:{smtp_conf.get('target_port', 25255)}",
-                    },
-                )
+                if backend_mode == "emulated":
+                    smtp_handler = SMTPHandler(self, smtp_conf)
+                    self.smtp_server = await asyncio.start_server(
+                        smtp_handler.handle_connection,
+                        "0.0.0.0",
+                        smtp_port,
+                        reuse_address=True,
+                    )
+                    self.logger.log_event(
+                        "system",
+                        "service_started",
+                        {"service": "smtp_emulated", "port": smtp_port},
+                    )
+                else:
+                    smtp_proxy = TCPProxy(
+                        "0.0.0.0",
+                        smtp_port,
+                        smtp_conf.get("target_host", "127.0.0.1"),
+                        int(smtp_conf.get("target_port", 25255)),
+                        protocol_name="smtp",
+                    )
+                    await smtp_proxy.start()
+                    self.logger.log_event(
+                        "system",
+                        "service_started",
+                        {
+                            "service": "smtp_proxy",
+                            "port": smtp_port,
+                            "target": f"{smtp_conf.get('target_host', '127.0.0.1')}:{smtp_conf.get('target_port', 25255)}",
+                        },
+                    )
             except Exception as e:
                 self.logger.log_event(
-                    "system", "smtp_proxy_error", {"message": f"Failed to start SMTP Proxy: {e}"}
+                    "system", "smtp_error", {"message": f"Failed to start SMTP Service: {e}"}
                 )
 
         # Start Metrics Server
@@ -870,6 +889,9 @@ class CyanideServer:
         if self.telnet_server:
             self.telnet_server.close()
             await self.telnet_server.wait_closed()
+        if self.smtp_server:
+            self.smtp_server.close()
+            await self.smtp_server.wait_closed()
         if self.metrics_server:
             self.metrics_server.close()
             await self.metrics_server.wait_closed()

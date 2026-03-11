@@ -93,7 +93,7 @@ def smoke_test():
     ssh_port = int(os.getenv("CYANIDE_SSH_PORT", 2222))
     telnet_port = int(os.getenv("CYANIDE_TELNET_PORT", 2223))
     metrics_port = int(os.getenv("CYANIDE_METRICS_PORT", 9090))
-    smtp_port = int(os.getenv("CYANIDE_SMTP_PORT", 25))
+    smtp_port = int(os.getenv("CYANIDE_SMTP_PORT", 2525))
 
     ports = {
         "SSH": ssh_port,

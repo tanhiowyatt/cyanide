@@ -8,6 +8,7 @@ services:
     ports:
       - "2222:2222"
       - "2223:2223"
+      - "2525:2525"
       - "9090:9090"
     volumes:
       - ../../var/log:/app/var/log
@@ -54,7 +55,7 @@ services:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
       - CYANIDE_VIRUSTOTAL_ENABLED=false
       - CYANIDE_SMTP_ENABLED=true
-      - CYANIDE_SMTP_LISTEN_PORT=2525
+      - CYANIDE_SMTP_PORT=2525
       - CYANIDE_SMTP_TARGET_HOST=mailhog
       - CYANIDE_SMTP_TARGET_PORT=1025
       - 'CYANIDE_USERS=[{"user": "root", "pass": "admin"}, {"user": "admin", "pass": "admin"}]'

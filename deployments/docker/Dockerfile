@@ -49,13 +49,13 @@ COPY deployments/docker/healthcheck.py /app/docker/healthcheck.py
 
 # Create necessary directories and set ownership
 RUN mkdir -p var/log/cyanide/tty var/quarantine var/run \
-    && chown -R cyanide:cyanide /app/var
+    && chown -R cyanide:cyanide /app/var /app/configs/profiles
 
 # Switch to non-root user
 USER cyanide
 
 # Expose ports
-EXPOSE 2222 2223 9090 25
+EXPOSE 2222 2223 9090 2525
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

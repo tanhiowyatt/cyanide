@@ -605,14 +605,14 @@ class CyanideServer:
                     try:
                         command = process.command
                         conn = process.channel.get_connection()
-                        factory = getattr(conn, 'cyanide_factory', None)
-                        
+                        factory = getattr(conn, "cyanide_factory", None)
+
                         if not factory:
                             process.exit(1)
                             return
 
                         honeypot_ref = factory.honeypot
-                        
+
                         # 1. Get/Create session
                         sess = factory.sessions.get(factory.conn_id)
                         if not sess:
@@ -634,20 +634,25 @@ class CyanideServer:
                             # Start session (sends Banner + Prompt)
                             sess.session_started()
                             await process.stdout.drain()
-                            
+
                             # 2. Expert stdin loop
                             # AsyncSSH uses process.stdin for the loop when process_factory is active
                             async for data in process.stdin:
                                 try:
                                     sess.data_received(data, None)
                                     await process.stdout.drain()
-                                except (asyncssh.TerminalSizeChanged, asyncssh.BreakReceived, 
-                                        asyncssh.SignalReceived):
+                                except (
+                                    asyncssh.TerminalSizeChanged,
+                                    asyncssh.BreakReceived,
+                                    asyncssh.SignalReceived,
+                                ):
                                     continue
                                 except Exception as e:
-                                    print(f"DEBUG: CyanideProcess stdin loop error: {e}", flush=True)
+                                    print(
+                                        f"DEBUG: CyanideProcess stdin loop error: {e}", flush=True
+                                    )
                                     break
-                            
+
                             sess.session_ended()
                         else:
                             # Log command
@@ -675,7 +680,7 @@ class CyanideServer:
                     "reuse_address": True,
                     "server_version": chosen_version,
                     "process_factory": cyanide_process_factory,
-                    "encoding": "utf-8", 
+                    "encoding": "utf-8",
                     # Cyanide-grade security limits
                     "login_timeout": ssh_conf.get("login_timeout", 60),
                     "rekey_bytes": parse_rekey(ssh_conf.get("rekey_limit", "1G")),
@@ -967,7 +972,9 @@ class SSHServerFactory(asyncssh.SSHServer):
         self.src_port = conn.get_extra_info("peername")[1]
 
         # Initialize session filesystem
-        self.fs = self.honeypot.get_filesystem(session_id="conn_" + self.conn_id, src_ip=self.src_ip)
+        self.fs = self.honeypot.get_filesystem(
+            session_id="conn_" + self.conn_id, src_ip=self.src_ip
+        )
 
         self.client_version = conn.get_extra_info("client_version", "unknown")
 
@@ -1237,7 +1244,7 @@ class SSHSession(asyncssh.SSHServerSession):
         super().connection_made(channel)
         self.channel = channel
         conn = channel.get_connection()
-        factory = getattr(conn, 'cyanide_factory', None)
+        factory = getattr(conn, "cyanide_factory", None)
         self.username = factory.username if factory else (conn.get_extra_info("username") or "root")
         self.client_version = conn.get_extra_info("client_version") or "unknown"
 
@@ -1370,6 +1377,7 @@ class SSHSession(asyncssh.SSHServerSession):
     # Function 69: Performs operations related to shell requested.
     def shell_requested(self):
         print(f"DEBUG: shell_requested called for {self.src_ip}", flush=True)
+
         # Function 70: Performs operations related to q hook.
         def q_hook(f, c):
             self.honeypot.save_quarantine_file(f, c, self.session_id, self.src_ip)
@@ -1417,20 +1425,20 @@ class SSHSession(asyncssh.SSHServerSession):
         """Helper to write to channel/process and log."""
         if not data:
             return
-        
+
         # If we have an asyncssh process (with encoding), use its stdout
-        if hasattr(self, 'process') and self.process and hasattr(self.process, 'stdout'):
+        if hasattr(self, "process") and self.process and hasattr(self.process, "stdout"):
             if isinstance(data, bytes):
-                data = data.decode('utf-8', 'ignore')
+                data = data.decode("utf-8", "ignore")
             self.process.stdout.write(data)
         else:
             # Fallback to raw channel (bytes)
             if isinstance(data, str):
-                encoded = data.encode('utf-8')
+                encoded = data.encode("utf-8")
             else:
                 encoded = data
             self.channel.write(encoded)
-            
+
         self._log_tty("OUT", data)
 
     # Function 73: Handles event logging and telemetry.
@@ -1721,14 +1729,14 @@ class SSHSession(asyncssh.SSHServerSession):
             # Use process if available, otherwise fallback to channel
             if self.process:
                 if isinstance(stdout, bytes):
-                    stdout_str = stdout.decode('utf-8', 'ignore')
+                    stdout_str = stdout.decode("utf-8", "ignore")
                 else:
                     stdout_str = stdout
                 self.process.stdout.write(stdout_str)
-                
+
                 if stderr:
                     if isinstance(stderr, bytes):
-                        stderr_str = stderr.decode('utf-8', 'ignore')
+                        stderr_str = stderr.decode("utf-8", "ignore")
                     else:
                         stderr_str = stderr
                     self.process.stderr.write(stderr_str)
@@ -1740,7 +1748,7 @@ class SSHSession(asyncssh.SSHServerSession):
 
             self.honeypot.stats.on_traffic("out", len(stdout))
             self._log_tty("OUT", stdout)
-            
+
             if stderr:
                 self.honeypot.stats.on_traffic("out", len(stderr))
                 self._log_tty("OUT", stderr)

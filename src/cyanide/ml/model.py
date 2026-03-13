@@ -126,12 +126,16 @@ class CommandAutoencoder(nn.Module):
                 error_msg = str(e)
                 if "numpy.core.multiarray.scalar" in error_msg:
                     # Known safe legacy global, load without warning
-                    checkpoint = torch.load(path, map_location=torch.device("cpu"), weights_only=False)
+                    checkpoint = torch.load(
+                        path, map_location=torch.device("cpu"), weights_only=False
+                    )
                 else:
                     logger.warning(
                         f"[*] Secure load failed for {path} ({e}), retrying with weights_only=False"
                     )
-                    checkpoint = torch.load(path, map_location=torch.device("cpu"), weights_only=False)
+                    checkpoint = torch.load(
+                        path, map_location=torch.device("cpu"), weights_only=False
+                    )
 
             model = CommandAutoencoder(
                 input_dim=checkpoint.get("input_dim", 512),

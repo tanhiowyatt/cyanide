@@ -4,7 +4,7 @@ Welcome to the official documentation for **Cyanide**, a high-interaction SSH & 
 
 This documentation suite provides detailed insights into the system's architecture, configuration, and extensibility.
 
-## 📚 Documentation Sections
+## Documentation Sections
 
 | Section | Description |
 |:---|:---|
@@ -22,7 +22,7 @@ This documentation suite provides detailed insights into the system's architectu
 | 🧪 **[Testing](tests/index.md)** | **Full Guide:** Automated suites, integration tests, and [Manual "Gauntlet"](tests/manual.md). |
 | 🆘 **[Troubleshooting](core/troubleshooting.md)** | **New:** Solutions for common errors (Libvirt, ML, Logging). |
 
-## 🌍 Translations
+## Translations
 
 We maintain a localized version of the main project overview in several languages:
 

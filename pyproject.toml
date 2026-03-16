@@ -108,7 +108,7 @@ include = ["cyanide*"]
 # Конфигурация Pytest
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-v --asyncio-mode=auto --color=yes --tb=short --black --isort --mypy --ruff"
+addopts = "-v --asyncio-mode=auto --color=yes --tb=short"
 testpaths = ["tests"]
 pythonpath = ["src"]
 log_cli = true

@@ -8,31 +8,39 @@ CLR_VAL = "\033[0m"
 RESET = "\033[0m"
 
 
+def _get_logo_raw():
+    logo_path = Path.cwd() / "assets/branding/logo.txt"
+    if logo_path.exists():
+        try:
+            return logo_path.read_text().splitlines()
+        except Exception:
+            pass
+    return []
+
+
+def _get_service_status(config, service, default_port):
+    svc_config = config.get(service, {})
+    port = svc_config.get("port", default_port)
+    enabled = "enabled" if svc_config.get("enabled") else "disabled"
+    return f"{port} ({enabled})"
+
+
+# Function 8: Performs operations related to fmt key.
+def fmt_key(k):
+    return f"{CLR_KEY}{k}{RESET}"
+
+
 # Function 7: Performs operations related to print startup banner.
 def print_startup_banner(config, resolved_profile: str = ""):
     """Print logo and startup information in a dynamic colored fastfetch-style layout."""
-    root_dir = Path.cwd()
-    logo_path = root_dir / "assets/branding/logo.txt"
+    logo_raw = _get_logo_raw()
 
-    logo_lines = []
-    logo_raw = []
-    if logo_path.exists():
-        try:
-            logo_raw = logo_path.read_text().splitlines()
-            logo_lines = [f"{CLR_LOGO}{line}{RESET}" for line in logo_raw]
-        except Exception:
-            pass
-
-    if not logo_lines or not config:
+    if not logo_raw or not config:
         return
 
     hostname = config.get("hostname", "cyanide")
     user_host = f"{CLR_USER}root@{hostname}{RESET}"
     separator = f"{CLR_SEP}{'-' * (len('root@') + len(hostname))}{RESET}"
-
-    # Function 8: Performs operations related to fmt key.
-    def fmt_key(k):
-        return f"{CLR_KEY}{k}{RESET}"
 
     info_fields = [
         user_host,
@@ -41,9 +49,9 @@ def print_startup_banner(config, resolved_profile: str = ""):
         f"{fmt_key('Hostname:')} {config.get('hostname', 'server01')}",
         f"{fmt_key('Listen IP:')} {config.get('listen_ip', '0.0.0.0')}",
         f"{fmt_key('SSH:')} {config.get('ssh', {}).get('port', 2222)}",
-        f"{fmt_key('Telnet:')} {config.get('telnet', {}).get('port', 2323)} ({'enabled' if config.get('telnet', {}).get('enabled') else 'disabled'})",
-        f"{fmt_key('SMTP:')} {config.get('smtp', {}).get('port', 2525)} ({'enabled' if config.get('smtp', {}).get('enabled') else 'disabled'})",
-        f"{fmt_key('Metrics:')} {config.get('metrics', {}).get('port', 9090)} ({'enabled' if config.get('metrics', {}).get('enabled') else 'disabled'})",
+        f"{fmt_key('Telnet:')} {_get_service_status(config, 'telnet', 2323)}",
+        f"{fmt_key('SMTP:')} {_get_service_status(config, 'smtp', 2525)}",
+        f"{fmt_key('Metrics:')} {_get_service_status(config, 'metrics', 9090)}",
         f"{fmt_key('ML Filter:')} {'Enabled' if config.get('ml', {}).get('enabled') else 'Disabled'}",
         f"{fmt_key('Sessions:')} {config.get('max_sessions', 100)} max ({config.get('max_sessions_per_ip', 5)} per IP)",
         f"{fmt_key('Timeout:')} {config.get('session_timeout', 300)}s",
@@ -51,7 +59,7 @@ def print_startup_banner(config, resolved_profile: str = ""):
     ]
 
     print()
-    max_h = max(len(logo_lines), len(info_fields))
+    max_h = max(len(logo_raw), len(info_fields))
     logo_width = max(len(line) for line in logo_raw) + 4 if logo_raw else 0
 
     for i in range(max_h):

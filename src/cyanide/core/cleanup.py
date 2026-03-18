@@ -26,6 +26,35 @@ class CleanupManager:
         else:
             self.target_paths = raw_paths
 
+    def _process_file(
+        self, file_path: Path, cutoff_time: float, dry_run: bool, stats: dict
+    ) -> None:
+        try:
+            mtime = file_path.stat().st_mtime
+            if mtime < cutoff_time:
+                size = file_path.stat().st_size
+                if not dry_run:
+                    file_path.unlink()
+                stats["deleted"] += 1
+                stats["bytes_freed"] += size
+        except Exception as e:
+            if self.logger:
+                self.logger.log_event(
+                    "system",
+                    "cleanup_error",
+                    {"path": str(file_path), "message": str(e)},
+                )
+            stats["errors"] += 1
+
+    def _cleanup_directory(
+        self, base_path: Path, cutoff_time: float, dry_run: bool, stats: dict
+    ) -> None:
+        if not base_path.exists():
+            return
+        for file_path in base_path.rglob("*"):
+            if file_path.is_file():
+                self._process_file(file_path, cutoff_time, dry_run, stats)
+
     # Function 15: Performs operations related to cleanup files.
     def cleanup_files(
         self, retention_days_override: Optional[int] = None, dry_run: bool = False
@@ -50,28 +79,6 @@ class CleanupManager:
         stats = {"deleted": 0, "bytes_freed": 0, "errors": 0}
 
         for path_str in self.target_paths:
-            base_path = Path(path_str)
-            if not base_path.exists():
-                continue
-
-            for file_path in base_path.rglob("*"):
-                if not file_path.is_file():
-                    continue
-                try:
-                    mtime = file_path.stat().st_mtime
-                    if mtime < cutoff_time:
-                        size = file_path.stat().st_size
-                        if not dry_run:
-                            file_path.unlink()
-                        stats["deleted"] += 1
-                        stats["bytes_freed"] += size
-                except Exception as e:
-                    if self.logger:
-                        self.logger.log_event(
-                            "system",
-                            "cleanup_error",
-                            {"path": str(file_path), "message": str(e)},
-                        )
-                    stats["errors"] += 1
+            self._cleanup_directory(Path(path_str), cutoff_time, dry_run, stats)
 
         return stats

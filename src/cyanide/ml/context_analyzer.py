@@ -91,39 +91,9 @@ class ContextAnalyzer:
         flags = []
 
         for url in urls:
-            if not url.startswith("http"):
-                url = "http://" + url
-
-            try:
-                parsed = urlparse(url)
-                domain = parsed.netloc.split(":")[0]
-
-                is_safe = False
-                for safe_dom in self.whitelist:
-                    if domain == safe_dom or domain.endswith("." + safe_dom):
-                        risk_score -= 0.3
-                        is_safe = True
-                        break
-
-                if not is_safe:
-                    if re.match(r"^\d+\.\d+\.\d+\.\d+$", domain):
-                        risk_score += 0.4
-                        flags.append(f"IP-based URL: {domain}")
-
-                    for tld in self.suspicious_tlds:
-                        if domain.endswith(tld):
-                            risk_score += 0.5
-                            flags.append(f"Suspicious TLD: {tld}")
-                            break
-
-                    for kw in self.url_keywords:
-                        if kw in url.lower():
-                            risk_score += 0.4
-                            flags.append(f"Suspicious keyword: {kw}")
-                            break
-
-            except Exception:
-                continue
+            u_score, u_flags = self._analyze_single_url(url)
+            risk_score += u_score
+            flags.extend(u_flags)
 
         risk_score = max(0.0, min(1.0, risk_score))
         return {
@@ -133,6 +103,53 @@ class ContextAnalyzer:
             "flags": list(set(flags)),
             "verdict": "suspicious" if risk_score >= 0.4 else "safe",
         }
+
+    def _analyze_single_url(self, url: str) -> tuple[float, list[str]]:
+        """Analyzes a single URL and returns its risk score and flags."""
+        if not url.startswith("http"):
+            url = "http://" + url
+
+        try:
+            parsed = urlparse(url)
+            domain = parsed.netloc.split(":")[0]
+
+            if self._is_safe_domain(domain):
+                return -0.3, []
+
+            return self._check_suspicious_url(url, domain)
+
+        except Exception:
+            return 0.0, []
+
+    def _is_safe_domain(self, domain: str) -> bool:
+        """Check if a domain is whitelisted."""
+        for safe_dom in self.whitelist:
+            if domain == safe_dom or domain.endswith("." + safe_dom):
+                return True
+        return False
+
+    def _check_suspicious_url(self, url: str, domain: str) -> tuple[float, list[str]]:
+        """Check for suspicious attributes in a non-whitelisted URL."""
+        score = 0.0
+        flags = []
+
+        if re.match(r"^\d+\.\d+\.\d+\.\d+$", domain):
+            score += 0.4
+            flags.append(f"IP-based URL: {domain}")
+
+        for tld in self.suspicious_tlds:
+            if domain.endswith(tld):
+                score += 0.5
+                flags.append(f"Suspicious TLD: {tld}")
+                break
+
+        for kw in self.url_keywords:
+            if kw in url.lower():
+                score += 0.4
+                flags.append(f"Suspicious keyword: {kw}")
+                break
+
+        return score, flags
 
     # Function 124: Performs operations related to analyze file paths.
     def analyze_file_paths(self, command: str) -> dict:

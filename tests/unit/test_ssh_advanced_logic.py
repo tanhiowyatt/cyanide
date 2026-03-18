@@ -156,6 +156,7 @@ async def test_server_rekey_limit_parsing(tmp_path):
         mock_vm_pool_cls.return_value.start = AsyncMock()
         server = CyanideServer(conf)
         server.async_logger = AsyncMock()
+        server.async_logger.start = MagicMock()
         server._get_host_keys = MagicMock(return_value=[])
         server.profile = {"ssh_banner": "SSH-2.0-OpenSSH_8.9"}
 

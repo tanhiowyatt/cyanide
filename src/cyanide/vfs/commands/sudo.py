@@ -1,3 +1,5 @@
+from typing import cast
+
 from .base import Command
 
 
@@ -7,58 +9,72 @@ class SudoCommand(Command):
     # Function 268: Executes the 'sudo' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute command as root or switch user."""
-        target_user = "root"
-        command_args = []
+        result = self._parse_sudo_args(args)
+        if "err" in result:
+            return "", result["err"], 1
+        if "output" in result:
+            return result["output"], "", 0
 
+        target_user = result["target_user"]
+        command_args = result["command_args"]
+        interactive = result["interactive"]
+
+        if not command_args:
+            if interactive:
+                return self._handle_interactive(target_user)
+            return "", self._usage(), 1
+
+        return await self._handle_command(target_user, command_args, interactive)
+
+    def _parse_sudo_args(self, args: list[str]) -> dict:
+        """Parse sudo arguments and return a result dictionary."""
+        res = {"target_user": "root", "command_args": [], "interactive": False}
         i = 0
-        interactive = False
-
         while i < len(args):
             arg = args[i]
             if arg == "-u":
                 if i + 1 < len(args):
-                    target_user = args[i + 1]
+                    res["target_user"] = args[i + 1]
                     i += 2
                 else:
-                    return "", "sudo: option requires an argument -- 'u'\n", 1
+                    return {"err": "sudo: option requires an argument -- 'u'\n"}
             elif arg == "-l":
-                return (
-                    f"Matching Defaults entries for {self.emulator.username} on server:\n"
-                    f"    env_reset, mail_badpass, secure_path=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n\n"
-                    f"User {self.emulator.username} may run the following commands on server:\n"
-                    f"    (ALL : ALL) ALL\n",
-                    "",
-                    0,
-                )
-            elif arg == "-i" or arg == "-s":
-                interactive = True
+                return {"output": self._list_privileges()}
+            elif arg in ("-i", "-s"):
+                res["interactive"] = True
                 i += 1
             elif arg.startswith("-"):
                 i += 1
             else:
-                command_args = args[i:]
+                res["command_args"] = args[i:]
                 break
+        return res
 
-        if not command_args and not interactive:
-            pass
+    def _list_privileges(self) -> str:
+        """Return the output for 'sudo -l'."""
+        return (
+            f"Matching Defaults entries for {self.emulator.username} on server:\n"
+            f"    env_reset, mail_badpass, secure_path=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n\n"
+            f"User {self.emulator.username} may run the following commands on server:\n"
+            f"    (ALL : ALL) ALL\n"
+        )
 
-        if not command_args:
-            if interactive:
-                self.emulator.username = target_user
-                if target_user == "root":
-                    self.emulator.cwd = "/root"
-                    if not self.fs.exists("/root"):
-                        self.emulator.cwd = "/"
-                else:
-                    self.emulator.cwd = f"/home/{target_user}"
+    def _handle_interactive(self, target_user: str) -> tuple[str, str, int]:
+        """Switch the current emulator user and update CWD."""
+        self.emulator.username = target_user
+        if target_user == "root":
+            self.emulator.cwd = "/root"
+            if not self.fs.exists("/root"):
+                self.emulator.cwd = "/"
+        else:
+            self.emulator.cwd = f"/home/{target_user}"
+        return "", "", 0
 
-                return "", "", 0
-            else:
-                return (
-                    "",
-                    "usage: sudo -h | -K | -k | -V\nusage: sudo -v [-AknS] [-g group] [-h host] [-p prompt] [-u user]\n",
-                    1,
-                )
+    async def _handle_command(
+        self, target_user: str, command_args: list[str], interactive: bool
+    ) -> tuple[str, str, int]:
+        """Execute a sub-command as the target user."""
+        import shlex
 
         from cyanide.core.emulator import ShellEmulator
 
@@ -66,9 +82,9 @@ class SudoCommand(Command):
         if not interactive:
             temp_shell.cwd = self.emulator.cwd
 
-        import shlex
-
         cmd_line = shlex.join(command_args)
+        return cast(tuple[str, str, int], await temp_shell.execute(cmd_line))
 
-        stdout, stderr, rc = await temp_shell.execute(cmd_line)
-        return stdout, stderr, rc
+    def _usage(self) -> str:
+        """Return the sudo usage message."""
+        return "usage: sudo -h | -K | -k | -V\nusage: sudo -v [-AknS] [-g group] [-h host] [-p prompt] [-u user]\n"

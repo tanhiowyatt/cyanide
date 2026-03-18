@@ -6,6 +6,26 @@ from .base import Command
 class GrepCommand(Command):
     # Function 236: Executes the 'grep' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
+        """Execute the grep command."""
+        parsed, recursive = self._parse_grep_args(args)
+        if not parsed.pattern:
+            return "", "Usage: grep [OPTION]... PATTERN [FILE]...\n", 2
+
+        try:
+            lines, error_msg = self._collect_lines(parsed.files, recursive, input_data)
+        except Exception as e:
+            return "", f"grep: {str(e)}\n", 2
+
+        if error_msg:
+            return "", error_msg, 2
+
+        output = self._filter_lines(lines, parsed.pattern, parsed.ignore_case, parsed.invert_match)
+
+        rc = 0 if output else 1
+        return output, "", rc
+
+    def _parse_grep_args(self, args):
+        """Parse grep arguments and return (parsed_args, recursive_flag)."""
         parser = argparse.ArgumentParser(prog="grep", add_help=False)
         parser.add_argument("-i", "--ignore-case", action="store_true")
         parser.add_argument("-v", "--invert-match", action="store_true")
@@ -15,36 +35,38 @@ class GrepCommand(Command):
         try:
             parsed, unknown = parser.parse_known_args(args)
         except SystemExit:
-            return "", "", 1
+            raise
 
-        pattern = parsed.pattern
-        if not pattern:
-            return "", "Usage: grep [OPTION]... PATTERN [FILE]...\n", 2
-
-        files = parsed.files
-        ignore_case = parsed.ignore_case
-        invert_match = parsed.invert_match
         recursive = "-r" in args or "-R" in args
+        return parsed, recursive
 
+    def _collect_lines(self, files, recursive, input_data):
+        """Collect lines from files or input data."""
         lines = []
         if not files:
-            lines = input_data.splitlines(keepends=True)
-        else:
-            for f in files:
-                path = self.emulator.resolve_path(f)
-                if recursive and self.fs.is_dir(path):
-                    all_files = self._get_recursive_files(path)
-                    for filepath in all_files:
-                        content = self.fs.get_content(filepath)
-                        lines.extend(
-                            [f"{filepath}:{line}" for line in content.splitlines(keepends=True)]
-                        )
-                elif self.fs.is_file(path):
-                    content = self.fs.get_content(path)
-                    lines.extend(content.splitlines(keepends=True))
-                elif self.fs.is_dir(path):
-                    return "", f"grep: {f}: Is a directory\n", 2
+            return input_data.splitlines(keepends=True), None
 
+        for f in files:
+            path = self.emulator.resolve_path(f)
+            if recursive and self.fs.is_dir(path):
+                all_files = self._get_recursive_files(path)
+                for filepath in all_files:
+                    content = self.fs.get_content(filepath)
+                    lines.extend(
+                        [f"{filepath}:{line}" for line in content.splitlines(keepends=True)]
+                    )
+            elif self.fs.is_file(path):
+                content = self.fs.get_content(path)
+                lines.extend(content.splitlines(keepends=True))
+            elif self.fs.is_dir(path):
+                return [], f"grep: {f}: Is a directory\n"
+            else:
+                return [], f"grep: {f}: No such file or directory\n"
+
+        return lines, None
+
+    def _filter_lines(self, lines, pattern, ignore_case, invert_match):
+        """Filter lines based on the pattern and flags."""
         output = ""
         search_pattern = pattern.lower() if ignore_case else pattern
 
@@ -58,9 +80,7 @@ class GrepCommand(Command):
             else:
                 if match:
                     output += line
-
-        rc = 0 if output else 1
-        return output, "", rc
+        return output
 
     # Function 237: Performs operations related to get recursive files.
     def _get_recursive_files(self, path):

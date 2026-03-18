@@ -44,33 +44,7 @@ class KnowledgeBase:
         kb_dir = Path(kb_dir)
         logger.info(f"[*] Loading KB data from {kb_dir}...")
 
-        for filename in ["atomic_red_team_mapping.jsonl", "manual_mappings.jsonl"]:
-            mappings_file = kb_dir / filename
-            if mappings_file.exists():
-                with open(mappings_file, "r") as f:
-                    for line in f:
-                        try:
-                            data = json.loads(line)
-                            command = data.get("input", "")
-                            output = data.get("output", "")
-
-                            if " - " in output:
-                                parts = output.split(" - ", 1)
-                                technique_id = parts[0].strip()
-                                technique_name = parts[1].strip()
-                            else:
-                                continue
-
-                            self.command_corpus.append(command)
-                            self.command_metadata.append(
-                                {
-                                    "technique_id": technique_id,
-                                    "technique_name": technique_name,
-                                    "metadata": data.get("metadata", {}),
-                                }
-                            )
-                        except (json.JSONDecodeError, IndexError):
-                            continue
+        self._load_mappings(kb_dir)
 
         self._load_jsonl_db(kb_dir / "mitre_techniques.jsonl", self.technique_db)
 
@@ -88,6 +62,44 @@ class KnowledgeBase:
         logger.info(
             f"[*] Loaded KB data: {len(self.command_corpus)} commands, {len(self.technique_db)} techniques."
         )
+
+    def _load_mappings(self, kb_dir: Path):
+        """Helper to load all mapping files."""
+        for filename in ["atomic_red_team_mapping.jsonl", "manual_mappings.jsonl"]:
+            mappings_file = kb_dir / filename
+            if mappings_file.exists():
+                self._load_mapping_file(mappings_file)
+
+    def _load_mapping_file(self, mappings_file: Path):
+        """Helper to load a single mapping file."""
+        with open(mappings_file, "r") as f:
+            for line in f:
+                self._process_mapping_line(line)
+
+    def _process_mapping_line(self, line: str):
+        """Helper to process a single line from a mapping file."""
+        try:
+            data = json.loads(line)
+            command = data.get("input", "")
+            output = data.get("output", "")
+
+            if " - " in output:
+                parts = output.split(" - ", 1)
+                technique_id = parts[0].strip()
+                technique_name = parts[1].strip()
+            else:
+                return
+
+            self.command_corpus.append(command)
+            self.command_metadata.append(
+                {
+                    "technique_id": technique_id,
+                    "technique_name": technique_name,
+                    "metadata": data.get("metadata", {}),
+                }
+            )
+        except (json.JSONDecodeError, IndexError):
+            pass
 
     # Function 111: Performs operations related to load jsonl db.
     def _load_jsonl_db(self, path, db_dict):

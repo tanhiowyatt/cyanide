@@ -76,6 +76,8 @@ class CyanideSFTPHandler(asyncssh.SFTPServer):
     Bridges asyncssh SFTP requests to the FakeFilesystem (VFS).
     """
 
+    ERR_NO_SUCH_FILE = "No such file"
+
     def __init__(self, chan: asyncssh.SSHServerChannel):
         super().__init__(chan)
         self.chan = chan
@@ -146,7 +148,7 @@ class CyanideSFTPHandler(asyncssh.SFTPServer):
         node = self.fs.get_node(p)
         if not node:
             self._log_op("stat", p, success=False, extra={"error": "no such file"})
-            raise asyncssh.SFTPNoSuchFile("No such file")
+            raise asyncssh.SFTPNoSuchFile(self.ERR_NO_SUCH_FILE)
 
         self._log_op("stat", p)
         return self._get_attrs(node)
@@ -164,28 +166,34 @@ class CyanideSFTPHandler(asyncssh.SFTPServer):
         p = self._decode_path(path)
         self._log_op("open", p, extra={"flags": flags})
 
-        is_write = flags & (asyncssh.FXF_WRITE | asyncssh.FXF_CREAT | asyncssh.FXF_TRUNC)
-
-        ssh_conf = self.honeypot.config.get("ssh", {})
-        if is_write and not ssh_conf.get("allow_upload", True):
-            raise asyncssh.SFTPPermissionDenied("Uploads disabled")
-
-        if not is_write and not ssh_conf.get("allow_download", True):
-            raise asyncssh.SFTPPermissionDenied("Downloads disabled")
+        is_write = bool(flags & (asyncssh.FXF_WRITE | asyncssh.FXF_CREAT | asyncssh.FXF_TRUNC))
+        self._check_sftp_permissions(is_write)
 
         if is_write:
             content = b""
             if not (flags & asyncssh.FXF_TRUNC) and self.fs.exists(p):
-                raw = self.fs.get_content(p)
-                content = raw.encode("utf-8", "ignore") if isinstance(raw, str) else (raw or b"")
-
+                content = self._get_node_content(p)
             return CyanideSFTPFile(self, p, bytearray(content), True)
-        else:
-            if not self.fs.exists(p):
-                raise asyncssh.SFTPNoSuchFile("No such file")
-            raw = self.fs.get_content(p)
-            content = raw.encode("utf-8", "ignore") if isinstance(raw, str) else (raw or b"")
-            return CyanideSFTPFile(self, p, bytearray(content), False)
+
+        if not self.fs.exists(p):
+            raise asyncssh.SFTPNoSuchFile(self.ERR_NO_SUCH_FILE)
+
+        return CyanideSFTPFile(self, p, bytearray(self._get_node_content(p)), False)
+
+    def _check_sftp_permissions(self, is_write: bool) -> None:
+        """Check if SFTP operation is allowed by configuration."""
+        ssh_conf = self.honeypot.config.get("ssh", {})
+        if is_write and not ssh_conf.get("allow_upload", True):
+            raise asyncssh.SFTPPermissionDenied("Uploads disabled")
+        if not is_write and not ssh_conf.get("allow_download", True):
+            raise asyncssh.SFTPPermissionDenied("Downloads disabled")
+
+    def _get_node_content(self, path: str) -> bytes:
+        """Retrieve and format node content from the filesystem."""
+        raw = self.fs.get_content(path)
+        if isinstance(raw, str):
+            return raw.encode("utf-8", "ignore")
+        return raw or b""
 
     async def mkdir(self, path: Union[str, bytes], attrs: asyncssh.SFTPAttrs):
         p = self._decode_path(path)
@@ -198,7 +206,7 @@ class CyanideSFTPHandler(asyncssh.SFTPServer):
             self._log_op("remove", p)
         else:
             self._log_op("remove", p, success=False)
-            raise asyncssh.SFTPNoSuchFile("No such file")
+            raise asyncssh.SFTPNoSuchFile(self.ERR_NO_SUCH_FILE)
 
     async def rmdir(self, path: Union[str, bytes]):
         await self.remove(path)
@@ -210,7 +218,7 @@ class CyanideSFTPHandler(asyncssh.SFTPServer):
             self._log_op("rename", op, extra={"new_path": np})
         else:
             self._log_op("rename", op, success=False, extra={"new_path": np})
-            raise asyncssh.SFTPNoSuchFile("No such file")
+            raise asyncssh.SFTPNoSuchFile(self.ERR_NO_SUCH_FILE)
 
     def _get_attrs(self, node: Any) -> asyncssh.SFTPAttrs:
         attrs = asyncssh.SFTPAttrs()

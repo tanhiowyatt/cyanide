@@ -16,11 +16,23 @@ class SMTPHandler:
         self.config = config
         self.stats = getattr(server, "stats", None)
         self.logger = getattr(server, "logger", None)
+        self._dispatch_map = {
+            "HELO": self._cmd_helo,
+            "EHLO": self._cmd_helo,
+            "MAIL": self._cmd_mail,
+            "RCPT": self._cmd_rcpt,
+            "DATA": self._cmd_data,
+            "QUIT": self._cmd_quit,
+            "VRFY": self._cmd_vrfy,
+            "NOOP": self._cmd_noop,
+            "RSET": self._cmd_rset,
+        }
 
     async def handle_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         peer = writer.get_extra_info("peername")
         src_ip = peer[0] if peer else "unknown"
         session_id = f"smtp_{int(time.time())}"
+        hostname = self.server.config.get("honeypot", {}).get("hostname", "server01")
 
         if self.logger:
             self.logger.log_event(
@@ -30,9 +42,7 @@ class SMTPHandler:
             )
 
         try:
-            hostname = self.server.config.get("honeypot", {}).get("hostname", "server01")
-            banner = f"220 {hostname} ESMTP Postfix\r\n"
-            writer.write(banner.encode())
+            writer.write(f"220 {hostname} ESMTP Postfix\r\n".encode())
             await writer.drain()
 
             while not reader.at_eof():
@@ -51,34 +61,15 @@ class SMTPHandler:
                         {"protocol": "smtp", "src_ip": src_ip, "input": cmd_line},
                     )
 
-                cmd = cmd_line.split()[0].upper() if cmd_line else ""
+                parts = cmd_line.split()
+                cmd = parts[0].upper() if parts else ""
+                args = parts[1:] if len(parts) > 1 else []
 
-                if cmd in ("HELO", "EHLO"):
-                    writer.write(f"250 {hostname} Hello {src_ip}\r\n".encode())
-                elif cmd == "MAIL":
-                    writer.write(b"250 2.1.0 Ok\r\n")
-                elif cmd == "RCPT":
-                    writer.write(b"250 2.1.5 Ok\r\n")
-                elif cmd == "DATA":
-                    writer.write(b"354 End data with <CR><LF>.<CR><LF>\r\n")
-                    await writer.drain()
-                    while True:
-                        data_line = await reader.readline()
-                        if not data_line or data_line.strip() == b".":
-                            break
-                    writer.write(b"250 2.0.0 Ok: queued as 12345\r\n")
-                elif cmd == "QUIT":
-                    writer.write(b"221 2.0.0 Bye\r\n")
-                    await writer.drain()
-                    break
-                elif cmd == "VRFY":
-                    writer.write(
-                        b"252 2.1.5 Cannot VRFY user, but will accept message and attempt delivery\r\n"
-                    )
-                elif cmd == "NOOP":
-                    writer.write(b"250 2.0.0 Ok\r\n")
-                elif cmd == "RSET":
-                    writer.write(b"250 2.0.0 Ok\r\n")
+                handler = self._dispatch_map.get(cmd)
+                if handler:
+                    should_continue = await handler(reader, writer, args, src_ip, hostname)
+                    if not should_continue:
+                        break
                 else:
                     writer.write(b"502 5.5.2 Error: command not recognized\r\n")
 
@@ -90,12 +81,54 @@ class SMTPHandler:
             if self.logger:
                 self.logger.log_event(session_id, "error", {"message": f"SMTP Error: {e}"})
         finally:
-            writer.close()
-            try:
-                await writer.wait_closed()
-            except Exception:
-                pass
-            if self.logger:
-                self.logger.log_event(
-                    session_id, "session_end", {"protocol": "smtp", "src_ip": src_ip}
-                )
+            await self._cleanup(writer, session_id, src_ip)
+
+    async def _cleanup(self, writer, session_id, src_ip):
+        writer.close()
+        try:
+            await writer.wait_closed()
+        except Exception:
+            pass
+        if self.logger:
+            self.logger.log_event(session_id, "session_end", {"protocol": "smtp", "src_ip": src_ip})
+
+    async def _cmd_helo(self, reader, writer, args, src_ip, hostname) -> bool:
+        writer.write(f"250 {hostname} Hello {src_ip}\r\n".encode())
+        return True
+
+    async def _cmd_mail(self, reader, writer, args, src_ip, hostname) -> bool:
+        writer.write(b"250 2.1.0 Ok\r\n")
+        return True
+
+    async def _cmd_rcpt(self, reader, writer, args, src_ip, hostname) -> bool:
+        writer.write(b"250 2.1.5 Ok\r\n")
+        return True
+
+    async def _cmd_data(self, reader, writer, args, src_ip, hostname) -> bool:
+        writer.write(b"354 End data with <CR><LF>.<CR><LF>\r\n")
+        await writer.drain()
+        while True:
+            data_line = await reader.readline()
+            if not data_line or data_line.strip() == b".":
+                break
+        writer.write(b"250 2.0.0 Ok: queued as 12345\r\n")
+        return True
+
+    async def _cmd_quit(self, reader, writer, args, src_ip, hostname) -> bool:
+        writer.write(b"221 2.0.0 Bye\r\n")
+        await writer.drain()
+        return False
+
+    async def _cmd_vrfy(self, reader, writer, args, src_ip, hostname) -> bool:
+        writer.write(
+            b"252 2.1.5 Cannot VRFY user, but will accept message and attempt delivery\r\n"
+        )
+        return True
+
+    async def _cmd_noop(self, reader, writer, args, src_ip, hostname) -> bool:
+        writer.write(b"250 2.0.0 Ok\r\n")
+        return True
+
+    async def _cmd_rset(self, reader, writer, args, src_ip, hostname) -> bool:
+        writer.write(b"250 2.0.0 Ok\r\n")
+        return True

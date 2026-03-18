@@ -12,8 +12,129 @@ from .config_schema import CyanideConfig
 
 logger = logging.getLogger("cyanide.config")
 
+DEFAULT_LOG_PATH = "var/log/cyanide"
 
 _CONFIG_EVENTS: list[dict[str, Any]] = []
+
+
+def _parse_val(v):
+    vl = str(v).lower()
+    if vl in ("true", "1", "yes", "on"):
+        return True
+    if vl in ("false", "0", "no", "off"):
+        return False
+    if str(v).isdigit():
+        return int(v)
+    if str(v).startswith("[") or str(v).startswith("{"):
+        try:
+            return json.loads(v)
+        except (json.JSONDecodeError, ValueError, TypeError):
+            pass
+    return v
+
+
+def _try_map_env_to_dict(remainder: str, env_val: Any, data: dict, override_keys: list) -> bool:
+    for top_key, top_val in data.items():
+        if not remainder.startswith(top_key + "_") or not isinstance(top_val, dict):
+            continue
+
+        sub_remainder = remainder[len(top_key) + 1 :]
+        if sub_remainder in top_val:
+            top_val[sub_remainder] = _parse_val(env_val)
+            override_keys.append(f"{top_key}.{sub_remainder}")
+            return True
+
+        for sub_key, sub_val in top_val.items():
+            if sub_remainder.startswith(sub_key + "_") and isinstance(sub_val, dict):
+                final_key = sub_remainder[len(sub_key) + 1 :]
+                sub_val[final_key] = _parse_val(env_val)
+                override_keys.append(f"{top_key}.{sub_key}.{final_key}")
+                return True
+    return False
+
+
+def _apply_env_overrides(data: dict, prefix: str = "CYANIDE_") -> dict:
+    override_count = 0
+    override_keys = []
+
+    for env_key, env_val in os.environ.items():
+        if not env_key.startswith(prefix):
+            continue
+
+        remainder = env_key[len(prefix) :].lower()
+        if remainder in data:
+            data[remainder] = _parse_val(env_val)
+            override_count += 1
+            override_keys.append(remainder)
+            continue
+
+        if _try_map_env_to_dict(remainder, env_val, data, override_keys):
+            override_count += 1
+
+    if override_count > 0:
+        _CONFIG_EVENTS.append(
+            {
+                "action": "config_env_override_applied",
+                "data": {"count": override_count, "keys": override_keys},
+            }
+        )
+
+    return data
+
+
+def _get_val(config_data, section, key, env_var, default, cast=str):
+    full_env_var = f"CYANIDE_{section.upper()}__" + (
+        env_var if env_var not in (key.upper(), key) else key.upper()
+    )
+    val = os.getenv(full_env_var)
+    if val is None:
+        val = os.getenv(env_var)
+
+    if val is None:
+        if section in config_data and isinstance(config_data[section], dict):
+            val = config_data[section].get(key)
+
+    if val is None:
+        return default
+
+    if cast is bool:
+        if isinstance(val, bool):
+            return val
+        if isinstance(val, str):
+            return val.lower() in ("true", "1", "yes", "on")
+        return bool(val)
+    elif cast is int:
+        try:
+            return int(val)
+        except (ValueError, TypeError):
+            return default
+    return val
+
+
+def _parse_users(config_data: dict) -> list:
+    users = []
+    users_env = os.getenv("CYANIDE_AUTH__USERS") or os.getenv("CYANIDE_USERS")
+    env_users_loaded = False
+    if users_env:
+        try:
+            env_users = json.loads(users_env)
+            if isinstance(env_users, list):
+                users.extend(env_users)
+                env_users_loaded = True
+        except json.JSONDecodeError:
+            logger.error(f"Failed to parse users env var: {users_env}")
+
+    if not env_users_loaded:
+        yaml_users = config_data.get("users", [])
+        if isinstance(yaml_users, list):
+            for user_obj in yaml_users:
+                if isinstance(user_obj, dict) and "user" in user_obj and "pass" in user_obj:
+                    users.append(user_obj)
+
+    if not users:
+        users = [{"user": "root", "pass": "admin"}, {"user": "admin", "pass": "admin"}]
+
+    return users
 
 
 # Function 16: Loads config from storage or configuration.
@@ -50,106 +171,10 @@ def load_config(path: Path = Path("configs/app.yaml")):
     else:
         logger.warning(f"Config file not found at {path}, using .env and defaults.")
 
-    def apply_env_overrides(data: dict, prefix: str = "CYANIDE_") -> dict:
-        """Deeply override configuration dictionary using single-underscore environment variables."""
-        import json
-
-        override_count = 0
-        override_keys = []
-
-        def parse_val(v):
-            vl = str(v).lower()
-            if vl in ("true", "1", "yes", "on"):
-                return True
-            if vl in ("false", "0", "no", "off"):
-                return False
-            if str(v).isdigit():
-                return int(v)
-            if str(v).startswith("[") or str(v).startswith("{"):
-                try:
-                    return json.loads(v)
-                except (json.JSONDecodeError, ValueError, TypeError):
-                    pass
-            return v
-
-        for env_key, env_val in os.environ.items():
-            if not env_key.startswith(prefix):
-                continue
-
-            remainder = env_key[len(prefix) :].lower()
-
-            if remainder in data:
-                data[remainder] = parse_val(env_val)
-                override_count += 1
-                override_keys.append(remainder)
-                continue
-
-            mapped = False
-            for top_key, top_val in data.items():
-                if remainder.startswith(top_key + "_"):
-                    if not isinstance(top_val, dict):
-                        continue
-
-                    sub_remainder = remainder[len(top_key) + 1 :]
-
-                    if sub_remainder in top_val:
-                        top_val[sub_remainder] = parse_val(env_val)
-                        override_count += 1
-                        override_keys.append(f"{top_key}.{sub_remainder}")
-                        mapped = True
-                        break
-
-                    for sub_key, sub_val in top_val.items():
-                        if sub_remainder.startswith(sub_key + "_"):
-                            if isinstance(sub_val, dict):
-                                final_key = sub_remainder[len(sub_key) + 1 :]
-                                sub_val[final_key] = parse_val(env_val)
-                                override_count += 1
-                                override_keys.append(f"{top_key}.{sub_key}.{final_key}")
-                                mapped = True
-                                break
-                    if mapped:
-                        break
-
-        if override_count > 0:
-            _CONFIG_EVENTS.append(
-                {
-                    "action": "config_env_override_applied",
-                    "data": {"count": override_count, "keys": override_keys},
-                }
-            )
-
-        return data
-
-    config_data = apply_env_overrides(config_data)
+    config_data = _apply_env_overrides(config_data)
 
     def get_val(section, key, env_var, default, cast=str):
-        full_env_var = f"CYANIDE_{section.upper()}__" + (
-            env_var if env_var not in (key.upper(), key) else key.upper()
-        )
-        val = os.getenv(full_env_var)
-        if val is None:
-            val = os.getenv(env_var)
-
-        if val is None:
-            if section in config_data and isinstance(config_data[section], dict):
-                val = config_data[section].get(key)
-
-        if val is None:
-            return default
-
-        if cast is bool:
-            if isinstance(val, bool):
-                return val
-            if isinstance(val, str):
-                return val.lower() in ("true", "1", "yes", "on")
-            return bool(val)
-        elif cast is int:
-            try:
-                return int(val)
-            except (ValueError, TypeError):
-                return default
-        return val
+        return _get_val(config_data, section, key, env_var, default, cast)
 
     config = {
         "hostname": (
@@ -158,9 +183,9 @@ def load_config(path: Path = Path("configs/app.yaml")):
             or (config_data.get("honeypot") or {}).get("hostname")
             or os.getenv("HOSTNAME", "server01")
         ),
-        "log_path": get_val("logging", "directory", "LOG_PATH", "var/log/cyanide"),
+        "log_path": get_val("logging", "directory", "LOG_PATH", DEFAULT_LOG_PATH),
         "logging": {
-            "directory": get_val("logging", "directory", "LOGGING_DIRECTORY", "var/log/cyanide"),
+            "directory": get_val("logging", "directory", "LOGGING_DIRECTORY", DEFAULT_LOG_PATH),
             "logtype": get_val("logging", "logtype", "LOGGING_LOGTYPE", "plain"),
             "rotation": {
                 "strategy": get_val(
@@ -384,37 +409,18 @@ def load_config(path: Path = Path("configs/app.yaml")):
         "users": [],
     }
 
-    users_env = os.getenv("CYANIDE_AUTH__USERS") or os.getenv("CYANIDE_USERS")
-    env_users_loaded = False
-    if users_env:
-        try:
-            env_users = json.loads(users_env)
-            if isinstance(env_users, list):
-                config["users"].extend(env_users)
-                env_users_loaded = True
-        except json.JSONDecodeError:
-            logger.error(f"Failed to parse users env var: {users_env}")
-
-    if not env_users_loaded:
-        yaml_users = config_data.get("users", [])
-        if isinstance(yaml_users, list):
-            for user_obj in yaml_users:
-                if isinstance(user_obj, dict) and "user" in user_obj and "pass" in user_obj:
-                    config["users"].append(user_obj)
-
-    if not config["users"]:
-        config["users"] = [{"user": "root", "pass": "admin"}, {"user": "admin", "pass": "admin"}]
+    config["users"] = _parse_users(config_data)
 
     config["ml"] = {
         "enabled": get_val("ml", "enabled", "ML_ENABLED", False, bool),
-        "ml_log": get_val("ml", "ml_log", "ML_LOG", "var/log/cyanide/ml.json"),
+        "ml_log": get_val("ml", "ml_log", "ML_LOG", f"{DEFAULT_LOG_PATH}/ml.json"),
         "model_path": get_val("ml", "model_path", "ML_MODEL_PATH", "assets/models/cyanideML.pkl"),
         "online_learning": get_val("ml", "online_learning", "ONLINE_LEARNING", False, bool),
         "retraining_interval_days": get_val(
             "ml", "retraining_interval_days", "ML_RETRAINING_INTERVAL_DAYS", 7, int
         ),
         "training_data": {
-            "hacker_methods": Path("var/log/cyanide"),
+            "hacker_methods": Path(DEFAULT_LOG_PATH),
         },
     }
 
@@ -422,7 +428,7 @@ def load_config(path: Path = Path("configs/app.yaml")):
         "enabled": get_val("cleanup", "enabled", "CLEANUP_ENABLED", True, bool),
         "interval": get_val("cleanup", "interval", "CLEANUP_INTERVAL", 3600, int),
         "retention_days": get_val("cleanup", "retention_days", "CLEANUP_RETENTION_DAYS", 7, int),
-        "paths": ["var/log/cyanide", "var/lib/cyanide", "var/quarantine"],
+        "paths": [DEFAULT_LOG_PATH, "var/lib/cyanide", "var/quarantine"],
     }
 
     config["custom_profile"] = config_data.get("custom_profile", {})

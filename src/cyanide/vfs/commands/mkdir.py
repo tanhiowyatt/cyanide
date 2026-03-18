@@ -14,7 +14,7 @@ class MkdirCommand(Command):
         try:
             parsed, unknown = parser.parse_known_args(args)
         except SystemExit:
-            return "", "", 1
+            raise
 
         for path_str in parsed.path:
             resolved = self.emulator.resolve_path(path_str)

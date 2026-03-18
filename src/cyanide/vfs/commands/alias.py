@@ -3,36 +3,44 @@ from .base import Command
 
 class AliasCommand(Command):
     # Function 202: Executes the 'alias' command logic within the virtual filesystem.
-    async def execute(self, args, input_data=""):
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+        """Execute the alias command."""
         if not args:
-            output = ""
-            for k in sorted(self.emulator.aliases.keys()):
-                output += f"alias {k}='{self.emulator.aliases[k]}'\n"
-            return output, "", 0
+            return self._list_aliases(), "", 0
 
         output = ""
-        rc = 0
+        total_rc = 0
         for arg in args:
             if "=" in arg:
-                parts = arg.split("=", 1)
-                name = parts[0]
-                value = parts[1]
-
-                if len(value) >= 2 and (
-                    (value.startswith("'") and value.endswith("'"))
-                    or (value.startswith('"') and value.endswith('"'))
-                ):
-                    value = value[1:-1]
-
-                self.emulator.aliases[name] = value
+                self._set_alias(arg)
             else:
-                if arg in self.emulator.aliases:
-                    output += f"alias {arg}='{self.emulator.aliases[arg]}'\n"
-                else:
-                    output += f"bash: alias: {arg}: not found\n"
-                    rc = 1
+                out, rc = self._get_alias(arg)
+                output += out
+                if rc != 0:
+                    total_rc = rc
 
-        return output, "", rc
+        return output, "", total_rc
+
+    def _list_aliases(self) -> str:
+        """List all current aliases."""
+        sorted_keys = sorted(self.emulator.aliases.keys())
+        return "".join(f"alias {k}='{self.emulator.aliases[k]}'\n" for k in sorted_keys)
+
+    def _set_alias(self, arg: str) -> None:
+        """Parse and set a new alias."""
+        name, value = arg.split("=", 1)
+        if len(value) >= 2 and (
+            (value.startswith("'") and value.endswith("'"))
+            or (value.startswith('"') and value.endswith('"'))
+        ):
+            value = value[1:-1]
+        self.emulator.aliases[name] = value
+
+    def _get_alias(self, name: str) -> tuple[str, int]:
+        """Look up a single alias."""
+        if name in self.emulator.aliases:
+            return f"alias {name}='{self.emulator.aliases[name]}'\n", 0
+        return f"bash: alias: {name}: not found\n", 1
 
 
 class UnaliasCommand(Command):

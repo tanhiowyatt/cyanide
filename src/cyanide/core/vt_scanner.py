@@ -35,7 +35,28 @@ class VTScanner:
             return None
 
         sha256 = hashlib.sha256(content).hexdigest()
-        result = {
+        result = self._init_result(sha256)
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                url = f"{self.base_url}/files/{sha256}"
+                async with session.get(url, headers=self.headers) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        return self._parse_report(data, result)
+
+                    if resp.status == 404:
+                        return await self._upload_file(session, content, filename, result)
+
+                    return self._handle_error_status(resp.status, result)
+
+        except Exception as e:
+            if self.logger:
+                self.logger.log_event("system", "vt_exception", {"error": str(e)})
+            return None
+
+    def _init_result(self, sha256: str) -> dict:
+        return {
             "sha256": sha256,
             "malicious": 0,
             "suspicious": 0,
@@ -44,72 +65,51 @@ class VTScanner:
             "status": "checked",
         }
 
-        try:
-            async with aiohttp.ClientSession() as session:
-                url = f"{self.base_url}/files/{sha256}"
-                async with session.get(url, headers=self.headers) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        attributes = data.get("data", {}).get("attributes", {})
-                        stats = attributes.get("last_analysis_stats", {})
+    def _parse_report(self, data: dict, result: dict) -> dict:
+        attributes = data.get("data", {}).get("attributes", {})
+        stats = attributes.get("last_analysis_stats", {})
 
-                        result["malicious"] = stats.get("malicious", 0)
-                        result["suspicious"] = stats.get("suspicious", 0)
+        result["malicious"] = stats.get("malicious", 0)
+        result["suspicious"] = stats.get("suspicious", 0)
 
-                        threat_info = attributes.get("popular_threat_classification", {})
-                        if threat_info:
-                            result["label"] = threat_info.get("suggested_threat_label", "detected")
-                        elif int(str(result["malicious"])) > 0:
-                            result["label"] = "generic_malware"
-                        else:
-                            result["label"] = "clean"
-
-                        return result
-
-                    elif resp.status == 404:
-                        result["status"] = "uploaded_queued"
-
-                        upload_url = f"{self.base_url}/files"
-                        form = aiohttp.FormData()
-                        form.add_field("utils", content, filename=filename)
-
-                        async with session.post(
-                            upload_url, headers=self.headers, data=form
-                        ) as upload_resp:
-                            if upload_resp.status == 200:
-                                upload_data = await upload_resp.json()
-                                analysis_id = upload_data.get("data", {}).get("id")
-                                result["analysis_id"] = analysis_id
-                                result["info"] = "File uploaded to VirusTotal. Analysis pending."
-                                return result
-                            else:
-                                result["error"] = f"Upload failed: {upload_resp.status}"
-                                return result
-                    elif resp.status == 401:
-                        if self.logger:
-                            self.logger.log_event(
-                                "system", "vt_error", {"status": 401, "message": "Unauthorized"}
-                            )
-                        self.enabled = False
-                        return None
-                    elif resp.status == 429:
-                        if self.logger:
-                            self.logger.log_event(
-                                "system", "vt_error", {"status": 429, "message": "Quota Exceeded"}
-                            )
-                        return None
-                    else:
-                        if self.logger:
-                            self.logger.log_event(
-                                "system",
-                                "vt_error",
-                                {"status": resp.status, "message": "Other error"},
-                            )
-                        return None
-
-        except Exception as e:
-            if self.logger:
-                self.logger.log_event("system", "vt_exception", {"error": str(e)})
-            return None
+        threat_info = attributes.get("popular_threat_classification", {})
+        if threat_info:
+            result["label"] = threat_info.get("suggested_threat_label", "detected")
+        elif int(str(result["malicious"])) > 0:
+            result["label"] = "generic_malware"
+        else:
+            result["label"] = "clean"
 
         return result
+
+    async def _upload_file(self, session, content: bytes, filename: str, result: dict) -> dict:
+        result["status"] = "uploaded_queued"
+        upload_url = f"{self.base_url}/files"
+        form = aiohttp.FormData()
+        form.add_field("utils", content, filename=filename)
+
+        async with session.post(upload_url, headers=self.headers, data=form) as upload_resp:
+            if upload_resp.status == 200:
+                upload_data = await upload_resp.json()
+                analysis_id = upload_data.get("data", {}).get("id")
+                result["analysis_id"] = analysis_id
+                result["info"] = "File uploaded to VirusTotal. Analysis pending."
+            else:
+                result["error"] = f"Upload failed: {upload_resp.status}"
+            return result
+
+    def _handle_error_status(self, status: int, result: dict) -> Optional[dict]:
+        error_map = {
+            401: ("Unauthorized", False),
+            429: ("Quota Exceeded", True),
+        }
+
+        msg, keep_enabled = error_map.get(status, ("Other error", True))
+
+        if self.logger:
+            self.logger.log_event("system", "vt_error", {"status": status, "message": msg})
+
+        if not keep_enabled:
+            self.enabled = False
+
+        return None

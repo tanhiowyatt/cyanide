@@ -118,6 +118,41 @@ class ShellEmulator:
             return str(self.fs.resolve(path))
         return str(self.fs.resolve(f"{self.cwd}/{path}"))
 
+    async def _execute_nodes(self, nodes: List[CommandNode]) -> tuple[str, str, int]:
+        full_stdout = ""
+        full_stderr = ""
+        last_rc = 0
+        should_execute = True
+
+        for node in nodes:
+            if not should_execute:
+                if node.operator == "||" and last_rc != 0:
+                    should_execute = True
+                elif node.operator == ";" or node.operator is None:
+                    should_execute = True
+                continue
+
+            stdout, stderr, rc = await self._execute_pipeline(node.cmd_line)
+
+            full_stdout += stdout
+            full_stderr += stderr
+            last_rc = rc
+
+            if len(full_stdout) > self.max_output_size:
+                full_stdout = full_stdout[: self.max_output_size] + "\n[output truncated]\n"
+                full_stderr += "shell: maximum output size exceeded\n"
+                last_rc = 1
+                break
+
+            if node.operator == "&&":
+                should_execute = rc == 0
+            elif node.operator == "||":
+                should_execute = rc != 0
+            elif node.operator == ";" or node.operator is None:
+                should_execute = True
+
+        return full_stdout, full_stderr, last_rc
+
     # Function 22: Executes the 'emulator' command logic within the virtual filesystem.
     async def execute(self, command_line: str) -> tuple[str, str, int]:
         """Execute a shell command line dealing with chains, pipes, and redirections.
@@ -149,47 +184,27 @@ class ShellEmulator:
         if len(nodes) > self.max_chain_depth:
             return "", "shell: maximum command chain depth exceeded\n", 1
 
-        full_stdout = ""
-        full_stderr = ""
-        last_rc = 0
+        return await self._execute_nodes(nodes)
 
-        should_execute = True
+    def _check_operator(self, command_line: str, i: int) -> Optional[str]:
+        """Check for chain operators at the current index."""
+        if command_line[i : i + 2] in ("&&", "||"):
+            return command_line[i : i + 2]
+        if command_line[i] == ";":
+            return ";"
+        return None
 
-        for i, node in enumerate(nodes):
-            if not should_execute:
-                if node.operator == "||" and last_rc != 0:
-                    should_execute = True
-                elif node.operator == ";" or node.operator is None:
-                    should_execute = True
-                else:
-                    pass
-                continue
-
-            stdout, stderr, rc = await self._execute_pipeline(node.cmd_line)
-
-            full_stdout += stdout
-            full_stderr += stderr
-            last_rc = rc
-
-            if len(full_stdout) > self.max_output_size:
-                full_stdout = full_stdout[: self.max_output_size] + "\n[output truncated]\n"
-                full_stderr += "shell: maximum output size exceeded\n"
-                last_rc = 1
-                break
-
-            if node.operator == "&&":
-                should_execute = rc == 0
-            elif node.operator == "||":
-                should_execute = rc != 0
-            elif node.operator == ";":
-                should_execute = True
-
-        return full_stdout, full_stderr, last_rc
+    def _update_quote_state(self, char: str, in_quote: bool, quote_char: str) -> tuple[bool, str]:
+        """Returns new (in_quote, quote_char) boolean states."""
+        if not in_quote:
+            return True, char
+        if char == quote_char:
+            return False, ""
+        return in_quote, quote_char
 
     # Function 23: Performs operations related to parse chain.
     def _parse_chain(self, command_line: str) -> List[CommandNode]:
         """Split command line by operators &&, ||, ; dealing with quotes."""
-
         tokens: List[tuple[str, Optional[str]]] = []
         current_token = ""
         in_quote = False
@@ -200,30 +215,20 @@ class ShellEmulator:
             char = command_line[i]
 
             if char in ("'", '"'):
-                if not in_quote:
-                    in_quote = True
-                    quote_char = char
-                elif char == quote_char:
-                    in_quote = False
+                in_quote, quote_char = self._update_quote_state(char, in_quote, quote_char)
                 current_token += char
+                i += 1
+                continue
 
-            elif not in_quote:
-                if command_line[i : i + 2] == "&&":
-                    tokens.append((current_token.strip(), "&&"))
+            if not in_quote:
+                op = self._check_operator(command_line, i)
+                if op:
+                    tokens.append((current_token.strip(), op))
                     current_token = ""
-                    i += 1
-                elif command_line[i : i + 2] == "||":
-                    tokens.append((current_token.strip(), "||"))
-                    current_token = ""
-                    i += 1
-                elif char == ";":
-                    tokens.append((current_token.strip(), ";"))
-                    current_token = ""
-                else:
-                    current_token += char
-            else:
-                current_token += char
+                    i += len(op)
+                    continue
 
+            current_token += char
             i += 1
 
         if current_token.strip():
@@ -296,6 +301,10 @@ class ShellEmulator:
                     params, input_data=input_data
                 )
                 return cast(tuple[str, str, int], result)
+            except SystemExit as e:
+                # argparse or other logic requested exit. Return the code.
+                rc = e.code if isinstance(e.code, int) else 1
+                return "", "", rc
             except Exception as e:
                 return "", f"Command execution error: {e}\n", 1
         else:

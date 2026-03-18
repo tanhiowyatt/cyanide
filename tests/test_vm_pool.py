@@ -10,7 +10,7 @@ sys.modules["libvirt"] = mock_libvirt
 
 from cyanide.core.config_schema import CyanideConfig  # noqa: E402
 from cyanide.core.libvirt_pool import Lease, LibvirtPool  # noqa: E402
-from cyanide.core.vm_pool import VMPool  # noqa: E402
+from cyanide.core.vm_pool import SimplePool, VMPool  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -125,3 +125,24 @@ async def test_healthcheck_eviction(mock_pool_config, monkeypatch):
     pool.vms["test-os-bad"]["state"] = "rebuilding"
     await pool._rebuild_vm("test-os-bad")
     assert pool.vms["test-os-bad"]["state"] == "ready"
+
+
+@pytest.mark.asyncio
+async def test_simple_pool_no_targets():
+    """Verify SimplePool handles empty target list correctly."""
+    config = {"pool": {"targets": ""}}
+    pool = SimplePool(config)
+    lease = await pool.reserve_target("session1", "ssh")
+    assert lease is None
+
+
+@pytest.mark.asyncio
+async def test_simple_pool_reserve():
+    """Verify SimplePool can reserve a target when configured."""
+    config = {"pool": {"targets": "1.2.3.4:2222"}}
+    pool = SimplePool(config)
+    lease = await pool.reserve_target("session1", "ssh")
+    assert lease is not None
+    assert lease.host == "1.2.3.4"
+    assert lease.port == 2222
+    await pool.release_target(lease)

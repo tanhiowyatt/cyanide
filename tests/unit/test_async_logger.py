@@ -14,7 +14,7 @@ async def test_async_logger_writes():
         log_file = Path(tmpdir) / "test.log"
 
         logger = AsyncLogger()
-        await logger.start()
+        logger.start()
 
         try:
             # Write multiple entries
@@ -41,7 +41,7 @@ async def test_async_logger_binary():
         log_file = Path(tmpdir) / "test.bin"
 
         logger = AsyncLogger()
-        await logger.start()
+        logger.start()
 
         try:
             logger.log(log_file, b"\x00\x01\x02", mode="wb")

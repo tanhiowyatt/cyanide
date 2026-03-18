@@ -13,7 +13,7 @@ class HeadCommand(Command):
         try:
             parsed, unknown = parser.parse_known_args(args)
         except SystemExit:
-            return "", "", 1
+            raise
 
         count = parsed.lines
         files = parsed.files

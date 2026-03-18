@@ -162,30 +162,24 @@ class ProxyServerSession(asyncssh.SSHServerSession):
         self.send_task = None
         self._chan = None
         self.request_event = asyncio.Event()
+        self._background_tasks = set()
 
     # Function 157: Performs operations related to connection made.
     def connection_made(self, chan):
         """Called when attacker channel is open."""
         self._chan = chan
-        asyncio.create_task(self._connect_backend())
+        task = asyncio.create_task(self._connect_backend())
+        self._background_tasks.add(task)
+        task.add_done_callback(self._background_tasks.discard)
 
     # Function 158: Performs operations related to connect backend.
     async def _connect_backend(self):
         """Establish connection to backend server and bridge channels."""
-        if self.pool:
-            self.lease = await self.pool.reserve_target(self.session_id, "ssh")
-            if self.lease:
-                if hasattr(self.lease, "host"):
-                    tgt_host, tgt_port = self.lease.host, self.lease.port
-                else:
-                    tgt_host, tgt_port = self.lease[0], self.lease[1]
-            else:
-                logger.error("No target available from pool")
-                if self._chan:
-                    self._chan.close()
-                return
-        else:
-            tgt_host, tgt_port = self.target_host, self.target_port
+        target = await self._get_target()
+        if not target:
+            return
+
+        tgt_host, tgt_port = target
 
         try:
             self.backend_conn = await asyncssh.connect(
@@ -197,16 +191,10 @@ class ProxyServerSession(asyncssh.SSHServerSession):
                 return
 
             await self.request_event.wait()
-
             req_type, args = self.pending_request
             command = args if req_type == "exec" else None
 
-            self.backend_channel, _ = await self.backend_conn.create_session(
-                lambda: ProxyClientChannel(self.session_id, self.src_ip, self._chan),
-                command=command,
-                term_type=self._chan.get_terminal_type(),
-                term_size=self._chan.get_terminal_size(),
-            )
+            await self._setup_backend_session(tgt_host, tgt_port, command)
 
             self.send_task = asyncio.create_task(self._send_loop())
 
@@ -214,6 +202,35 @@ class ProxyServerSession(asyncssh.SSHServerSession):
             logger.error(f"Backend connect failed: {e}")
             if self._chan:
                 self._chan.close()
+
+    async def _get_target(self):
+        """Get target host and port from pool or config."""
+        if not self.pool:
+            return self.target_host, self.target_port
+
+        self.lease = await self.pool.reserve_target(self.session_id, "ssh")
+        if not self.lease:
+            logger.error("No target available from pool")
+            if self._chan:
+                self._chan.close()
+            return None
+
+        if hasattr(self.lease, "host"):
+            return self.lease.host, self.lease.port
+
+        return self.lease[0], self.lease[1]
+
+    async def _setup_backend_session(self, host, port, command):
+        """Initialize the backend SSH session."""
+        if not self.backend_conn or not self._chan:
+            return
+
+        self.backend_channel, _ = await self.backend_conn.create_session(
+            lambda: ProxyClientChannel(self.session_id, self.src_ip, self._chan),
+            command=command,
+            term_type=self._chan.get_terminal_type(),
+            term_size=self._chan.get_terminal_size(),
+        )
 
     # Function 159: Performs operations related to data received.
     def data_received(self, data, datatype):
@@ -281,7 +298,9 @@ class ProxyServerSession(asyncssh.SSHServerSession):
             self.backend_conn.close()
 
         if self.pool and self.lease:
-            asyncio.create_task(self.pool.release_target(self.lease))
+            task = asyncio.create_task(self.pool.release_target(self.lease))
+            self._background_tasks.add(task)
+            task.add_done_callback(self._background_tasks.discard)
 
     # Function 168: Performs operations related to send loop.
     async def _send_loop(self):
@@ -406,4 +425,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
-        pass
+        raise

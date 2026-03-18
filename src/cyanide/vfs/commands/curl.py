@@ -1,6 +1,5 @@
 import argparse
 from pathlib import PurePosixPath
-from typing import Dict
 
 import aiohttp
 
@@ -17,6 +16,50 @@ class CurlCommand(Command):
 
     # Function 223: Executes the 'curl' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
+        """Execute the curl command."""
+        parsed, unknown = self._parse_curl_args(args)
+        url = self._get_url(parsed, unknown)
+        if not url:
+            return "", "curl: try 'curl --help' for more information\n", 1
+
+        is_valid, error, resolved_ip = self.validate_url(url)
+        if not is_valid:
+            return "", f"curl: (1) {error}\n", 1
+
+        save_to_file, filename = self._get_output_config(url, parsed)
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                if parsed.head:
+                    async with session.head(url, headers={}, timeout=10) as resp:
+                        return await self._handle_head_response(resp), "", 0
+
+                async with session.get(url, headers={}, timeout=10) as resp:
+                    if resp.status >= 400:
+                        err_msg = (
+                            ""
+                            if parsed.silent
+                            else f"curl: (22) The requested URL returned error: {resp.status}\n"
+                        )
+                        return "", err_msg, 22
+
+                    content = await resp.read()
+                    q_filename = filename if filename else PurePosixPath(url).name or "index.html"
+                    if self.emulator.quarantine_callback:
+                        self.emulator.quarantine_callback(q_filename, content)
+
+                    if save_to_file:
+                        return self._handle_file_save(filename, content, parsed.silent)
+
+                    return content.decode("utf-8", errors="ignore"), "", 0
+
+        except aiohttp.ClientError as e:
+            return "", f"curl: (6) Could not resolve host: {e}\n", 6
+        except Exception as e:
+            return "", f"curl: (1) Protocol not supported or error: {e}\n", 1
+
+    def _parse_curl_args(self, args):
+        """Parse curl arguments."""
         parser = argparse.ArgumentParser(prog="curl", add_help=False)
         parser.add_argument("-o", "--output", dest="output", help="write to file")
         parser.add_argument(
@@ -27,100 +70,57 @@ class CurlCommand(Command):
         parser.add_argument("url", nargs="?", help="URL to fetch")
 
         try:
-            parsed, unknown = parser.parse_known_args(args)
+            return parser.parse_known_args(args)
         except SystemExit:
-            return "", "", 1
+            raise
 
-        url = parsed.url
-        if not url:
-            if unknown:
-                url = unknown[-1]
-            else:
-                return "", "curl: try 'curl --help' for more information\n", 1
+    def _get_url(self, parsed, unknown):
+        """Extract URL from parsed or unknown args."""
+        if parsed.url:
+            return parsed.url
+        if unknown:
+            return unknown[-1]
+        return None
 
-        is_valid, error, resolved_ip = self.validate_url(url)
-        if not is_valid:
-            return "", f"curl: (1) {error}\n", 1
-
-        request_url = url
-        headers: Dict[str, str] = {}
-
-        save_to_file = False
-        filename = None
-
+    def _get_output_config(self, url, parsed):
+        """Determine if saving to file and the filename."""
         if parsed.output:
-            save_to_file = True
-            filename = parsed.output
-        elif parsed.remote_name:
-            save_to_file = True
-            filename = PurePosixPath(url).name
-            if not filename:
-                filename = "index.html"
+            return True, parsed.output
+        if parsed.remote_name:
+            filename = PurePosixPath(url).name or "index.html"
+            return True, filename
+        return False, None
 
-        try:
-            async with aiohttp.ClientSession() as session:
-                if parsed.head:
-                    async with session.head(request_url, headers=headers, timeout=10) as resp:
-                        version_str = "1.1"
-                        if resp.version:
-                            version_str = f"{resp.version.major}.{resp.version.minor}"
-                        headers_out = f"HTTP/{version_str} {resp.status} {resp.reason}\r\n"
-                        for k, v in resp.headers.items():
-                            headers_out += f"{k}: {v}\r\n"
-                        headers_out += "\r\n"
-                        return headers_out, "", 0
-                else:
-                    async with session.get(request_url, headers=headers, timeout=10) as resp:
-                        if resp.status >= 400:
-                            if not parsed.silent:
-                                return (
-                                    "",
-                                    f"curl: (22) The requested URL returned error: {resp.status}\n",
-                                    22,
-                                )
-                            return "", "", 22
+    async def _handle_head_response(self, resp):
+        """Format header output for HEAD requests."""
+        version_str = f"{resp.version.major}.{resp.version.minor}" if resp.version else "1.1"
+        headers_out = f"HTTP/{version_str} {resp.status} {resp.reason}\r\n"
+        for k, v in resp.headers.items():
+            headers_out += f"{k}: {v}\r\n"
+        headers_out += "\r\n"
+        return headers_out
 
-                        content = await resp.read()
+    def _handle_file_save(self, filename, content, silent):
+        """Save content to fake FS and return result."""
+        full_path = self.emulator.resolve_path(filename)
+        parent_dir = str(PurePosixPath(full_path).parent)
 
-                        q_filename = (
-                            filename if filename else PurePosixPath(url).name or "index.html"
-                        )
+        if not self.fs.exists(parent_dir):
+            return "", f"curl: (23) Failed writing body (0 != {len(content)})\n", 23
 
-                        if self.emulator.quarantine_callback:
-                            self.emulator.quarantine_callback(q_filename, content)
+        if (
+            self.fs.mkfile(
+                full_path, content=content.decode("utf-8", errors="ignore"), owner=self.username
+            )
+            is None
+        ):
+            return "", "curl: (23) Check output path\n", 23
 
-                        if save_to_file:
-                            full_path = self.emulator.resolve_path(filename)
-                            parent_dir = str(PurePosixPath(full_path).parent)
-
-                            if not self.fs.exists(parent_dir):
-                                return (
-                                    "",
-                                    f"curl: (23) Failed writing body (0 != {len(content)})\n",
-                                    23,
-                                )
-
-                            if (
-                                self.fs.mkfile(
-                                    full_path,
-                                    content=content.decode("utf-8", errors="ignore"),
-                                    owner=self.username,
-                                )
-                                is None
-                            ):
-                                return "", "curl: (23) Check output path\n", 23
-
-                            if not parsed.silent:
-                                stderr = f"  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current\n                                 Dload  Upload   Total   Spent    Left  Speed\n100  {len(content)}  100  {len(content)}    0     0   {len(content)}      0 --:--:-- --:--:-- --:--:--  {len(content)}\n"
-                                return "", stderr, 0
-                            return "", "", 0
-
-                        else:
-                            return content.decode("utf-8", errors="ignore"), "", 0
-
-        except aiohttp.ClientError as e:
-            return "", f"curl: (6) Could not resolve host: {e}\n", 6
-        except Exception as e:
-            return "", f"curl: (1) Protocol not supported or error: {e}\n", 1
-
+        if not silent:
+            stderr = (
+                "  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current\n"
+                f"                                 Dload  Upload   Total   Spent    Left  Speed\n"
+                f"100  {len(content)}  100  {len(content)}    0     0   {len(content)}      0 --:--:-- --:--:-- --:--:--  {len(content)}\n"
+            )
+            return "", stderr, 0
         return "", "", 0

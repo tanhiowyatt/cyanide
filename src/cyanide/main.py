@@ -54,7 +54,8 @@ def main():
     try:
         asyncio.run(async_main())
     except (KeyboardInterrupt, SystemExit):
-        logging.info("\\n[*] Honeypot stopped.")
+        logging.info("\n[*] Honeypot stopped.")
+        raise
     except Exception as e:
         logging.error(f"[!] Unexpected error: {e}")
 

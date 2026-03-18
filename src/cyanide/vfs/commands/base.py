@@ -133,64 +133,86 @@ class Command:
         """
         try:
             parsed = urlparse(url)
-            if parsed.scheme not in ("http", "https"):
-                return False, f"Protocol '{parsed.scheme}' not supported or disabled.", None
+            is_valid, err_msg = self._validate_basic_url(parsed)
+            if not is_valid:
+                return False, err_msg, None
 
             hostname = parsed.hostname
-            if not hostname:
-                return False, "Invalid URL", None
+            # hostname is guaranteed to exist by _validate_basic_url
+            cached_ip = self._check_dns_cache(hostname)  # type: ignore
+            if cached_ip:
+                return True, "", cached_ip
 
-            now = time.time()
-            if hasattr(self.emulator, "dns_cache") and hostname in self.emulator.dns_cache:
-                ip_str, expiry = self.emulator.dns_cache[hostname]
-                if now < expiry:
-                    if hasattr(self.emulator, "stats"):
-                        self.emulator.stats.dns_cache_hits += 1
-                    return True, "", ip_str
+            allow_local = (
+                self.emulator.config.get("allow_local_network", False)
+                if hasattr(self.emulator, "config")
+                else False
+            )
 
-            if hasattr(self.emulator, "stats"):
-                self.emulator.stats.dns_cache_misses += 1
+            return self._resolve_and_verify_ip(hostname, allow_local)  # type: ignore
 
-            try:
-                ip_list = socket.getaddrinfo(hostname, None)
-
-                allow_local = (
-                    self.emulator.config.get("allow_local_network", False)
-                    if hasattr(self.emulator, "config")
-                    else False
-                )
-
-                valid_ip = None
-                for item in ip_list:
-                    ip_str = item[4][0]
-                    ip_obj = ipaddress.ip_address(ip_str)
-
-                    if not allow_local and (
-                        ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local
-                    ):
-                        return (
-                            False,
-                            f"Access to private/local resource '{hostname}' ({ip_str}) denied.",
-                            None,
-                        )
-
-                    if not valid_ip:
-                        valid_ip = ip_str
-
-                if hasattr(self.emulator, "dns_cache") and valid_ip:
-                    ttl = (
-                        self.emulator.config.get("dns_cache_ttl", 60)
-                        if hasattr(self.emulator, "config")
-                        else 60
-                    )
-                    self.emulator.dns_cache[hostname] = (str(valid_ip), now + ttl)
-
-                return True, "", str(valid_ip) if valid_ip else None
-
-            except socket.gaierror:
-                return False, f"Could not resolve host: {hostname}", None
-
-        except ValueError:
-            return False, "Invalid URL format", None
         except Exception as e:
             return False, f"URL validation error: {e}", None
+
+    def _validate_basic_url(self, parsed) -> tuple[bool, str]:
+        """Validate the scheme and presence of hostname."""
+        if parsed.scheme not in ("http", "https"):
+            return False, f"Protocol '{parsed.scheme}' not supported or disabled."
+
+        if not parsed.hostname:
+            return False, "Invalid URL"
+
+        return True, ""
+
+    def _check_dns_cache(self, hostname: str) -> Optional[str]:
+        """Check the DNS cache for the hostname."""
+        now = time.time()
+        if hasattr(self.emulator, "dns_cache") and hostname in self.emulator.dns_cache:
+            ip_str, expiry = self.emulator.dns_cache[hostname]
+            if now < expiry:
+                if hasattr(self.emulator, "stats"):
+                    self.emulator.stats.dns_cache_hits += 1
+                return str(ip_str)
+        return None
+
+    def _resolve_and_verify_ip(
+        self, hostname: str, allow_local: bool
+    ) -> tuple[bool, str, Optional[str]]:
+        """Resolve the hostname and verify the resulting IPs."""
+        if hasattr(self.emulator, "stats"):
+            self.emulator.stats.dns_cache_misses += 1
+
+        try:
+            ip_list = socket.getaddrinfo(hostname, None)
+            valid_ip = None
+
+            for item in ip_list:
+                ip_str = item[4][0]
+                ip_obj = ipaddress.ip_address(ip_str)
+
+                if not allow_local and (
+                    ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local
+                ):
+                    return (
+                        False,
+                        f"Access to private/local resource '{hostname}' ({ip_str}) denied.",
+                        None,
+                    )
+
+                if not valid_ip:
+                    valid_ip = ip_str
+
+            if hasattr(self.emulator, "dns_cache") and valid_ip:
+                ttl = (
+                    self.emulator.config.get("dns_cache_ttl", 60)
+                    if hasattr(self.emulator, "config")
+                    else 60
+                )
+                self.emulator.dns_cache[hostname] = (str(valid_ip), time.time() + ttl)
+
+            return True, "", str(valid_ip) if valid_ip else None
+
+        except socket.gaierror:
+            return False, f"Could not resolve host: {hostname}", None
+        except ValueError:
+            return False, "Invalid IP format encountered", None

@@ -26,7 +26,7 @@ class WgetCommand(Command):
         try:
             parsed, unknown = parser.parse_known_args(args)
         except SystemExit:
-            return "", "", 1
+            raise
 
         if not parsed.url:
             return "", "wget: missing URL\n", 1

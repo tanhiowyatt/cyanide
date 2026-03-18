@@ -18,7 +18,7 @@ class AsyncLogger:
         self._worker_task = None
 
     # Function 10: Performs operations related to start.
-    async def start(self):
+    def start(self):
         """Start the background worker."""
         if self._worker_task is None:
             self._worker_task = asyncio.create_task(self._worker())

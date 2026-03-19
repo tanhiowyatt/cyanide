@@ -24,6 +24,7 @@ from cyanide.services.smtp_handler import SMTPHandler
 from cyanide.services.telnet_handler import TelnetHandler
 from cyanide.vfs.engine import FakeFilesystem
 from cyanide.vfs.rsync import RsyncHandler
+from cyanide.vfs.scp import ScpHandler
 
 from .async_logger import AsyncLogger
 from .config import _CONFIG_EVENTS
@@ -184,6 +185,8 @@ class CyanideServer:
             self.profile = DEFAULT_METADATA.copy()
             self.resolved_profile_name = "ubuntu"
 
+        self.vfs_cache: Dict[str, FakeFilesystem] = {}
+
     # Function 40: Performs operations related to analyze command.
     def _analyze_command(self, cmd, username, src_ip, session_id, protocol, is_bot=False):
         """Delegated to AnalyticsService."""
@@ -251,6 +254,9 @@ class CyanideServer:
         def audit_hook(action, path):
             self._fs_audit_hook(action, path, session_id, src_ip)
 
+        if src_ip != "unknown" and src_ip in self.vfs_cache:
+            return self.vfs_cache[src_ip]
+
         try:
             fs = FakeFilesystem(
                 os_profile=self.os_profile,
@@ -259,6 +265,8 @@ class CyanideServer:
                 stats=self.stats,
                 users=self.users,
             )
+            if src_ip != "unknown":
+                self.vfs_cache[src_ip] = fs
             return fs
         except Exception as e:
             self.logger.log_event(
@@ -554,17 +562,21 @@ class CyanideServer:
     @staticmethod
     async def _handle_exec_session(process, sess, factory, command):
         """Handle non-interactive EXEC session."""
-        factory.honeypot.logger.log_event(
-            "conn_" + factory.conn_id,
-            EVENT_COMMAND_INPUT,
-            {
-                "protocol": "ssh",
-                "src_ip": factory.src_ip,
-                "username": factory.username,
-                "input": command,
-                "client_version": factory.client_version,
-            },
-        )
+        ssh_conf = factory.honeypot.config.get("ssh", {})
+        if command.startswith("rsync ") and ssh_conf.get("rsync_enabled", True):
+            rsync = RsyncHandler(sess, process)
+            rc = await rsync.handle(command)
+            process.exit(rc)
+            return
+
+        if (
+            command.startswith("scp ") or command.startswith("/usr/bin/scp ")
+        ) and ssh_conf.get("scp_enabled", True):
+            scp = ScpHandler(sess, process)
+            rc = await scp.handle(command)
+            process.exit(rc)
+            return
+
         await sess._async_exec(command)
 
     @staticmethod
@@ -625,7 +637,7 @@ class CyanideServer:
 
             ssh_opts["sftp_factory"] = CyanideSFTPHandler
 
-        ssh_opts["allow_scp"] = True
+        ssh_opts["allow_scp"] = False
 
         algo_map = {
             "kex_algs": "kex_algs",
@@ -1554,31 +1566,10 @@ class SSHSession(asyncssh.SSHServerSession):
                 command, self.username, self.src_ip, self.session_id, "ssh"
             )
 
-        ssh_conf = self.honeypot.config.get("ssh", {})
-        if command.startswith("rsync ") and ssh_conf.get("rsync_enabled", True):
-            rsync = RsyncHandler(self)
-            task = asyncio.create_task(self._run_rsync(rsync, command))
-            self._background_tasks.add(task)
-            task.add_done_callback(self._background_tasks.discard)
-            return True
-
         task = asyncio.create_task(self._async_exec(command))
         self._background_tasks.add(task)
         task.add_done_callback(self._background_tasks.discard)
         return True
-
-    # Function 79.2: Runs rsync handler and handles exit.
-    async def _run_rsync(self, rsync, command):
-        try:
-            rc = await rsync.handle(command)
-            self.channel.exit(rc)
-            self.channel.close()
-        except Exception as e:
-            self.honeypot.logger.log_event(
-                self.session_id, "error", {"message": f"Rsync handler crashed: {e}"}
-            )
-            self.channel.exit(1)
-            self.channel.close()
 
     # Function 80: Performs operations related to async exec.
     async def _async_exec(self, command):

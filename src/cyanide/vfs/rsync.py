@@ -37,9 +37,10 @@ class RsyncHandler:
 
     def _write(self, data: bytes):
         if self.process is not None:
-            self.process.channel.write(data)
+            # If encoding is set, write() expects a string
+            self.process.channel.write(data.decode("latin-1"))
         else:
-            self.session.channel.write(data)
+            self.session.channel.write(data.decode("latin-1"))
         self.bytes_written += len(data)
 
     async def _read(self, n: int) -> bytes:
@@ -57,7 +58,7 @@ class RsyncHandler:
                     return b""
 
                 if isinstance(data, str):
-                    data = data.encode()
+                    data = data.encode("latin-1")
 
                 self.bytes_read += len(data)
                 return bytes(data)

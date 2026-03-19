@@ -13,6 +13,7 @@ services:
     volumes:
       - ../../var/log:/app/var/log
       - ../../var/lib/cyanide:/app/var/lib/cyanide
+      - ../../var/quarantine:/app/var/quarantine
       - ../../configs/app.yaml:/app/configs/app.yaml
       - ../../configs/profiles:/app/configs/profiles:ro
       - ../../src:/app/src

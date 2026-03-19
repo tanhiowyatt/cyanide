@@ -17,15 +17,13 @@ class CyanideSFTPFile:
         self.is_write = is_write
         self.pos = 0
 
-    async def read(self, offset: int, size: int) -> bytes:
-        await asyncio.sleep(0)
+    def read(self, offset: int, size: int) -> bytes:
         if offset >= len(self.buffer):
             return b""
         end = min(offset + size, len(self.buffer))
         return bytes(self.buffer[offset:end])
 
-    async def write(self, offset: int, data: bytes) -> int:
-        await asyncio.sleep(0)
+    def write(self, offset: int, data: bytes) -> int:
         if not self.is_write:
             raise asyncssh.SFTPPermissionDenied("File not open for writing")
 
@@ -40,8 +38,7 @@ class CyanideSFTPFile:
         self.buffer[offset:end] = data
         return len(data)
 
-    async def seek(self, offset: int, whence: int):
-        await asyncio.sleep(0)
+    def seek(self, offset: int, whence: int):
         if whence == 0:
             self.pos = offset
         elif whence == 1:
@@ -51,19 +48,17 @@ class CyanideSFTPFile:
         else:
             raise asyncssh.SFTPBadMessage("Invalid seek whence")
 
-    async def tell(self) -> int:
-        await asyncio.sleep(0)
+    def tell(self) -> int:
         return self.pos
 
-    async def fstat(self) -> asyncssh.SFTPAttrs:
-        return await self.handler.stat(self.path)
+    def fstat(self) -> asyncssh.SFTPAttrs:
+        node = self.handler.fs.get_node(self.path)
+        return self.handler._get_attrs(node) if node else asyncssh.SFTPAttrs()
 
-    async def fsetstat(self, attrs: asyncssh.SFTPAttrs):
-        await asyncio.sleep(0)
+    def fsetstat(self, attrs: asyncssh.SFTPAttrs):
         self.handler._log_op("fsetstat", self.path, extra={"attrs": str(attrs)})
 
-    async def close(self):
-        await asyncio.sleep(0)
+    def close(self):
         if self.is_write:
             content = bytes(self.buffer)
             self.handler.fs.mkfile(self.path, content=content.decode("utf-8", "ignore"))

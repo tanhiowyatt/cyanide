@@ -17,6 +17,8 @@ Cyanide generates high-fidelity JSON logs in `var/log/cyanide/`.
 - **`rsync_filelist`**: Detailed list of intended files (names, sizes, modes) extracted from the binary stream.
 - **`rsync_denied`**: Reason for rejecting the transfer (e.g. `target_readonly`).
 - **`rsync_error`**: Binary protocol parsing failures.
+- **`scp_exec_detected`**: Capture of raw `scp` command string and direction.
+- **`scp_upload_complete`**: Detailed event for finished SCP file transfers (name, size, mode).
 
 ### Log Rotation Policy (logtype)
 Cyanide supports built-in rotation logic controlled by `app.yaml` (`logging.logtype`).

@@ -52,8 +52,9 @@ Cyanide implements a full SFTP subsystem that bridges directly to the Virtual Fi
 
 ### SCP Support
 Secure Copy (SCP) is supported via the standard RCP-based wire protocol.
-- **Interception:** Cyanide intercepts `scp -t` (to) and `scp -f` (from) execution requests.
-- **Realistic Protocol:** The honeypot engages in the expected ACK-based handshake, supporting both file and directory uploads.
+- **Interception:** Cyanide intercepts `scp` and `/usr/bin/scp` execution requests in the SSH session.
+- **Realistic Sink Mode:** Implements the `sink` protocol (`-t`) to receive files. The honeypot performs the expected ACK-based handshake (`\0`) to realistically simulate a successful transfer.
+- **VFS Integration:** Captured files are automatically placed into the Virtual Filesystem (VFS) and forwarded to the quarantine service for analysis.
 
 ### rsync Monitoring & Intent Capture
 Cyanide provides a high-fidelity rsync "Server Mode" monitor that performs active protocol analysis of incoming synchronization requests.

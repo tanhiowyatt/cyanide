@@ -68,7 +68,7 @@ class CrontabCommand(Command):
         return "", "", 0
 
     # Function 222: Performs operations related to on editor input.
-    async def _on_editor_input(self, line: str) -> tuple[str, str, int]:
+    def _on_editor_input(self, line: str) -> tuple[str, str, int]:
         raw_line = line.strip()
         if raw_line == "CANCEL":
             return "crontab: edits aborted\n", "", 0

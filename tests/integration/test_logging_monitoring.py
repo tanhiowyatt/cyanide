@@ -19,7 +19,7 @@ def log_dir(tmp_path):
 def test_stats_to_prometheus():
     stats = StatsManager()
     stats.on_connect("ssh", "192.168.1.1")
-    stats.on_auth("ssh", "192.168.1.1", "root", "123456", True)
+    stats.on_auth("root", "123456", True)
     stats.on_command("ssh", "192.168.1.1", "root", "id")
 
     output = stats.to_prometheus()

@@ -5,8 +5,6 @@ import traceback
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-import aiofiles
-
 
 class TelnetHandler:
     """
@@ -114,7 +112,7 @@ class TelnetHandler:
             writer.close()
             return "", None, False
 
-        session_id = self.services.session.register_session(src_ip, "telnet")
+        session_id = self.services.session.register_session(src_ip)
         folder_name = f"telnet_{src_ip}_{session_id}"
         log_dir = Path(self.logger.log_dir) / "tty" / folder_name
         log_dir.mkdir(parents=True, exist_ok=True)
@@ -126,8 +124,7 @@ class TelnetHandler:
         }
 
         for path in tty_paths.values():
-            async with aiofiles.open(path, "w"):
-                pass
+            path.touch()
 
         class TTYState:
             def __init__(self):
@@ -192,7 +189,7 @@ class TelnetHandler:
             return False, "", bytes_in, bytes_out
 
         success = self.server.is_valid_user(username, password)
-        self.stats.on_auth("telnet", src_ip, username, password, success)
+        self.stats.on_auth(username, password, success)
         log_common = {"protocol": "telnet", "username": username, "success": success}
         self.logger.log_event(
             session_id, "auth_attempt", {**log_common, "password_len": len(password)}
@@ -258,7 +255,7 @@ class TelnetHandler:
                         "client_version": "Telnet",
                     },
                 )
-                self.services.analytics.analyze_command(cmd, username, src_ip, session_id, "telnet")
+                self.services.analytics.analyze_command(cmd, src_ip, session_id)
 
                 await asyncio.sleep(random.uniform(0.05, 0.3))
                 stdout, stderr, rc = await shell.execute(cmd)
@@ -314,6 +311,6 @@ class TelnetHandler:
             },
         )
         self.services.session.unregister_session(src_ip)
-        self.stats.on_disconnect("telnet", src_ip)
+        self.stats.on_disconnect()
         writer.close()
         await writer.wait_closed()

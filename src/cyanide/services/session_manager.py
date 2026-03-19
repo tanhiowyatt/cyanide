@@ -64,7 +64,7 @@ class SessionManager:
         return True, ""
 
     # Function 192: Performs operations related to register session.
-    def register_session(self, ip: str, protocol: str = "unknown") -> str:
+    def register_session(self, ip: str) -> str:
         """
         Register a new session.
         Returns: session_id

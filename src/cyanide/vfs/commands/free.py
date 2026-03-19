@@ -1,9 +1,12 @@
+import asyncio
+
 from .base import Command
 
 
 class FreeCommand(Command):
     # Function 234: Executes the 'free' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
+        await asyncio.sleep(0)
         import secrets
 
         is_mb = "-m" in args

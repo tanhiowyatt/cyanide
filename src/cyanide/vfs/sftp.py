@@ -1,3 +1,4 @@
+import asyncio
 import os
 from typing import Any, AsyncIterator, Dict, Optional, Union
 
@@ -17,12 +18,14 @@ class CyanideSFTPFile:
         self.pos = 0
 
     async def read(self, offset: int, size: int) -> bytes:
+        await asyncio.sleep(0)
         if offset >= len(self.buffer):
             return b""
         end = min(offset + size, len(self.buffer))
         return bytes(self.buffer[offset:end])
 
     async def write(self, offset: int, data: bytes) -> int:
+        await asyncio.sleep(0)
         if not self.is_write:
             raise asyncssh.SFTPPermissionDenied("File not open for writing")
 
@@ -38,6 +41,7 @@ class CyanideSFTPFile:
         return len(data)
 
     async def seek(self, offset: int, whence: int):
+        await asyncio.sleep(0)
         if whence == 0:
             self.pos = offset
         elif whence == 1:
@@ -48,15 +52,18 @@ class CyanideSFTPFile:
             raise asyncssh.SFTPBadMessage("Invalid seek whence")
 
     async def tell(self) -> int:
+        await asyncio.sleep(0)
         return self.pos
 
     async def fstat(self) -> asyncssh.SFTPAttrs:
         return await self.handler.stat(self.path)
 
     async def fsetstat(self, attrs: asyncssh.SFTPAttrs):
+        await asyncio.sleep(0)
         self.handler._log_op("fsetstat", self.path, extra={"attrs": str(attrs)})
 
     async def close(self):
+        await asyncio.sleep(0)
         if self.is_write:
             content = bytes(self.buffer)
             self.handler.fs.mkfile(self.path, content=content.decode("utf-8", "ignore"))
@@ -144,6 +151,7 @@ class CyanideSFTPHandler(asyncssh.SFTPServer):
             raise asyncssh.SFTPNoSuchFile(str(e))
 
     async def stat(self, path: Union[str, bytes]) -> asyncssh.SFTPAttrs:
+        await asyncio.sleep(0)
         p = self._decode_path(path)
         node = self.fs.get_node(p)
         if not node:
@@ -157,6 +165,7 @@ class CyanideSFTPHandler(asyncssh.SFTPServer):
         return await self.stat(path)
 
     async def setstat(self, path: Union[str, bytes], attrs: asyncssh.SFTPAttrs):
+        await asyncio.sleep(0)
         p = self._decode_path(path)
         self._log_op("setstat", p, extra={"attrs": str(attrs)})
 
@@ -196,11 +205,13 @@ class CyanideSFTPHandler(asyncssh.SFTPServer):
         return raw or b""
 
     async def mkdir(self, path: Union[str, bytes], attrs: asyncssh.SFTPAttrs):
+        await asyncio.sleep(0)
         p = self._decode_path(path)
         self.fs.mkdir_p(p)
         self._log_op("mkdir", p)
 
     async def remove(self, path: Union[str, bytes]):
+        await asyncio.sleep(0)
         p = self._decode_path(path)
         if self.fs.remove(p):
             self._log_op("remove", p)

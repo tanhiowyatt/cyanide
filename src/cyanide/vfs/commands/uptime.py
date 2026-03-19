@@ -1,3 +1,4 @@
+import asyncio
 import time
 
 from .base import Command
@@ -8,6 +9,7 @@ class UptimeCommand(Command):
 
     # Function 273: Executes the 'uptime' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+        await asyncio.sleep(0)
         uptime_content = self.fs.get_content("/proc/uptime")
         if not uptime_content:
             uptime_seconds = 3600.0

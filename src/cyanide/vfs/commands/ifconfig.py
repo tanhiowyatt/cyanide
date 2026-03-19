@@ -1,9 +1,12 @@
+import asyncio
+
 from .base import Command
 
 
 class IfconfigCommand(Command):
     # Function 242: Executes the 'ifconfig' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
+        await asyncio.sleep(0)
         mac = self.generate_mac()
         stats = self.get_random_network_stats()
         return (

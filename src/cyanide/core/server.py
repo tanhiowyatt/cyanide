@@ -194,9 +194,7 @@ class CyanideServer:
             span.set_attribute("session.id", session_id)
             span.set_attribute("net.protocol.name", protocol)
             span.set_attribute("bot.detected", is_bot)
-            self.services.analytics.analyze_command(
-                cmd, username, src_ip, session_id, protocol, is_bot=is_bot
-            )
+            self.services.analytics.analyze_command(cmd, src_ip, session_id, is_bot=is_bot)
 
     # Function 41: Handles event logging and telemetry.
     async def log_geoip(self, session_id, ip, protocol):
@@ -918,7 +916,7 @@ class SSHServerFactory(asyncssh.SSHServer):
         if not self._check_session_limits(conn):
             return
 
-        self.honeypot.services.session.register_session(self.src_ip, "ssh")
+        self.honeypot.services.session.register_session(self.src_ip)
 
         self.fs = self.honeypot.get_filesystem(
             session_id="conn_" + self.conn_id, src_ip=self.src_ip
@@ -1012,7 +1010,7 @@ class SSHServerFactory(asyncssh.SSHServer):
     def validate_password(self, username, password):
         self.username = username
         success = self.honeypot.is_valid_user(username, password)
-        self.honeypot.stats.on_auth("ssh", self.src_ip, username, password, success)
+        self.honeypot.stats.on_auth(username, password, success)
         self.honeypot.logger.log_event(
             "conn_" + self.conn_id,
             "auth",
@@ -1256,7 +1254,7 @@ class SSHSession(asyncssh.SSHServerSession):
         if exc:
             reason = f"error: {exc}"
 
-        self.honeypot.stats.on_disconnect("ssh", self.src_ip)
+        self.honeypot.stats.on_disconnect()
 
         self.honeypot.logger.log_event(
             self.session_id,
@@ -1279,8 +1277,6 @@ class SSHSession(asyncssh.SSHServerSession):
                 "height": height,
             },
         )
-        if self.shell:
-            pass
 
     # Function 69: Performs operations related to shell requested.
     def shell_requested(self):

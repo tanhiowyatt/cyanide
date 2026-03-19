@@ -1,3 +1,4 @@
+import asyncio
 import time
 
 from .base import Command
@@ -8,6 +9,7 @@ class WCommand(Command):
 
     # Function 275: Executes the 'w' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+        await asyncio.sleep(0)
         """Execute the w command.
 
         Returns:

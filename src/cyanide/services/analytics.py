@@ -81,10 +81,8 @@ class AnalyticsService:
     def analyze_command(
         self,
         cmd: str,
-        username: str,
         src_ip: str,
         session_id: str,
-        protocol: str,
         is_bot: bool = False,
     ):
         """Run command through ML pipeline and alert if anomaly."""

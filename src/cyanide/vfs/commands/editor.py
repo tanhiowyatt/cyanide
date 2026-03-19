@@ -30,7 +30,7 @@ class EditorCommand(Command):
         return prompt, "", 0
 
     # Function 228: Performs operations related to on input.
-    async def _on_input(self, line: str) -> tuple[str, str, int]:
+    def _on_input(self, line: str) -> tuple[str, str, int]:
         stop_save = [":wq", "^X", "wq"]
         stop_abort = [":q!", "^C", "q!", ":q"]
 

@@ -114,20 +114,18 @@ class CyanideSSHServer(asyncssh.SSHServer):
 
     # Function 155: Performs operations related to session requested.
     async def session_requested(self):
-        """Bridge a new session to the backend.
-
-        Returns:
-            ProxyServerSession: New session handler for this connection.
-        """
-        try:
-            pass
-        except Exception as e:
-            logger.error(f"Error bridging session: {e}")
-            return False
-
-        return ProxyServerSession(
+        """Bridge a new session to the backend."""
+        session = ProxyServerSession(
             self.pool, self.target_host, self.target_port, self.session_id, self.src_ip, self.fs
         )
+
+        if hasattr(self, "logger") and getattr(self, "logger"):
+            getattr(self, "logger").log_event(
+                self.session_id,
+                "session_created",
+                {"backend": self.pool.__class__.__name__, "src_ip": self.src_ip},
+            )
+        return session
 
 
 class ProxyServerSession(asyncssh.SSHServerSession):

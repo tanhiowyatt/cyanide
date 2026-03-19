@@ -40,6 +40,8 @@ class SMTPHandler:
                 "connect",
                 {"protocol": "smtp", "src_ip": src_ip, "src_port": peer[1] if peer else 0},
             )
+        if self.stats:
+            self.stats.on_connect("smtp", src_ip)
         return src_ip, session_id, hostname, peer
 
     async def _command_loop(self, reader, writer, session_id, src_ip, hostname):
@@ -52,26 +54,36 @@ class SMTPHandler:
             if not cmd_line:
                 continue
 
-            if self.logger:
-                self.logger.log_event(
-                    session_id,
-                    "command.input",
-                    {"protocol": "smtp", "src_ip": src_ip, "input": cmd_line},
-                )
+            cmd, args = self._parse_and_log_command(cmd_line, session_id, src_ip)
+            should_continue = await self._handle_command(
+                reader, writer, cmd, args, src_ip, hostname
+            )
 
-            parts = cmd_line.split()
-            cmd = parts[0].upper() if parts else ""
-            args = parts[1:] if len(parts) > 1 else []
-
-            handler = self._dispatch_map.get(cmd)
-            if handler:
-                should_continue = await handler(reader, writer, args, src_ip, hostname)
-                if not should_continue:
-                    break
-            else:
-                writer.write(b"502 5.5.2 Error: command not recognized\r\n")
+            if not should_continue:
+                break
 
             await writer.drain()
+
+    def _parse_and_log_command(self, cmd_line, session_id, src_ip):
+        if self.logger:
+            self.logger.log_event(
+                session_id,
+                "command.input",
+                {"protocol": "smtp", "src_ip": src_ip, "input": cmd_line},
+            )
+
+        parts = cmd_line.split()
+        cmd = parts[0].upper() if parts else ""
+        args = parts[1:] if len(parts) > 1 else []
+        return cmd, args
+
+    async def _handle_command(self, reader, writer, cmd, args, src_ip, hostname) -> bool:
+        handler = self._dispatch_map.get(cmd)
+        if handler:
+            return await handler(reader, writer, args, src_ip, hostname)
+
+        writer.write(b"502 5.5.2 Error: command not recognized\r\n")
+        return True
 
     async def handle_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         src_ip, session_id, hostname, _ = self._init_session(writer)
@@ -98,17 +110,22 @@ class SMTPHandler:
             pass
         if self.logger:
             self.logger.log_event(session_id, "session_end", {"protocol": "smtp", "src_ip": src_ip})
+        if self.stats:
+            self.stats.on_disconnect()
 
     async def _cmd_helo(self, reader, writer, args, src_ip, hostname) -> bool:
         writer.write(f"250 {hostname} Hello {src_ip}\r\n".encode())
+        await writer.drain()
         return True
 
     async def _cmd_mail(self, reader, writer, args, src_ip, hostname) -> bool:
         writer.write(b"250 2.1.0 Ok\r\n")
+        await writer.drain()
         return True
 
     async def _cmd_rcpt(self, reader, writer, args, src_ip, hostname) -> bool:
         writer.write(b"250 2.1.5 Ok\r\n")
+        await writer.drain()
         return True
 
     async def _cmd_data(self, reader, writer, args, src_ip, hostname) -> bool:
@@ -130,12 +147,15 @@ class SMTPHandler:
         writer.write(
             b"252 2.1.5 Cannot VRFY user, but will accept message and attempt delivery\r\n"
         )
+        await writer.drain()
         return True
 
     async def _cmd_noop(self, reader, writer, args, src_ip, hostname) -> bool:
         writer.write(b"250 2.0.0 Ok\r\n")
+        await writer.drain()
         return True
 
     async def _cmd_rset(self, reader, writer, args, src_ip, hostname) -> bool:
-        writer.write(b"250 2.0.0 Ok\r\n")
+        writer.write(b"250 2.0.0 Reset state\r\n")
+        await writer.drain()
         return True

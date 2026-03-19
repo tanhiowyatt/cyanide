@@ -1,14 +1,17 @@
+import asyncio
+
 from .base import Command
 
 
 class YumCommand(Command):
     # Function 279: Executes the 'yum' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+        await asyncio.sleep(0)
         if not self._is_yummy_os():
             return "", f"bash: {args[0] if args else 'yum'}: command not found\n", 127
 
         if not args:
-            return ("Loaded plugins: fastestmirror\n" "You need to give some command\n"), "", 1
+            return ("Loaded plugins: fastestmirror\n" + "You need to give some command\n"), "", 1
 
         subcommand = args[0]
         packages = args[1:]

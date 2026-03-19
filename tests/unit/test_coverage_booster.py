@@ -104,7 +104,7 @@ def test_stats_manager_coverage():
     mgr = StatsManager()
     mgr.get_stats()
     mgr.on_connect("ssh", "1.1.1.1")
-    mgr.on_auth("ssh", "1.1.1.1", "u", "p", True)
+    mgr.on_auth("u", "p", True)
     mgr.on_command("ssh", "1.1.1.1", "u", "ls")
     mgr.on_traffic("in", 100)
     assert mgr.total_sessions == 1

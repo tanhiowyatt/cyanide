@@ -1,3 +1,5 @@
+import asyncio
+
 from cyanide.vfs.nodes import Directory
 
 from .base import Command
@@ -8,6 +10,7 @@ class LsCommand(Command):
 
     # Function 246: Executes the 'ls' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+        await asyncio.sleep(0)
         """Execute the ls command."""
         show_all, long_format, paths = self._parse_ls_args(args)
         target_node = self._get_target_node(paths)

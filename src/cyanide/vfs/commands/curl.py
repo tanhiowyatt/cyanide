@@ -32,7 +32,7 @@ class CurlCommand(Command):
             async with aiohttp.ClientSession() as session:
                 if parsed.head:
                     async with session.head(url, headers={}, timeout=10) as resp:
-                        return await self._handle_head_response(resp), "", 0
+                        return self._handle_head_response(resp), "", 0
 
                 async with session.get(url, headers={}, timeout=10) as resp:
                     if resp.status >= 400:
@@ -91,7 +91,7 @@ class CurlCommand(Command):
             return True, filename
         return False, None
 
-    async def _handle_head_response(self, resp):
+    def _handle_head_response(self, resp):
         """Format header output for HEAD requests."""
         version_str = f"{resp.version.major}.{resp.version.minor}" if resp.version else "1.1"
         headers_out = f"HTTP/{version_str} {resp.status} {resp.reason}\r\n"

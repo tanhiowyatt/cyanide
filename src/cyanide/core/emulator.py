@@ -1,3 +1,4 @@
+import inspect
 import shlex
 from dataclasses import dataclass
 from typing import Dict, List, Optional
@@ -31,19 +32,22 @@ class ShellEmulator:
         self.config = config or {}
         self.quarantine_callback = quarantine_callback
         self.dns_cache: dict[str, tuple[str, float]] = {}
-        self.cwd = (
-            "/home/admin"
-            if username == "admin"
-            else "/root" if username == "root" else f"/home/{username}"
-        )
+
+        if username == "admin":
+            self.cwd = "/home/admin"
+        elif username == "root":
+            self.cwd = "/root"
+        else:
+            self.cwd = f"/home/{username}"
+
         if not self.fs.exists(self.cwd):
             self.cwd = "/"
 
         self.max_chain_depth = self.config.get("shell", {}).get("max_chain_depth", 100)
         self.max_output_size = self.config.get("shell", {}).get("max_output_size", 1024 * 1024)
-
         self.pending_input_callback = None
         self.pending_input_prompt = None
+
         self.history: list[str] = []
         self.env: dict[str, str] = {
             "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
@@ -177,7 +181,10 @@ class ShellEmulator:
             callback = self.pending_input_callback
             self.pending_input_callback = None
             self.pending_input_prompt = None
-            return await callback(command_line)
+            res = callback(command_line)
+            if inspect.isawaitable(res):
+                return await res
+            return res
 
         if not command_line.strip():
             return "", "", 0
@@ -196,9 +203,8 @@ class ShellEmulator:
 
         try:
             return await self._execute_nodes(nodes)
-        except SystemExit as e:
-            rc = e.code if isinstance(e.code, int) else 1
-            return "", "", rc
+        except SystemExit:
+            raise
 
     def _check_operator(self, command_line: str, i: int) -> Optional[str]:
         """Check for chain operators at the current index."""
@@ -249,6 +255,28 @@ class ShellEmulator:
             tokens.append((current_token.strip(), None))
 
         return [CommandNode(cmd, op) for cmd, op in tokens if cmd]
+
+    # Function 23: Splits a command line by a delimiter while ignoring delimiters inside quotes.
+    def _split_ignore_quotes(self, s: str, delimiter: str) -> list[str]:
+        """Split a string by delimiter, but ignore delimiters inside quotes."""
+        parts = []
+        current = ""
+        in_quote = None
+        for char in s:
+            if char in ("'", '"'):
+                if in_quote == char:
+                    in_quote = None
+                elif in_quote is None:
+                    in_quote = char
+                current += char
+            elif char == delimiter and in_quote is None:
+                parts.append(current.strip())
+                current = ""
+            else:
+                current += char
+        if current.strip():
+            parts.append(current.strip())
+        return parts
 
     # Function 24: Performs operations related to execute pipeline.
     async def _execute_pipeline(self, pipeline_str: str) -> tuple[str, str, int]:
@@ -315,8 +343,10 @@ class ShellEmulator:
                     params, input_data=input_data
                 )
                 return cast(tuple[str, str, int], result)
-            except SystemExit:
-                raise
+            except SystemExit as e:
+                # Catch argparse or other SystemExit and return as error
+                code = e.code if isinstance(e.code, int) else 1
+                return "", f"Command exited with code {code}\n", code
             except Exception as e:
                 return "", f"Command execution error: {e}\n", 1
         else:
@@ -352,28 +382,6 @@ class ShellEmulator:
             i += 1
 
         return shlex.join(clean_parts), target, append
-
-    # Function 27: Performs operations related to split ignore quotes.
-    def _split_ignore_quotes(self, s: str, separator: str) -> List[str]:
-        tokens = []
-        current = ""
-        in_quote = False
-        quote_char = ""
-        for char in s:
-            if char in ("'", '"'):
-                if not in_quote:
-                    in_quote = True
-                    quote_char = char
-                elif char == quote_char:
-                    in_quote = False
-
-            if char == separator and not in_quote:
-                tokens.append(current.strip())
-                current = ""
-            else:
-                current += char
-        tokens.append(current.strip())
-        return tokens
 
     # Function 28: Performs operations related to write file.
     def _write_file(self, path: str, content: str):

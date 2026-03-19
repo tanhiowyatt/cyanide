@@ -39,21 +39,22 @@ class RsyncHandler:
             self.session.channel.write(data)
         self.bytes_written += len(data)
 
-    async def _read(self, n: int, timeout: float = 10.0) -> bytes:
+    async def _read(self, n: int) -> bytes:
         if n <= 0:
             return b""
         try:
-            if self.process is not None:
-                data = await asyncio.wait_for(self.process.stdin.read(n), timeout=timeout)
-            else:
-                data = await asyncio.wait_for(self.session.channel.read(n), timeout=timeout)
+            async with asyncio.timeout(10.0):  # type: ignore[attr-defined]
+                if self.process is not None:
+                    data = await self.process.stdin.read(n)
+                else:
+                    data = await self.session.channel.read(n)
 
-            if not data:
-                return b""
-            if isinstance(data, str):
-                data = data.encode()
-            self.bytes_read += len(data)
-            return bytes(data)
+                if not data:
+                    return b""
+                if isinstance(data, str):
+                    data = data.encode()
+                self.bytes_read += len(data)
+                return bytes(data)
         except (asyncio.TimeoutError, Exception):
             return b""
 
@@ -129,7 +130,7 @@ class RsyncHandler:
             )
 
             if is_sender:
-                return await self._handle_pull(dest_path)
+                return self._handle_pull(dest_path)
             else:
                 return await self._handle_push(dest_path)
 
@@ -214,7 +215,7 @@ class RsyncHandler:
 
         return files
 
-    async def _handle_pull(self, src_path: str) -> int:
+    def _handle_pull(self, src_path: str) -> int:
         """Attacker pulls files FROM honeypot."""
         self._log_event(
             "rsync_denied",

@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 from pathlib import PurePosixPath
 
 from .base import Command
@@ -7,6 +8,7 @@ from .base import Command
 class MkdirCommand(Command):
     # Function 250: Executes the 'mkdir' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
+        await asyncio.sleep(0)
         parser = argparse.ArgumentParser(prog="mkdir", add_help=False)
         parser.add_argument("-p", "--parents", action="store_true")
         parser.add_argument("path", nargs="+")

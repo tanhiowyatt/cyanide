@@ -107,8 +107,8 @@ class Command:
                 break
 
         if needs_root:
-            self.emulator.pending_input_callback = lambda pwd: self._on_password_auth(
-                pwd, args, input_data
+            self.emulator.pending_input_callback = lambda _: self._on_password_auth(
+                args, input_data
             )
             self.emulator.pending_input_prompt = (
                 f"[cyanide] password for {self.emulator.username}: "
@@ -118,9 +118,7 @@ class Command:
         return await self.execute(args, input_data=input_data)
 
     # Function 213: Performs operations related to on password auth.
-    async def _on_password_auth(
-        self, password: str, args: list[str], input_data: str
-    ) -> tuple[str, str, int]:
+    async def _on_password_auth(self, args: list[str], input_data: str) -> tuple[str, str, int]:
         self.emulator.username = "root"
         return await self.execute(args, input_data=input_data)
 

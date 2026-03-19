@@ -99,17 +99,22 @@ class VTScanner:
             return result
 
     def _handle_error_status(self, status: int, result: dict) -> Optional[dict]:
-        error_map = {
-            401: ("Unauthorized", False),
-            429: ("Quota Exceeded", True),
-        }
-
+        error_map = {401: ("Unauthorized", False), 429: ("Quota Exceeded", True)}
         msg, keep_enabled = error_map.get(status, ("Other error", True))
 
         if self.logger:
-            self.logger.log_event("system", "vt_error", {"status": status, "message": msg})
+            self.logger.log_event(
+                "system",
+                "vt_error",
+                {
+                    "status": status,
+                    "message": msg,
+                    "scan_id": result.get("scan_id"),
+                    "sha256": result.get("sha256"),
+                    "positives": result.get("positives", 0),
+                },
+            )
 
         if not keep_enabled:
             self.enabled = False
-
         return None

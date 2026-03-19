@@ -34,7 +34,13 @@ async def test_su_root_success(emulator):
     su = SuCommand(emulator)
     await su.execute([])
     # Simulate entering password
-    stdout, stderr, rc = await emulator.pending_input_callback("root")
+    res = emulator.pending_input_callback("root")
+    import inspect
+
+    if inspect.isawaitable(res):
+        stdout, stderr, rc = await res
+    else:
+        stdout, stderr, rc = res
     assert rc == 0
     assert emulator.username == "root"
     # su without - should not change directory

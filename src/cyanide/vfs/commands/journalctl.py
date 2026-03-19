@@ -1,3 +1,4 @@
+import asyncio
 import time
 
 from .base import Command
@@ -6,6 +7,7 @@ from .base import Command
 class JournalctlCommand(Command):
     # Function 244: Executes the 'journalctl' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
+        await asyncio.sleep(0)
         now = time.strftime("%b %d %H:%M:%S")
         return (
             (

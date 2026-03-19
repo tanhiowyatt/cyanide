@@ -338,6 +338,78 @@
                     "refId": "B"
                 }
             ]
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 28
+            },
+            "id": 9,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                }
+            },
+            "title": "Top Missing Commands",
+            "type": "barchart",
+            "targets": [
+                {
+                    "expr": "topk(10, cyanide_missing_commands_total)",
+                    "legendFormat": "{{command}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 28
+            },
+            "id": 10,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                }
+            },
+            "title": "Top Accessed Paths",
+            "type": "barchart",
+            "targets": [
+                {
+                    "expr": "topk(10, cyanide_path_access_total)",
+                    "legendFormat": "{{path}}",
+                    "refId": "A"
+                }
+            ]
         }
     ],
     "refresh": "5s",

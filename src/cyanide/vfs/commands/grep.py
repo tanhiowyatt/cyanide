@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 
 from .base import Command
 
@@ -6,6 +7,7 @@ from .base import Command
 class GrepCommand(Command):
     # Function 236: Executes the 'grep' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
+        await asyncio.sleep(0)
         """Execute the grep command."""
         parsed, recursive = self._parse_grep_args(args)
         if not parsed.pattern:

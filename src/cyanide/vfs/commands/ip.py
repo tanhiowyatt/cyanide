@@ -1,9 +1,12 @@
+import asyncio
+
 from .base import Command
 
 
 class IpCommand(Command):
     # Function 243: Executes the 'ip' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
+        await asyncio.sleep(0)
         if not args:
             return "Usage: ip [ OPTIONS ] OBJECT { COMMAND | help }\n", "", 0
 

@@ -1,3 +1,5 @@
+import asyncio
+
 from cyanide.vfs.nodes import Directory
 
 from .base import Command
@@ -6,6 +8,7 @@ from .base import Command
 class RmCommand(Command):
     # Function 261: Executes the 'rm' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
+        await asyncio.sleep(0)
         recursive = "-r" in args or "-rf" in args or "-R" in args
         force = "-f" in args or "-rf" in args
 

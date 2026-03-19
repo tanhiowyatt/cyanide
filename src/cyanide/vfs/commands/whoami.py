@@ -1,3 +1,5 @@
+import asyncio
+
 from .base import Command
 
 
@@ -6,6 +8,7 @@ class WhoamiCommand(Command):
 
     # Function 278: Executes the 'whoami' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+        await asyncio.sleep(0)
         """Execute the whoami command.
 
         Returns:

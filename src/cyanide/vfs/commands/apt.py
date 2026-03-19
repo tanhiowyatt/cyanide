@@ -1,3 +1,5 @@
+import asyncio
+
 from .base import Command
 
 
@@ -5,6 +7,7 @@ class AptCommand(Command):
     # Function 204: Executes the 'apt' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the apt command."""
+        await asyncio.sleep(0)
         if not self._is_apt_os():
             return "", f"bash: {args[0] if args else 'apt'}: command not found\n", 127
 

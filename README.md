@@ -7,11 +7,16 @@
 
 
 <p align="center">
+  <a target="_blank" href="/docs/translations/readme-ru.md">RU</a> &nbsp; | &nbsp;
+  <a target="_blank" href="/docs/translations/readme-pl.md">PL</a>
+</p>
+
+<p align="center">
   <img src="assets/branding/name.png" alt="Cyanide" width="500" height="auto">
 </p>
 
 # Cyanide – Medium-Interaction SSH and Telnet Honeypot
-
+ 
 **Cyanide** is a medium-interaction SSH and Telnet honeypot designed to deceive attackers and analyze their behavior in depth. It combines realistic Linux filesystem emulation, advanced command simulation (with pipes and redirections), robust anti-detection mechanisms, and a hybrid ML engine for anomaly detection.
 
 

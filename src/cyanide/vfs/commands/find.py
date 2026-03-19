@@ -1,9 +1,12 @@
+import asyncio
+
 from .base import Command
 
 
 class FindCommand(Command):
     # Function 231: Executes the 'find' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
+        await asyncio.sleep(0)
         if not args:
             return ".\n", "", 0
 

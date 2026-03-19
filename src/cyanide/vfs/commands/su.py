@@ -1,3 +1,5 @@
+import asyncio
+
 from .base import Command
 
 
@@ -6,6 +8,7 @@ class SuCommand(Command):
 
     # Function 266: Executes the 'su' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+        await asyncio.sleep(0)
         target_user = "root"
         login_shell = False
 
@@ -29,11 +32,26 @@ class SuCommand(Command):
         return "Password: ", "", 0
 
     # Function 267: Performs operations related to on password.
-    async def _on_password(self, password: str) -> tuple[str, str, int]:
+    def _on_password(self, password: str) -> tuple[str, str, int]:
+        password = password.strip()
+        success = False
 
-        valid_passwords = ["root", "password", "cyanide", "admin"]
+        # Check against configured users from docker-compose / config
+        for user_entry in self.fs.users:
+            if user_entry.get("user") == self.target_user:
+                if user_entry.get("pass") == password:
+                    success = True
+                break
 
-        if password.strip() in valid_passwords or not password.strip():
+        # Fallback for common honeypot passwords
+        if not success and password in ["root", "password", "cyanide", "admin"]:
+            success = True
+
+        # Treat empty password as success if not explicit in config (common in honeypots)
+        if not password and not success:
+            success = True
+
+        if success:
             self.emulator.username = self.target_user
             if self.target_user == "root":
                 if self.login_shell or self.emulator.cwd == "/":

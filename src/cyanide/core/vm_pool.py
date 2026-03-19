@@ -46,7 +46,7 @@ class SimplePool:
         # No background tasks or connections to clean up for SimplePool.
         pass
 
-    async def reserve_target(self, session_id: str, protocol: str):
+    def reserve_target(self, session_id: str, protocol: str):  # ← убрал async
         if not self.targets:
             logger.error("SimplePool: No targets configured in pool settings.")
             return None
@@ -54,14 +54,11 @@ class SimplePool:
         now = time.time()
         # Filter out targets that failed recently
         available_targets = [
-            t
-            for t in self.targets
-            if t not in self.failed_targets
-            or (now - self.failed_targets[t] > self.failure_threshold)
+            t for t in self.targets
+            if t not in self.failed_targets or (now - self.failed_targets[t] > self.failure_threshold)
         ]
 
         if not available_targets:
-            # If all are "failed", pick from all and hope for the best
             if self.logger:
                 self.logger.log_event(
                     "system", "pool_fallback", {"backend": "simple", "reason": "all_targets_failed"}
@@ -69,6 +66,7 @@ class SimplePool:
             available_targets = self.targets
 
         target = secrets.choice(available_targets)
+
         if Lease is not None:
             lease = Lease(
                 host=target[0],
@@ -80,21 +78,13 @@ class SimplePool:
             )
             if self.logger:
                 self.logger.log_event(
-                    session_id,
-                    "pool_reserved",
-                    {
-                        "backend": "simple",
-                        "host": target[0],
-                        "port": target[1],
-                        "protocol": protocol,
-                    },
+                    session_id, "pool_reserved",
+                    {"backend": "simple", "host": target[0], "port": target[1], "protocol": protocol}
                 )
             return lease
-        else:
-            return target
+        return target
 
-    async def release_target(self, lease):
-        # SimplePool targets are static and do not require rebuild or cleanup.
+    async def release_target(self, lease):  # ← оставляем, если есть await внутри
         pass
 
 

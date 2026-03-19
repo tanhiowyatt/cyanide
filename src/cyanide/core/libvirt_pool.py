@@ -74,14 +74,14 @@ class LibvirtPool:
         self._bg_tasks.append(asyncio.create_task(self._recycle_loop()))
         logger.info(f"Libvirt pool started. Max VMs: {self.max_vms}")
 
-    async def stop(self):
+    def stop(self):
         """Stop background tasks and close connection"""
         for task in self._bg_tasks:
             task.cancel()
         if self.conn:
             self.conn.close()
 
-    async def _sync_vms(self):
+    def _sync_vms(self):
         """Discover existing VMs with the tag and populate self.vms"""
         if not self.conn:
             return
@@ -91,20 +91,25 @@ class LibvirtPool:
             for dom_id in domain_ids:
                 dom = self.conn.lookupByID(dom_id)
                 name = dom.name()
-                if self.guest_tag in name:
-                    if name not in self.vms:
-                        self.vms[name] = {
-                            "state": "ready",
-                            "ip": self._get_domain_ip(dom),
-                            "last_used": time.time(),
-                        }
-                        logger.info(f"Found existing VM in pool: {name}")
+
+            if self.guest_tag in name and name not in self.vms:
+                self.vms[name] = dom
+
         except Exception as e:
-            logger.error(f"Error syncing VMs: {e}")
+            logger.error(f"VM sync failed: {e}")
 
     def _get_domain_ip(self, dom) -> Optional[str]:
+        """Get actual IP from libvirt guest network"""
         if self.use_nat:
             return str(self.nat_public_ip)
+
+        try:
+            ifaces = dom.interfaceAddresses()
+            for iface in ifaces.values():
+                if iface["hwaddr"] and iface.get("addrs"):
+                    return str(iface["addrs"][0]["addr"])
+        except Exception:
+            pass
         return "127.0.0.1"
 
     async def reserve_target(self, session_id: str, protocol: str) -> Optional[Lease]:
@@ -115,7 +120,7 @@ class LibvirtPool:
             if not ready_vms:
                 if len(self.vms) < self.max_vms:
                     new_vm_id = f"{self.guest_tag}-{len(self.vms) + 1}"
-                    await self._provision_vm(new_vm_id)
+                    self._provision_vm(new_vm_id)
                     ready_vms.append(new_vm_id)
                 else:
                     logger.warning("VM pool exhausted.")
@@ -173,9 +178,10 @@ class LibvirtPool:
                     task.add_done_callback(self._rebuild_tasks.discard)
                 break
 
-    async def _provision_vm(self, vm_id: str):
+    def _provision_vm(self, vm_id: str):
         """Provision a new VM from config."""
         logger.info(f"Provisioning new VM: {vm_id}")
+
         self.vms[vm_id] = {
             "state": "rebuilding",
             "ip": self.nat_public_ip if self.use_nat else "127.0.0.1",
@@ -189,7 +195,6 @@ class LibvirtPool:
 
         if self.conn:
             try:
-                # Provisioning logic for libvirt XML would go here.
                 pass
             except Exception as e:
                 logger.error(f"Failed to provision {vm_id}: {e}")

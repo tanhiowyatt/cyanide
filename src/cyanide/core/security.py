@@ -59,15 +59,13 @@ class RestrictedUnpickler(pickle.Unpickler):
 
     # Function 34: Performs operations related to find class.
     def find_class(self, module, name):
-        if module == "builtins":
-            if name in self.SAFE_BUILTINS:
-                return getattr(builtins, name)
+        if module == "builtins" and name in self.SAFE_BUILTINS:
+            return getattr(builtins, name)
 
-        if module == "_codecs":
-            if name in {"encode", "decode"}:
-                import _codecs
+        if module == "_codecs" and name in {"encode", "decode"}:
+            import _codecs
 
-                return getattr(_codecs, name)
+            return getattr(_codecs, name)
 
         if module in self.SAFE_MODULES:
             return super().find_class(module, name)

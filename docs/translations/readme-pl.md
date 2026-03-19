@@ -5,6 +5,12 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=tanhiowyatt_cyanide&metric=coverage)](https://sonarcloud.io/component_measures/metric/coverage/list?id=tanhiowyatt_cyanide)
 
+<p align="center">
+  <a target="_blank" href="/docs/translations/readme-ru.md">RU</a> &nbsp; | &nbsp;
+  <a target="_blank" href="/README.md">ENG</a>
+</p>
+
+
 
 <p align="center">
   <img src="../../assets/branding/name.png" alt="Cyanide" width="500" height="auto">

@@ -1,3 +1,5 @@
+import asyncio
+
 from cyanide.vfs.nodes import Directory, File
 
 from .base import Command
@@ -6,6 +8,7 @@ from .base import Command
 class CpCommand(Command):
     # Function 219: Executes the 'cp' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
+        await asyncio.sleep(0)
         recursive = "-r" in args or "-R" in args or "--recursive" in args
 
         clean_args = [a for a in args if not a.startswith("-")]

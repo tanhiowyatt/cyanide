@@ -51,7 +51,7 @@ def test_ml_command_logging(analytics_svc):
         "severity": "HIGH",
     }
 
-    analytics_svc.analyze_command("ls -la", "root", "1.1.1.1", "sess1", "ssh")
+    analytics_svc.analyze_command("ls -la", "1.1.1.1", "sess1")
 
     # Check if log file contains the entry
     # Note: AnalyticsService now uses self.logger which writes to cyanide-ml.json

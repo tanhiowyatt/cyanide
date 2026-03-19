@@ -7,6 +7,12 @@
 
 
 <p align="center">
+  <a target="_blank" href="/README.md">ENG</a> &nbsp; | &nbsp;
+  <a target="_blank" href="/docs/translations/readme-pl.md">PL</a>
+</p>
+
+
+<p align="center">
   <img src="../../assets/branding/name.png" alt="Cyanide" width="500" height="auto">
 </p>
 

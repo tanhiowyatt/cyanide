@@ -24,7 +24,8 @@ class StatsManager:
         self.dns_cache_hits = 0
         self.dns_cache_misses = 0
 
-        self.command_not_found = 0
+        self.command_not_found: Counter[str] = Counter()
+        self.path_stats: Counter[str] = Counter()
 
         self.auth_success = 0
         self.auth_failures = 0
@@ -45,12 +46,10 @@ class StatsManager:
         self.ips[ip] += 1
         self.unique_ips.add(ip)
 
-    # Function 84: Performs operations related to on disconnect.
-    def on_disconnect(self, protocol: str, ip: str):
+    def on_disconnect(self):
         self.active_sessions = max(0, self.active_sessions - 1)
 
-    # Function 85: Performs operations related to on auth.
-    def on_auth(self, protocol: str, ip: str, username: str, password: str, success: bool):
+    def on_auth(self, username: str, password: str, success: bool):
         self.usernames[username] += 1
         self.passwords[password] += 1
         if success:
@@ -85,15 +84,14 @@ class StatsManager:
         if is_malicious:
             self.malicious_files[filename] += 1
 
-    # Function 89: Performs operations related to on file op.
     def on_file_op(self, operation: str, path: str):
         """Track file operations (read, write, delete)."""
         self.file_ops[operation] += 1
+        self.path_stats[path] += 1
 
-    # Function 90: Performs operations related to on command not found.
     def on_command_not_found(self, cmd: str):
         """Track 'command not found' events (confusion metric)."""
-        self.command_not_found += 1
+        self.command_not_found[cmd] += 1
 
     # Function 91: Performs operations related to on traffic.
     def on_traffic(self, direction: str, size: int):
@@ -122,7 +120,9 @@ class StatsManager:
             "malware_scans": sum(self.malware_scans.values()),
             "malicious_detected": sum(self.malicious_files.values()),
             "file_operations": dict(self.file_ops),
-            "command_not_found": self.command_not_found,
+            "top_file_paths": dict(self.path_stats.most_common(10)),
+            "command_not_found_counts": dict(self.command_not_found.most_common(10)),
+            "total_command_not_found": sum(self.command_not_found.values()),
             "traffic": {"bytes_in": self.bytes_in, "bytes_out": self.bytes_out},
         }
 
@@ -187,7 +187,13 @@ class StatsManager:
 
         lines.append("# HELP cyanide_command_not_found_total Total count of commands not found")
         lines.append("# TYPE cyanide_command_not_found_total counter")
-        lines.append(f"cyanide_command_not_found_total {self.command_not_found}")
+        lines.append(f"cyanide_command_not_found_total {sum(self.command_not_found.values())}")
+
+        for cmd, count in self.command_not_found.items():
+            lines.append(f'cyanide_missing_commands_total{{command="{cmd}"}} {count}')
+
+        for path, count in self.path_stats.items():
+            lines.append(f'cyanide_path_access_total{{path="{path}"}} {count}')
 
         lines.append("# HELP cyanide_dns_cache_hits_total Total DNS cache hits")
         lines.append("# TYPE cyanide_dns_cache_hits_total counter")

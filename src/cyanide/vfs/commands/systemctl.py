@@ -1,3 +1,4 @@
+import asyncio
 import secrets
 
 from .base import Command
@@ -6,6 +7,7 @@ from .base import Command
 class SystemctlCommand(Command):
     # Function 269: Executes the 'systemctl' command logic within the virtual filesystem.
     async def execute(self, args, input_data=""):
+        await asyncio.sleep(0)
         if "status" in args:
             service = (
                 args[args.index("status") + 1] if args.index("status") + 1 < len(args) else "ssh"

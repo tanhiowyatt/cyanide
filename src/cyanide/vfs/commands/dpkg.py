@@ -1,9 +1,12 @@
+import asyncio
+
 from .base import Command
 
 
 class DpkgCommand(Command):
     # Function 225: Executes the 'dpkg' command logic within the virtual filesystem.
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+        await asyncio.sleep(0)
         """Execute the dpkg command."""
         if not self._is_dpkg_os():
             return "", "bash: dpkg: command not found\n", 127

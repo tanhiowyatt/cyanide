@@ -31,6 +31,19 @@ class CyanideLogger:
         self.ml_log = self._setup_logger("cyanide_ml", self.log_dir / "cyanide-ml.json")
 
         self.stats_log = self._setup_logger("cyanide_stats", self.log_dir / "cyanide-stats.json")
+        self.session_logs: dict[str, dict[str, Path]] = {}
+
+    def register_session_log(self, session_id: str, jsonl_path: Path, ml_json_path: Path):
+        """Register a session's log paths for event mirroring."""
+        self.session_logs[session_id] = {
+            "jsonl": jsonl_path,
+            "ml_json": ml_json_path,
+        }
+
+    def unregister_session_log(self, session_id: str):
+        """Unregister a session's log paths."""
+        if session_id in self.session_logs:
+            del self.session_logs[session_id]
 
     def _load_plugins(self):
         plugins = []
@@ -145,7 +158,7 @@ class CyanideLogger:
 
     # Function 103: Handles event logging and telemetry.
     def log_event(self, session_id, event_type, data):
-        """Log a generic event in structured JSON, routed to proper file."""
+        """Log a generic event in structured JSON, routed to proper file and mirrored to session log."""
         entry = {
             "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "session": session_id,
@@ -158,6 +171,22 @@ class CyanideLogger:
 
         logger = self._get_target_logger(event_type)
         logger.info(json.dumps(entry))
+
+        # Mirror to session-specific logs
+        if session_id in self.session_logs:
+            paths = self.session_logs[session_id]
+
+            # All events go to the detailed session audit log
+            try:
+                with open(paths["jsonl"], "a") as f:
+                    f.write(json.dumps(entry) + "\n")
+
+                # ML analysis events also go to the specific .json analysis file
+                if event_type.startswith("ml_") or event_type == "ml_thought":
+                    with open(paths["ml_json"], "a") as f:
+                        f.write(json.dumps(entry) + "\n")
+            except Exception as e:
+                logging.error(f"Failed to mirror event to session log {session_id}: {e}")
 
         for plugin in self.plugins:
             plugin.emit(entry.copy())

@@ -17,3 +17,6 @@ dynamic_files:
     provider: cpuinfo_provider
   /proc/version:
     content: "Linux version {{ kernel_version }} (mockbuild@kbuilder.bsys.centos.org) (gcc version 4.8.5 20150623 (Red Hat 4.8.5-44) (GCC) ) #1 SMP Thu Jan 25 16:17:31 UTC 2024"
+  /etc/motd:
+    type: generated
+    provider: motd_provider

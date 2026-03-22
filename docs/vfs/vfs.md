@@ -22,6 +22,13 @@ Certain system paths require computationally generated string output that cannot
 - **Uptime Provider (`uptime_provider`):** Generates a realistic `/proc/uptime` output by simulating an OS boot time set in the randomized past and tracking realistic idle cycles.
 - **CPU Info Provider (`cpuinfo_provider`):** Emits detailed, realistic multiprocessor data matching common Linux deployments instead of the real system's exact architecture.
 
+### 3.1 Last Login Tracking
+
+For enhanced realism, the VFS tracks the source IP of each attacker session.
+- **First Login:** Attackers are shown a randomized, plausible management IP (e.g. `192.168.1.10`) in the "Last login" banner.
+- **Subsequent Logins:** If the same source IP connects again, the honeypot displays their *own* previous IP as the last login source. This mimics standard Linux behavior and increases the perceived legitimacy of the server.
+- This logic is handled by the `motd_provider` in `src/cyanide/vfs/dynamic.py` using a lightweight in-memory cache.
+
 ## 4. Caching System
 
 Because parsing thousands of lines of `static.yaml` across active attacker sessions incurs overwhelming computational overhead, the VFS utilizes a **two-tier profile caching engine**. 

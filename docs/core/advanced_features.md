@@ -50,10 +50,15 @@ Beyond the standard stats dashboard, Cyanide exposes a professional-grade monito
 Unlike simple honeypots that generate new SSH keys on every restart, Cyanide generates and stores persistent host keys in `var/lib/cyanide/keys/`. 
 - **Benefit**: Regular scanners will see the same SSH fingerprint over time, making the honeypot appear as a stable, long-running production server rather than a transient script.
 
-### TTY Dual-Logging
-Every session is logged in TWO formats simultaneously:
-1. **JSONL (`.jsonl`)**: For easy parsing and grep-searching of session input/output.
-2. **Timing/Data (`timing`, `data`)**: For realistic replay using the standard `scriptreplay` command.
+### Session-Specific Logging
+Every session is logged in a dedicated directory under `var/log/cyanide/tty/ssh_<IP>_<SessionID>/` with four standardized files:
+1.  **`audit.json`**: Full JSONL event log containing every interaction and metadata.
+2.  **`transcript.log`**: Raw TTY transcript for manual inspection or playback.
+3.  **`timing.time`**: Standard `scriptreplay` timing data for session reconstruction.
+4.  **`ml_analysis.json`**: Detailed ML-specific analysis, scores, and classifications.
+
+> [!NOTE]
+> Filenames are kept static (`audit.json`, etc.) while metadata (IP, Session ID) is stored in the parent directory name for easier batch processing.
 
 ## 6. SSH Expert Features (Mimicry & Attribution)
 
@@ -75,10 +80,13 @@ Cyanide can intercept SSH tunnels (`-L` or `-R`).
 
 ## 7. Anti-Bot & Behavioral Analysis
 
-### Keystroke Dynamics
-Cyanide monitors the timing between individual characters entered by the attacker.
-- **Bot Detection**: If the average delay between characters is less than **10ms**, or if an entire command arrives in a single packet (paste), the session is flagged with `is_bot=true`.
-- **Jitter Mimicry**: To confuse automated scanners, Cyanide adds randomized millisecond delays to every response, breaking simple "echo" timing attacks.
+### Smart Bot Detection (Keystroke Dynamics)
+Cyanide monitors the precise timing and statistical distribution of characters entered by the attacker to distinguish between automated scripts, manual "copy-paste" actions, and human typing.
+
+-   **Statistical Score**: Instead of a fixed threshold, Cyanide calculates a multi-factor "Bot Score" (0.0 to 1.0).
+-   **Jitter Analysis**: Humans have high variance (jitter) between keystrokes. Scripts have very low standard deviation. If the jitter is too low, the score increases.
+-   **Paste Handling**: Pasted text is flagged but doesn't immediately brand a user as a bot; it is analyzed alongside subsequent manual typing.
+-   **Threshold**: A session is officially flagged with `is_bot=true` only if the cumulative score exceeds **0.7**.
 
 ### Real-time IoC Extraction
 Every command entered into the shell is automatically scanned using regex for:

@@ -116,23 +116,36 @@ class TelnetHandler:
             writer.close()
             return "", None, False
 
-        session_id = self.services.session.register_session(src_ip)
+        session_id = "conn_" + self.services.session.register_session(src_ip)
         folder_name = f"telnet_{src_ip}_{session_id}"
         log_dir = Path(self.logger.log_dir) / "tty" / folder_name
         log_dir.mkdir(parents=True, exist_ok=True)
 
         tty_paths = {
-            "jsonl": log_dir / f"{folder_name}.jsonl",
-            "txt": log_dir / f"{folder_name}.log",
-            "time": log_dir / f"{folder_name}.time",
+            "json": log_dir / "audit.json",
+            "txt": log_dir / "transcript.log",
+            "time": log_dir / "timing.time",
+            "ml": log_dir / "ml_analysis.json",
         }
 
         for path in tty_paths.values():
             path.touch()
 
+        # Register paths for mirroring in the central logger
+        self.logger.register_session_log(session_id, tty_paths["json"], tty_paths["ml"])
+
+        # Log initial session info
+        self.logger.log_event(
+            session_id,
+            "session_init",
+            {"protocol": "telnet", "src_ip": src_ip, "session_id": session_id},
+        )
+
         class TTYState:
             def __init__(self):
-                self.tty_log_path_jsonl = tty_paths["jsonl"]
+                self.session_id = session_id
+                self.src_ip = src_ip
+                self.tty_log_path_json = tty_paths["json"]
                 self.tty_log_path = tty_paths["txt"]
                 self.tty_timing_path = tty_paths["time"]
                 self.last_log_time = time.time()
@@ -319,6 +332,7 @@ class TelnetHandler:
                 "bytes_out": bytes_out,
             },
         )
+        self.logger.unregister_session_log(session_id)
         self.services.session.unregister_session(src_ip)
         self.stats.on_disconnect()
         writer.close()

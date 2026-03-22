@@ -3,6 +3,7 @@ Advanced SSH/Telnet Honeypot Server Implementation.
 """
 
 import asyncio
+import datetime
 import json
 import logging
 import secrets
@@ -325,11 +326,11 @@ class CyanideServer:
 
     # Function 49: Handles event logging and telemetry.
     def _log_tty(self, session_obj, direction: str, data: str):
-        """Dual format logging: JSONL for reading + Timing/TS for scriptreplay."""
-        if direction != "OUT" and not hasattr(session_obj, "tty_log_path_jsonl"):
+        """Detailed logging: JSON (Detailed Audit) + Timing/TS (scriptreplay)."""
+        if direction != "OUT" and not hasattr(session_obj, "tty_log_path_json"):
             return
 
-        if hasattr(session_obj, "tty_log_path_jsonl"):
+        if hasattr(session_obj, "tty_log_path_json"):
             try:
                 now = time.time()
                 if isinstance(data, bytes):
@@ -337,8 +338,38 @@ class CyanideServer:
                 else:
                     readable_data = data
 
-                entry = {"timestamp": now, "direction": direction, "data": readable_data}
-                self.async_logger.log(session_obj.tty_log_path_jsonl, json.dumps(entry) + "\n")
+                # Create a rich entry similar to log_event in CyanideLogger
+                timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
+                session_id = getattr(session_obj, "session_id", "unknown")
+                src_ip = getattr(session_obj, "src_ip", "unknown")
+                protocol = "ssh" if hasattr(session_obj, "channel") else "telnet"
+
+                entry = {
+                    "timestamp": timestamp,
+                    "session": session_id,
+                    "eventid": f"tty.{direction.lower()}",
+                    "src_ip": src_ip,
+                    "protocol": protocol,
+                    "direction": direction,
+                    "data": readable_data,
+                }
+
+                # We log this detailed entry to the JSON file
+                self.async_logger.log(session_obj.tty_log_path_json, json.dumps(entry) + "\n")
+
+                # ALSO mirror it to the central cyanide-fs.json via log_event for completeness
+                # (This fulfills the "make it as full as central logger" requirement)
+                self.logger.log_event(
+                    session_id,
+                    f"tty.{direction.lower()}",
+                    {
+                        "src_ip": src_ip,
+                        "protocol": protocol,
+                        "direction": direction,
+                        "data": readable_data,
+                    },
+                )
+
             except Exception as e:
                 self.logger.log_event(
                     "system", "tty_error", {"message": f"Error saving JSONL TTY: {e}"}
@@ -1284,6 +1315,7 @@ class SSHSession(asyncssh.SSHServerSession):
                 "reason": reason,
             },
         )
+        self.honeypot.logger.unregister_session_log(self.session_id)
 
     # Function 68: Performs operations related to terminal size changed.
     def terminal_size_changed(self, width, height, pixwidth, pixheight):
@@ -1335,16 +1367,11 @@ class SSHSession(asyncssh.SSHServerSession):
     def session_started(self):
         self._ensure_tty_log()
         if self.shell:
-            banner = (
-                "\r\n"
-                "Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-41-generic x86_64)\r\n"
-                "\r\n"
-                " * Documentation:  https://help.ubuntu.com\r\n"
-                " * Management:     https://landscape.canonical.com\r\n"
-                " * Support:        https://ubuntu.com/advantage\r\n"
-                "\r\n"
-                "Last login: Fri Mar 13 14:20:01 2026 from 192.168.1.10\r\n"
-            )
+            # Fetch dynamic/static banner from VFS
+            banner = self.fs.get_content("/etc/motd", args={"src_ip": self.src_ip})
+            if not banner:
+                banner = "\r\nWelcome to Cyanide Honeypot\r\n\r\n"
+
             self._write(banner)
             prompt = self._get_prompt()
             self._write(prompt)
@@ -1374,14 +1401,38 @@ class SSHSession(asyncssh.SSHServerSession):
         log_dir = Path(self.honeypot.logger.log_dir) / "tty" / folder_name
         log_dir.mkdir(parents=True, exist_ok=True)
 
-        self.tty_log_path_jsonl = log_dir / f"{folder_name}.jsonl"
-        self.tty_log_path = log_dir / f"{folder_name}.log"
-        self.tty_timing_path = log_dir / f"{folder_name}.time"
+        self.tty_log_path_json = log_dir / "audit.json"
+        self.tty_log_path = log_dir / "transcript.log"
+        self.tty_timing_path = log_dir / "timing.time"
+        self.tty_log_path_ml = log_dir / "ml_analysis.json"
         self.last_log_time = time.time()
 
-        open(self.tty_log_path_jsonl, "a").close()
-        open(self.tty_log_path, "a").close()
-        open(self.tty_timing_path, "a").close()
+        # Initialize all 4 files
+        for p in [
+            self.tty_log_path_json,
+            self.tty_log_path,
+            self.tty_timing_path,
+            self.tty_log_path_ml,
+        ]:
+            p.touch()
+
+        # Register paths for mirroring in the central logger
+        self.honeypot.logger.register_session_log(
+            self.session_id, self.tty_log_path_json, self.tty_log_path_ml
+        )
+
+        # Log initial session info to the JSONL log
+        self.honeypot.logger.log_event(
+            self.session_id,
+            "session_init",
+            {
+                "protocol": "ssh",
+                "src_ip": self.src_ip,
+                "src_port": self.src_port,
+                "username": self.username,
+                "client_version": self.client_version,
+            },
+        )
 
     # Function 74: Handles event logging and telemetry.
     def _log_tty(self, direction: str, data: str):
@@ -1444,7 +1495,7 @@ class SSHSession(asyncssh.SSHServerSession):
                     self._write("\r\n" + self._get_prompt())
                     continue
 
-                is_bot = self._calculate_is_bot(is_paste)
+                is_bot = self._calculate_is_bot(is_paste, len(cmd))
                 self.keystrokes = []
 
                 if self._handle_system_commands(cmd):
@@ -1458,17 +1509,48 @@ class SSHSession(asyncssh.SSHServerSession):
                 self.session_id, "debug", {"message": f"process_input error: {e}"}
             )
 
-    def _calculate_is_bot(self, is_paste):
-        """Determine if input resembles a bot."""
+    def _calculate_is_bot(self, is_paste, data_len=0):
+        """
+        Determine if input resembles a bot using multi-factor scoring.
+        Considers: mean delay, standard deviation (jitter), and paste ratio.
+        """
+        score = 0.0
+
+        # 1. Paste Factor: Legitimate users paste short snippets, but bots paste whole scripts.
         if is_paste:
-            return True
+            score += 0.3
+            if data_len > 100:  # Long script paste
+                score += 0.5
+
         if len(self.keystrokes) > 1:
             delays = [
                 self.keystrokes[i] - self.keystrokes[i - 1] for i in range(1, len(self.keystrokes))
             ]
-            if delays and (sum(delays) / len(delays)) < 0.01:
-                return True
-        return False
+
+            if delays:
+                mean_delay = sum(delays) / len(delays)
+
+                # 2. Speed Factor: Humans rarely stay under 15ms average for a whole command.
+                if mean_delay < 0.015:
+                    score += 0.4
+                elif mean_delay < 0.030:
+                    score += 0.2
+
+                # 3. Jitter Factor (Standard Deviation):
+                # High jitter = human. Low jitter = script/bot.
+                import math
+
+                variance = sum((d - mean_delay) ** 2 for d in delays) / len(delays)
+                std_dev = math.sqrt(variance)
+
+                if std_dev < 0.005:  # Extremely regular typing
+                    score += 0.5
+                elif std_dev < 0.015:
+                    score += 0.2
+
+        # Threshold: if score > 0.7, we are very confident it's a bot.
+        # Otherwise, if score > 0.4, it's "suspicious".
+        return score > 0.7
 
     def _handle_system_commands(self, cmd):
         """Handle logout/exit commands."""

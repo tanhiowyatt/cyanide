@@ -17,3 +17,6 @@ dynamic_files:
     provider: cpuinfo_provider
   /proc/version:
     content: "Linux version {{ kernel_version }} (buildd@lcy02-amd64-011) (gcc (Ubuntu 11.3.0-1ubuntu1~22.04.1) 11.3.0) #80-Ubuntu SMP Mon May 15 15:18:26 UTC 2023"
+  /etc/motd:
+    type: generated
+    provider: motd_provider

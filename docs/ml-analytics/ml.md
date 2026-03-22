@@ -27,7 +27,7 @@ Context analysis enriches raw detection outcomes by considering the surrounding 
 
 ### Mechanism:
 - If a seemingly benign command (`cat`) is executed against a critically sensitive target (`/etc/shadow`), the semantic consequence is inherently severe.
-- The `ContextAnalyzer` assesses target IPs (identifying public scanners vs internal ranges), referenced VFS paths (identifying attempts to manipulate system bootloaders vs temp storage), and the timing behavior of specific attacker patterns (e.g. executing 10 recon commands in exactly 0.05 seconds indicates bot-like orchestration).
+- **Smart Bot Detection**: The `ContextAnalyzer` assesses the timing behavior of attacker patterns. It calculates a multi-factor **Bot Score** based on keystroke jitter (standard deviation of delays) and "paste" events. A very low standard deviation (even if delays are long) indicates a scripted orchestration, while high variance suggests a human.
 
 ## Layer 4: GeoIP Enrichment
 

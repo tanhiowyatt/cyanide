@@ -44,8 +44,9 @@ async def test_bot_detection_by_paste(mock_honeypot):
     session = SSHSession(mock_honeypot, MagicMock(), "1.1.1.1", 1234, "test-id")
     session.channel = MagicMock()
 
-    # Simulate a paste
-    await session._process_input("whoami\n")
+    # Simulate a long paste (script-like)
+    long_cmd = "echo 'exploit' > /tmp/x; chmod +x /tmp/x; /tmp/x; rm /tmp/x;" * 5 + "\n"
+    await session._process_input(long_cmd)
 
     args, kwargs = mock_honeypot._analyze_command.call_args
     assert kwargs["is_bot"] is True

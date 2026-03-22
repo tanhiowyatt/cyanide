@@ -280,7 +280,7 @@ class FakeFilesystem:
         return sorted([c for c in contents if posixpath.join(path, c) not in self.deleted_paths])
 
     # Function 297: Retrieves content data.
-    def get_content(self, path: str) -> str:
+    def get_content(self, path: str, args: Optional[Dict[str, Any]] = None) -> str:
         path = self.resolve(path)
         if path in self.deleted_paths:
             return ""
@@ -297,7 +297,9 @@ class FakeFilesystem:
             config = self.dynamic_files[path]
             provider = PROVIDERS.get(config.get("provider"))
             if provider:
-                return provider(self.context, config.get("args", {}))
+                # Merge profile-defined args with runtime args
+                combined_args = {**config.get("args", {}), **(args or {})}
+                return provider(self.context, combined_args)
             if "content" in config:
                 return self._render(config["content"])
             return ""

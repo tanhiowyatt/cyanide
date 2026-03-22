@@ -17,3 +17,6 @@ dynamic_files:
     provider: cpuinfo_provider
   /proc/version:
     content: "Linux version {{ kernel_version }} (debian-kernel@lists.debian.org) (gcc-10 (Debian 10.2.1-6) 10.2.1 20210110, GNU ld (GNU Binutils for Debian) 2.35.2) #1 SMP Debian 5.10.209-2 (2024-01-31)"
+  /etc/motd:
+    type: generated
+    provider: motd_provider

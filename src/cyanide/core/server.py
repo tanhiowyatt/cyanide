@@ -3,7 +3,6 @@ Advanced SSH/Telnet Honeypot Server Implementation.
 """
 
 import asyncio
-import datetime
 import json
 import logging
 import secrets
@@ -345,22 +344,11 @@ class CyanideServer:
 
         try:
             readable_data = data.decode("utf-8", "ignore") if isinstance(data, bytes) else data
-            timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
             session_id = getattr(session_obj, "session_id", "unknown")
             src_ip = getattr(session_obj, "src_ip", "unknown")
             protocol = "ssh" if hasattr(session_obj, "channel") else "telnet"
 
-            entry = {
-                "timestamp": timestamp,
-                "session": session_id,
-                "eventid": f"tty.{direction.lower()}",
-                "src_ip": src_ip,
-                "protocol": protocol,
-                "direction": direction,
-                "data": readable_data,
-            }
-
-            self.async_logger.log(session_obj.tty_log_path_json, json.dumps(entry) + "\n")
+            # log_event routes to fs_log and mirrors to session audit.json automatically
             self.logger.log_event(
                 session_id,
                 f"tty.{direction.lower()}",
@@ -985,6 +973,8 @@ class SSHServerFactory(asyncssh.SSHServer):
         self._background_tasks: set[asyncio.Task] = set()
         self.username = "root"
         self.client_version = "unknown"
+        self._captured_kex_alg: Optional[str] = None
+        self._captured_host_key_alg: Optional[str] = None
 
     # Function 58: Performs operations related to connection made.
     def connection_made(self, conn):
@@ -992,8 +982,34 @@ class SSHServerFactory(asyncssh.SSHServer):
         conn.cyanide_factory = self
         self.src_ip = conn.get_extra_info("peername")[0]
         self.src_port = conn.get_extra_info("peername")[1]
-        self.client_version = conn.get_extra_info("client_version", "unknown")
         self._handshake_logged = False
+
+        # Monkey-patch set_extra_info to capture kex/host_key algorithm
+        # right before asyncssh zeroes out conn._kex after kex completes.
+        try:
+            original_set_extra = conn.set_extra_info.__func__
+
+            def _capturing_set_extra_info(c, **kwargs):
+                if "send_cipher" in kwargs and self._captured_kex_alg is None:
+                    kex_obj = getattr(c, "_kex", None)
+                    if kex_obj is not None:
+                        alg = getattr(kex_obj, "algorithm", None)
+                        if isinstance(alg, bytes):
+                            alg = alg.decode("ascii", "ignore")
+                        self._captured_kex_alg = alg
+                    hk = getattr(c, "_server_host_key", None)
+                    if hk is not None:
+                        hk_alg = getattr(hk, "algorithm", None)
+                        if isinstance(hk_alg, bytes):
+                            hk_alg = hk_alg.decode("ascii", "ignore")
+                        self._captured_host_key_alg = hk_alg
+                original_set_extra(c, **kwargs)
+
+            import types
+
+            conn.set_extra_info = types.MethodType(_capturing_set_extra_info, conn)
+        except AttributeError:
+            pass  # Non-asyncssh connection (e.g. MagicMock in tests)
 
         if not self._check_session_limits(conn):
             return
@@ -1026,7 +1042,7 @@ class SSHServerFactory(asyncssh.SSHServer):
             )
         )
 
-    async def _log_connection_details(self, conn, algos):
+    async def _log_connection_details(self, conn):
         """Log connection opening and algorithms."""
         session_id = "conn_" + self.conn_id
 
@@ -1043,17 +1059,19 @@ class SSHServerFactory(asyncssh.SSHServer):
             },
         )
 
-        fp_str = ",".join(
-            [
-                str(algos.get("kex_algo", "")),
-                str(algos.get("host_key_algo", "")),
-                str(algos.get("encryption_algo", "")),
-                str(algos.get("mac_algo", "")),
-                str(algos.get("compression_algo", "")),
-            ]
-        )
+        # Read algorithms via correct asyncssh extra_info keys.
+        # send_* = direction from server's perspective (client→server)
+        # kex_alg and host_key_alg are captured via monkey-patched set_extra_info.
+        kex_alg = self._captured_kex_alg
+        host_key_alg = self._captured_host_key_alg
+
+        cipher = conn.get_extra_info("send_cipher")
+        mac = conn.get_extra_info("send_mac")
+        compression = conn.get_extra_info("send_compression")
+
         import hashlib
 
+        fp_str = ",".join([str(v or "") for v in [kex_alg, host_key_alg, cipher, mac, compression]])
         fingerprint = hashlib.md5(fp_str.encode()).hexdigest()
 
         # Log client fingerprint
@@ -1065,11 +1083,11 @@ class SSHServerFactory(asyncssh.SSHServer):
                 "src_ip": self.src_ip,
                 "client_version": self.client_version,
                 "fingerprint": {
-                    "kex": algos.get("kex_algo"),
-                    "key_algo": algos.get("host_key_algo"),
-                    "cipher": algos.get("encryption_algo"),
-                    "mac": algos.get("mac_algo"),
-                    "compression": algos.get("compression_algo"),
+                    "kex": kex_alg,
+                    "key_algo": host_key_alg,
+                    "cipher": cipher,
+                    "mac": mac,
+                    "compression": compression,
                 },
                 "md5": fingerprint,
             },
@@ -1081,11 +1099,11 @@ class SSHServerFactory(asyncssh.SSHServer):
             "ssh_negotiated",
             {
                 "src_ip": self.src_ip,
-                "kex": algos.get("kex_algo"),
-                "key_algo": algos.get("host_key_algo"),
-                "cipher": algos.get("encryption_algo"),
-                "mac": algos.get("mac_algo"),
-                "compression": algos.get("compression_algo"),
+                "kex": kex_alg,
+                "key_algo": host_key_alg,
+                "cipher": cipher,
+                "mac": mac,
+                "compression": compression,
             },
         )
 
@@ -1146,8 +1164,9 @@ class SSHServerFactory(asyncssh.SSHServer):
     async def begin_auth(self, username):
         """Called when authentication begins; handshake is guaranteed to be complete."""
         if not self._handshake_logged:
-            algos = self.conn.get_extra_info("algorithms") or {}
-            await self._log_connection_details(self.conn, algos)
+            # Read client_version here — guaranteed available after banner exchange
+            self.client_version = self.conn.get_extra_info("client_version", "unknown")
+            await self._log_connection_details(self.conn)
             self._handshake_logged = True
         return True
 

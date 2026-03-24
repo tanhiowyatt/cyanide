@@ -48,21 +48,22 @@ def test_ssh_factory_init(mock_honeypot):
 
 
 @pytest.mark.asyncio
-async def test_ssh_factory_connection_made_logging(mock_honeypot):
+async def test_ssh_factory_connection_made_logging(mock_honeypot, tmp_path):
+    # Set logger.log_dir to a real temp path so connection_made doesn't
+    # create spurious MagicMock/ directories on disk.
+    mock_honeypot.logger.log_dir = str(tmp_path)
     factory = SSHServerFactory(mock_honeypot)
 
-    # Mock connection object
+    # Mock connection object using the correct asyncssh extra_info keys
     mock_conn = MagicMock()
+    mock_conn._kex_alg = b"curve25519-sha256"
+    mock_conn._server_host_key_alg = b"ssh-ed25519"
     mock_conn.get_extra_info.side_effect = lambda key, default=None: {
         "peername": ("1.2.3.4", 12345),
         "client_version": "SSH-2.0-TestClient",
-        "algorithms": {
-            "kex_algo": "curve25519-sha256",
-            "host_key_algo": "ssh-ed25519",
-            "encryption_algo": "aes256-gcm@openssh.com",
-            "mac_algo": "hmac-sha2-512",
-            "compression_algo": "none",
-        },
+        "send_cipher": "aes256-gcm@openssh.com",
+        "send_mac": "hmac-sha2-512",
+        "send_compression": "none",
     }.get(key, default)
 
     with patch("asyncio.create_task") as mock_task:

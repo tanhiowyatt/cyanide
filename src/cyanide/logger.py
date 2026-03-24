@@ -193,47 +193,58 @@ class CyanideLogger:
     # Function 103: Handles event logging and telemetry.
     def log_event(self, session_id, event_type, data):
         """Log a generic event in structured JSON, routed to proper file and mirrored to session log."""
-        # Baseline entry
-        entry = {
-            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "session": session_id,
-            "eventid": event_type,
-        }
-
         if isinstance(data, dict):
-            # Update with data, but ensure we don't overwrite session or eventid unless intended
-            # Actually, we WANT event_type and session_id from the arguments to take precedence
             payload = data.copy()
             payload.pop("session", None)
             payload.pop("eventid", None)
             payload.pop("timestamp", None)
-            entry.update(payload)
 
-            # Ensure src_ip is present and top-level, and inject GeoIP
-            src_ip = data.get("src_ip")
+            # Resolve src_ip: from data first, then session cache
+            src_ip = payload.pop("src_ip", None)
             if not src_ip and session_id in self.session_to_ip:
                 src_ip = self.session_to_ip[session_id]
-                entry["src_ip"] = src_ip
+            if src_ip and session_id not in self.session_to_ip:
+                self.session_to_ip[session_id] = src_ip
 
+            # Pop geoip if caller provided it, we'll re-attach at the end
+            caller_geoip = payload.pop("geoip", None)
+
+            # Resolve geoip: cache > local stub > caller-provided
+            if src_ip and src_ip in self.geoip_cache:
+                resolved_geoip = self.geoip_cache[src_ip]
+            elif src_ip and (
+                src_ip in ("127.0.0.1", "localhost", "::1")
+                or src_ip.startswith("192.168.")
+                or src_ip.startswith("10.")
+            ):
+                resolved_geoip = {
+                    "country": "Local Network",
+                    "city": "Internal",
+                    "isp": "Private IP Space",
+                    "org": "Internal",
+                }
+            else:
+                resolved_geoip = caller_geoip
+
+            # Build entry with strict field order:
+            # timestamp → session → eventid → src_ip → [payload] → geoip
+            entry: dict[str, Any] = {
+                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "session": session_id,
+                "eventid": event_type,
+            }
             if src_ip:
-                if session_id not in self.session_to_ip:
-                    self.session_to_ip[session_id] = src_ip
-                if src_ip in self.geoip_cache:
-                    entry["geoip"] = self.geoip_cache[src_ip]
-                elif (
-                    src_ip in ("127.0.0.1", "localhost", "::1")
-                    or src_ip.startswith("192.168.")
-                    or src_ip.startswith("10.")
-                ):
-                    # Immediate stub for local IPs to ensure format consistency in tests/dev
-                    entry["geoip"] = {
-                        "country": "Local Network",
-                        "city": "Internal",
-                        "isp": "Private IP Space",
-                        "org": "Internal",
-                    }
+                entry["src_ip"] = src_ip
+            entry.update(payload)
+            if resolved_geoip:
+                entry["geoip"] = resolved_geoip
         else:
-            entry["data"] = data
+            entry = {
+                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "session": session_id,
+                "eventid": event_type,
+                "data": data,
+            }
 
         logger, log_path = self._get_target_logger_info(event_type)
         line = json.dumps(entry) + "\n"

@@ -133,11 +133,14 @@ async def test_server_stop(server):
     server.ssh_server.close = MagicMock()
     server.ssh_server.wait_closed = AsyncMock()
 
-    server.background_tasks = [MagicMock(spec=asyncio.Task)]
+    # Use a real task to avoid loop issues with MagicMock(spec=Task)
+    task = asyncio.create_task(asyncio.sleep(10))
+    server.background_tasks = [task]
 
+    mock_ssh = server.ssh_server
     await server.stop()
-    server.ssh_server.close.assert_called()
-    server.background_tasks[0].cancel.assert_called()
+    mock_ssh.close.assert_called()
+    assert task.cancelled()
 
 
 def test_get_host_keys(server):

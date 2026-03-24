@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class SSHConfig(BaseModel):
@@ -12,6 +12,13 @@ class SSHConfig(BaseModel):
     target_host: Optional[str] = "127.0.0.1"
     target_port: Optional[int] = 22222
     pool_protocol: str = "ssh"
+
+    @field_validator("port", "target_port")
+    @classmethod
+    def validate_port(cls, v):
+        if v is not None and not (1 <= v <= 65535):
+            raise ValueError("Port must be between 1 and 65535")
+        return v
 
     ciphers: List[str] = Field(
         default_factory=lambda: [
@@ -105,10 +112,24 @@ class TelnetConfig(BaseModel):
     pool_protocol: str = "telnet"
     banner: Optional[str] = None
 
+    @field_validator("port", "target_port")
+    @classmethod
+    def validate_port(cls, v):
+        if v is not None and not (1 <= v <= 65535):
+            raise ValueError("Port must be between 1 and 65535")
+        return v
+
 
 class MetricsConfig(BaseModel):
     enabled: bool = True
     port: int = 9090
+
+    @field_validator("port")
+    @classmethod
+    def validate_port(cls, v):
+        if not (1 <= v <= 65535):
+            raise ValueError("Port must be between 1 and 65535")
+        return v
 
 
 class SMTPConfig(BaseModel):
@@ -117,6 +138,13 @@ class SMTPConfig(BaseModel):
     backend_mode: str = Field(default="emulated", pattern="^(emulated|proxy)$")
     target_host: str = "127.0.0.1"
     target_port: int = 25255
+
+    @field_validator("port", "target_port")
+    @classmethod
+    def validate_port(cls, v):
+        if not (1 <= v <= 65535):
+            raise ValueError("Port must be between 1 and 65535")
+        return v
 
 
 class TelemetryConfig(BaseModel):
@@ -208,3 +236,6 @@ class CyanideConfig(BaseModel):
     users: List[Dict[str, str]] = Field(default_factory=list)
 
     model_config = ConfigDict(extra="ignore")
+
+
+CyanideConfig.model_rebuild()

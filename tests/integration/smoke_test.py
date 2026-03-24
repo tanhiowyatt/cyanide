@@ -178,7 +178,7 @@ def smoke_test():
                 import requests  # type: ignore
 
                 response = requests.get(
-                    f"http://{host}:{metrics_port}/health",
+                    f"http://{host}:{metrics_port}/health",  # nosemgrep: python.lang.security.audit.insecure-transport.requests.request-with-http.request-with-http
                     timeout=5,
                     headers={"Connection": "close"},
                 )
@@ -190,7 +190,7 @@ def smoke_test():
 
                 req = urllib.request.Request(f"http://{host}:{metrics_port}/health")
                 req.add_header("Connection", "close")
-                with urllib.request.urlopen(req, timeout=5) as response:
+                with urllib.request.urlopen(req, timeout=5) as response:  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
                     if response.status == 200:
                         data = json.loads(response.read().decode())
 

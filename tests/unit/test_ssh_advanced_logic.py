@@ -1,5 +1,5 @@
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -25,6 +25,13 @@ def mock_honeypot():
     hp.services.session = MagicMock()
     hp.services.session.can_accept.return_value = (True, "OK")
     hp.services.session.active_sessions = 0
+    hp.services.analytics = MagicMock()
+    hp.services.analytics.geoip = MagicMock()
+    hp.services.analytics.geoip.lookup = AsyncMock(
+        return_value={"country": "Local Network", "city": "Internal"}
+    )
+    hp.services.analytics.log_geoip = MagicMock()
+
     # Mock tracer.start_as_current_span to work as a context manager
     span_mock = MagicMock()
     hp.tracer.start_as_current_span.return_value.__enter__.return_value = span_mock
@@ -40,7 +47,8 @@ def test_ssh_factory_init(mock_honeypot):
     assert len(factory.conn_id) == 8
 
 
-def test_ssh_factory_connection_made_logging(mock_honeypot):
+@pytest.mark.asyncio
+async def test_ssh_factory_connection_made_logging(mock_honeypot):
     factory = SSHServerFactory(mock_honeypot)
 
     # Mock connection object
@@ -57,22 +65,27 @@ def test_ssh_factory_connection_made_logging(mock_honeypot):
         },
     }.get(key, default)
 
-    factory.connection_made(mock_conn)
+    with patch("asyncio.create_task") as mock_task:
+        factory.connection_made(mock_conn)
+        mock_task.assert_called()
+    await factory.begin_auth("root")
 
-    # Check if log_event was called with correct algo info
+    # Check if log_event was called with correct connect info
     mock_honeypot.logger.log_event.assert_any_call(
         "conn_" + factory.conn_id,
         "ssh.connect",
         {
             "src_ip": "1.2.3.4",
             "src_port": 12345,
-            "client_version": "SSH-2.0-TestClient",
-            "kex_alg": "curve25519-sha256",
-            "key_alg": "ssh-ed25519",
-            "cipher": "aes256-gcm@openssh.com",
-            "mac": "hmac-sha2-512",
-            "compression": "none",
+            "geoip": {"country": "Local Network", "city": "Internal"},
         },
+    )
+
+    # Check if fingerprinting was also logged
+    mock_honeypot.logger.log_event.assert_any_call(
+        "conn_" + factory.conn_id,
+        "client_fingerprint",
+        ANY,
     )
 
 
@@ -153,16 +166,21 @@ async def test_server_rekey_limit_parsing(tmp_path):
         patch("cyanide.core.server.VMPool") as mock_vm_pool_cls,
     ):
 
-        mock_vm_pool_cls.return_value.start = AsyncMock()
+        mock_vm_pool_cls.return_value.start = MagicMock()
         server = CyanideServer(conf)
-        server.async_logger = AsyncMock()
-        server.async_logger.start = MagicMock()
+        async def dummy_coro(*args, **kwargs): pass
+        server.async_logger = MagicMock()
+        server.async_logger.stop = MagicMock(side_effect=dummy_coro)
+        server._start_vm_pool = MagicMock()
+        server._start_telnet_service = MagicMock(side_effect=dummy_coro)
+        server._start_smtp_service = MagicMock(side_effect=dummy_coro)
         server._get_host_keys = MagicMock(return_value=[])
         server.profile = {"ssh_banner": "SSH-2.0-OpenSSH_8.9"}
 
         mock_ssh_server = MagicMock()
         mock_ssh_server.close = MagicMock()
-        mock_ssh_server.wait_closed = AsyncMock()
+        async def dummy_coro2(*args, **kwargs): pass
+        mock_ssh_server.wait_closed = MagicMock(side_effect=dummy_coro2)
 
         with patch("asyncssh.listen", new_callable=AsyncMock) as mock_listen:
             mock_listen.return_value = mock_ssh_server

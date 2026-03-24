@@ -80,7 +80,19 @@ class LsCommand(Command):
         """Format listing in long format (-l)."""
         output = ""
         for node, name in nodes_with_names:
-            date_str = node.mtime.strftime("%b %d %H:%M")
+            mtime = node.mtime
+            if isinstance(mtime, str):
+                try:
+                    # Handle common ISO formats or fallback
+                    from dateutil import parser
+
+                    mtime = parser.parse(mtime)
+                except (ImportError, ValueError):
+                    import datetime
+
+                    mtime = datetime.datetime.now()
+
+            date_str = mtime.strftime("%b %d %H:%M")
 
             output += f"{node.perm} 1 {node.owner} {node.group} {node.size} {date_str} {name}\n"
         return f"total {len(nodes_with_names) * 4}\n" + output

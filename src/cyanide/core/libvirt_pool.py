@@ -74,12 +74,22 @@ class LibvirtPool:
         self._bg_tasks.append(asyncio.create_task(self._recycle_loop()))
         logger.info(f"Libvirt pool started. Max VMs: {self.max_vms}")
 
-    def stop(self):
-        """Stop background tasks and close connection"""
+    async def stop(self):
+        """Stop background tasks and close connection."""
         for task in self._bg_tasks:
             task.cancel()
+        for task in self._rebuild_tasks:
+            task.cancel()
+
+        if self._bg_tasks or self._rebuild_tasks:
+            await asyncio.gather(*self._bg_tasks, *self._rebuild_tasks, return_exceptions=True)
+
+        self._bg_tasks = []
+        self._rebuild_tasks = set()
+
         if self.conn:
-            self.conn.close()
+            await asyncio.get_running_loop().run_in_executor(None, self.conn.close)
+            self.conn = None
 
     def _sync_vms(self):
         """Discover existing VMs with the tag and populate self.vms"""

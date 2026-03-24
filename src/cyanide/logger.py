@@ -2,14 +2,20 @@ import datetime
 import json
 import logging
 from pathlib import Path
+from typing import Any, Optional
 
 
 class CyanideLogger:
     # Function 100: Initializes the class instance and its attributes.
-    def __init__(self, log_dir, output_config=None, logging_config=None):
+    def __init__(self, log_dir, output_config=None, logging_config=None, async_logger=None):
         self.log_dir = Path(log_dir)
-        if not self.log_dir.exists():
-            self.log_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            if not self.log_dir.exists():
+                self.log_dir.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            import sys
+
+            print(f"WARNING: Could not create log directory {self.log_dir}: {e}", file=sys.stderr)
 
         self.output_config = output_config or {}
         self.logging_config = logging_config or {
@@ -22,23 +28,34 @@ class CyanideLogger:
                 "max_bytes": 10485760,
             },
         }
+        self.async_logger = async_logger
         self.plugins = self._load_plugins()
+        self.geoip_cache: dict[str, dict[str, Any]] = {}
+        self.session_to_ip: dict[str, str] = {}
 
-        self.server_log = self._setup_logger("cyanide_server", self.log_dir / "cyanide-server.json")
+        self.server_log_path = self.log_dir / "cyanide-server.json"
+        self.server_log = self._setup_logger("cyanide_server", self.server_log_path)
 
-        self.fs_log = self._setup_logger("cyanide_fs", self.log_dir / "cyanide-fs.json")
+        self.fs_log_path = self.log_dir / "cyanide-fs.json"
+        self.fs_log = self._setup_logger("cyanide_fs", self.fs_log_path)
 
-        self.ml_log = self._setup_logger("cyanide_ml", self.log_dir / "cyanide-ml.json")
+        self.ml_log_path = self.log_dir / "cyanide-ml.json"
+        self.ml_log = self._setup_logger("cyanide_ml", self.ml_log_path)
 
-        self.stats_log = self._setup_logger("cyanide_stats", self.log_dir / "cyanide-stats.json")
+        self.stats_log_path = self.log_dir / "cyanide-stats.json"
+        self.stats_log = self._setup_logger("cyanide_stats", self.stats_log_path)
         self.session_logs: dict[str, dict[str, Path]] = {}
 
-    def register_session_log(self, session_id: str, jsonl_path: Path, ml_json_path: Path):
+    def register_session_log(
+        self, session_id: str, jsonl_path: Path, ml_json_path: Path, src_ip: Optional[str] = None
+    ):
         """Register a session's log paths for event mirroring."""
         self.session_logs[session_id] = {
             "jsonl": jsonl_path,
             "ml_json": ml_json_path,
         }
+        if src_ip:
+            self.session_to_ip[session_id] = src_ip
 
     def unregister_session_log(self, session_id: str):
         """Unregister a session's log paths."""
@@ -104,27 +121,38 @@ class CyanideLogger:
         rotation = self.logging_config.get("rotation", {})
 
         handler: logging.Handler
-        if logtype == "rotating":
-            strategy = rotation.get("strategy", "time")
-            backup_count = rotation.get("backup_count", 14)
+        try:
+            if logtype == "rotating":
+                strategy = rotation.get("strategy", "time")
+                backup_count = rotation.get("backup_count", 14)
 
-            if strategy == "time":
-                from logging.handlers import TimedRotatingFileHandler
+                if strategy == "time":
+                    from logging.handlers import TimedRotatingFileHandler
 
-                when = rotation.get("when", "midnight")
-                interval = rotation.get("interval", 1)
-                handler = TimedRotatingFileHandler(
-                    path, when=when, interval=interval, backupCount=backup_count
-                )
-            elif strategy == "size":
-                from logging.handlers import RotatingFileHandler
+                    when = rotation.get("when", "midnight")
+                    interval = rotation.get("interval", 1)
+                    handler = TimedRotatingFileHandler(
+                        path, when=when, interval=interval, backupCount=backup_count
+                    )
+                elif strategy == "size":
+                    from logging.handlers import RotatingFileHandler
 
-                max_bytes = rotation.get("max_bytes", 10485760)
-                handler = RotatingFileHandler(path, maxBytes=max_bytes, backupCount=backup_count)
+                    max_bytes = rotation.get("max_bytes", 10485760)
+                    handler = RotatingFileHandler(
+                        path, maxBytes=max_bytes, backupCount=backup_count
+                    )
+                else:
+                    handler = logging.FileHandler(path)
             else:
                 handler = logging.FileHandler(path)
-        else:
-            handler = logging.FileHandler(path)
+        except (OSError, PermissionError) as e:
+            import sys
+
+            print(
+                f"WARNING: Could not initialize file logger for {name} ({path}): {e}. Falling back to stdout.",
+                file=sys.stderr,
+            )
+            handler = logging.StreamHandler(sys.stdout)
 
         formatter = logging.Formatter("%(message)s")
         handler.setFormatter(formatter)
@@ -132,15 +160,21 @@ class CyanideLogger:
         return logger
 
     # Function 102: Handles event logging and telemetry.
-    def _get_target_logger(self, event_type):
-        """Routes event target logger based on event_type."""
+    def _get_target_logger_info(self, event_type):
+        """Routes event target logger and its path based on event_type."""
         if event_type in [
             "command.input",
             "auth",
             "file.quarantine",
             "tty.input",
+            "tty.out",
+            "tty.in",
             "client_fingerprint",
             "client_geo",
+            "ssh.connect",
+            "ssh_negotiated",
+            "session.start",
+            "session.end",
             "rsync_exec_detected",
             "rsync_handshake",
             "rsync_filelist",
@@ -149,28 +183,65 @@ class CyanideLogger:
             "scp_op",
             "sftp_op",
         ]:
-            return self.fs_log
+            return self.fs_log, self.fs_log_path
         if event_type.startswith("ml_") or event_type == "ml_thought":
-            return self.ml_log
+            return self.ml_log, self.ml_log_path
         if event_type == "stats":
-            return self.stats_log
-        return self.server_log
+            return self.stats_log, self.stats_log_path
+        return self.server_log, self.server_log_path
 
     # Function 103: Handles event logging and telemetry.
     def log_event(self, session_id, event_type, data):
         """Log a generic event in structured JSON, routed to proper file and mirrored to session log."""
+        # Baseline entry
         entry = {
             "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "session": session_id,
             "eventid": event_type,
         }
+
         if isinstance(data, dict):
-            entry.update(data)
+            # Update with data, but ensure we don't overwrite session or eventid unless intended
+            # Actually, we WANT event_type and session_id from the arguments to take precedence
+            payload = data.copy()
+            payload.pop("session", None)
+            payload.pop("eventid", None)
+            payload.pop("timestamp", None)
+            entry.update(payload)
+
+            # Ensure src_ip is present and top-level, and inject GeoIP
+            src_ip = data.get("src_ip")
+            if not src_ip and session_id in self.session_to_ip:
+                src_ip = self.session_to_ip[session_id]
+                entry["src_ip"] = src_ip
+
+            if src_ip:
+                if session_id not in self.session_to_ip:
+                    self.session_to_ip[session_id] = src_ip
+                if src_ip in self.geoip_cache:
+                    entry["geoip"] = self.geoip_cache[src_ip]
+                elif (
+                    src_ip in ("127.0.0.1", "localhost", "::1")
+                    or src_ip.startswith("192.168.")
+                    or src_ip.startswith("10.")
+                ):
+                    # Immediate stub for local IPs to ensure format consistency in tests/dev
+                    entry["geoip"] = {
+                        "country": "Local Network",
+                        "city": "Internal",
+                        "isp": "Private IP Space",
+                        "org": "Internal",
+                    }
         else:
             entry["data"] = data
 
-        logger = self._get_target_logger(event_type)
-        logger.info(json.dumps(entry))
+        logger, log_path = self._get_target_logger_info(event_type)
+        line = json.dumps(entry) + "\n"
+
+        if self.async_logger:
+            self.async_logger.log(log_path, line)
+        else:
+            logger.info(json.dumps(entry))
 
         # Mirror to session-specific logs
         if session_id in self.session_logs:
@@ -178,13 +249,19 @@ class CyanideLogger:
 
             # All events go to the detailed session audit log
             try:
-                with open(paths["jsonl"], "a") as f:
-                    f.write(json.dumps(entry) + "\n")
+                if self.async_logger:
+                    self.async_logger.log(paths["jsonl"], line)
+                else:
+                    with open(paths["jsonl"], "a") as f:
+                        f.write(line)
 
                 # ML analysis events also go to the specific .json analysis file
                 if event_type.startswith("ml_") or event_type == "ml_thought":
-                    with open(paths["ml_json"], "a") as f:
-                        f.write(json.dumps(entry) + "\n")
+                    if self.async_logger:
+                        self.async_logger.log(paths["ml_json"], line)
+                    else:
+                        with open(paths["ml_json"], "a") as f:
+                            f.write(line)
             except Exception as e:
                 logging.error(f"Failed to mirror event to session log {session_id}: {e}")
 

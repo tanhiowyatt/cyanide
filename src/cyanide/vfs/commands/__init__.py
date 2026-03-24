@@ -40,6 +40,7 @@ from .mkdir import MkdirCommand
 from .mv import MvCommand
 from .nc import NcCommand
 from .netstat import NetstatCommand
+from .pacman import PacmanCommand
 from .perl import PerlCommand
 from .ping import PingCommand
 from .pkexec import PkexecCommand
@@ -131,6 +132,7 @@ COMMAND_MAP = {
     "wget": WgetCommand,
     "ping": PingCommand,
     "uptime": UptimeCommand,
+    "pacman": PacmanCommand,
     "vi": EditorCommand,
     "vim": EditorCommand,
     "nano": EditorCommand,

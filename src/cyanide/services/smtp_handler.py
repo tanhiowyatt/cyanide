@@ -109,7 +109,7 @@ class SMTPHandler:
         except Exception:
             pass
         if self.logger:
-            self.logger.log_event(session_id, "session_end", {"protocol": "smtp", "src_ip": src_ip})
+            self.logger.log_event(session_id, "session.end", {"protocol": "smtp", "src_ip": src_ip})
         if self.stats:
             self.stats.on_disconnect()
 

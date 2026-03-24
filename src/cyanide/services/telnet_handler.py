@@ -2,6 +2,7 @@ import asyncio
 import random
 import time
 import traceback
+import uuid
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -37,6 +38,17 @@ class TelnetHandler:
         commands: List[str] = []
 
         try:
+            # Initialize TTY and Mirroring early
+            folder_name = f"telnet_{src_ip}_{session_id}"
+            log_dir = Path(self.logger.log_dir) / "tty" / folder_name
+            log_dir.mkdir(parents=True, exist_ok=True)
+
+            audit_json_path = log_dir / "audit.json"
+            ml_json_path = log_dir / "ml_analysis.json"
+            self.logger.register_session_log(
+                session_id, audit_json_path, ml_json_path, src_ip=src_ip
+            )
+
             self.logger.log_event(
                 session_id,
                 "connect",
@@ -61,7 +73,7 @@ class TelnetHandler:
 
                 self.logger.log_event(
                     session_id,
-                    "session_start",
+                    "session.start",
                     {"protocol": "telnet", "src_ip": src_ip, "session_id": session_id},
                 )
                 shell = ShellEmulator(
@@ -93,6 +105,8 @@ class TelnetHandler:
                 session_id, "telnet_exception", {"traceback": traceback.format_exc()}
             )
         finally:
+            if "fs" in locals():
+                fs.save_ip_history()
             await self._cleanup_session(
                 writer, session_id, src_ip, username, start_time, commands, bytes_in, bytes_out
             )
@@ -116,7 +130,11 @@ class TelnetHandler:
             writer.close()
             return "", None, False
 
-        session_id = "conn_" + self.services.session.register_session(src_ip)
+        session_id = str(uuid.uuid4())[:12]
+        if not session_id.startswith("conn_"):
+            session_id = "conn_" + session_id
+
+        self.services.session.register_session(src_ip, session_id=session_id)
         folder_name = f"telnet_{src_ip}_{session_id}"
         log_dir = Path(self.logger.log_dir) / "tty" / folder_name
         log_dir.mkdir(parents=True, exist_ok=True)
@@ -132,12 +150,14 @@ class TelnetHandler:
             path.touch()
 
         # Register paths for mirroring in the central logger
-        self.logger.register_session_log(session_id, tty_paths["json"], tty_paths["ml"])
+        self.logger.register_session_log(
+            session_id, tty_paths["json"], tty_paths["ml"], src_ip=src_ip
+        )
 
         # Log initial session info
         self.logger.log_event(
             session_id,
-            "session_init",
+            "session.start",
             {"protocol": "telnet", "src_ip": src_ip, "session_id": session_id},
         )
 
@@ -321,7 +341,7 @@ class TelnetHandler:
         duration = time.time() - start_time
         self.logger.log_event(
             session_id,
-            "session_end",
+            "session.end",
             {
                 "protocol": "telnet",
                 "src_ip": src_ip,
@@ -333,7 +353,7 @@ class TelnetHandler:
             },
         )
         self.logger.unregister_session_log(session_id)
-        self.services.session.unregister_session(src_ip)
+        self.services.session.unregister_session(session_id)
         self.stats.on_disconnect()
         writer.close()
         await writer.wait_closed()

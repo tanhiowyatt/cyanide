@@ -161,7 +161,26 @@ class ShellEmulator:
                 else:
                     continue
 
-            stdout, stderr, rc = await self._execute_pipeline(node.cmd_line)
+            if node.operator == "&":
+                # Simulate backgrounding
+                import secrets
+                import time
+
+                pid = secrets.SystemRandom().randint(2000, 9000)
+                if hasattr(self.fs, "processes"):
+                    self.fs.processes.append(
+                        {
+                            "pid": pid,
+                            "tty": "pts/0",
+                            "time": "00:00:00",
+                            "cmd": node.cmd_line,
+                            "user": self.username,
+                            "start_time": time.time(),
+                        }
+                    )
+                stdout, stderr, rc = f"[{secrets.SystemRandom().randint(1, 10)}] {pid}\n", "", 0
+            else:
+                stdout, stderr, rc = await self._execute_pipeline(node.cmd_line)
 
             full_stdout += stdout
             full_stderr += stderr
@@ -217,8 +236,8 @@ class ShellEmulator:
         """Check for chain operators at the current index."""
         if command_line[i : i + 2] in ("&&", "||"):
             return command_line[i : i + 2]
-        if command_line[i] == ";":
-            return ";"
+        if command_line[i] in (";", "&"):
+            return command_line[i]
         return None
 
     def _update_quote_state(self, char: str, in_quote: bool, quote_char: str) -> tuple[bool, str]:

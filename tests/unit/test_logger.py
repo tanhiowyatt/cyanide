@@ -83,16 +83,16 @@ def test_get_target_logger(temp_log_dir):
     logger = CyanideLogger(temp_log_dir, logging_config=config)
 
     # FS log events
-    assert logger._get_target_logger("command.input") == logger.fs_log
-    assert logger._get_target_logger("sftp_op") == logger.fs_log
-    assert logger._get_target_logger("rsync_filelist") == logger.fs_log
+    assert logger._get_target_logger_info("command.input")[0] == logger.fs_log
+    assert logger._get_target_logger_info("sftp_op")[0] == logger.fs_log
+    assert logger._get_target_logger_info("rsync_filelist")[0] == logger.fs_log
 
     # ML events
-    assert logger._get_target_logger("ml_classification") == logger.ml_log
-    assert logger._get_target_logger("ml_thought") == logger.ml_log
+    assert logger._get_target_logger_info("ml_classification")[0] == logger.ml_log
+    assert logger._get_target_logger_info("ml_thought")[0] == logger.ml_log
 
     # Stats
-    assert logger._get_target_logger("stats") == logger.stats_log
+    assert logger._get_target_logger_info("stats")[0] == logger.stats_log
 
     # Default
-    assert logger._get_target_logger("system_init") == logger.server_log
+    assert logger._get_target_logger_info("system_init")[0] == logger.server_log

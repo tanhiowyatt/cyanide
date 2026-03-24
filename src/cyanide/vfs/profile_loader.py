@@ -107,7 +107,8 @@ def _compile_to_sqlite(manifest: Dict[str, Any], db_path: Path, target_hash: str
                 mtime TEXT
             )
         """)
-        conn.execute("CREATE INDEX idx_parent ON vfs(parent_path)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_parent ON vfs(parent_path)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_name ON vfs(name)")
         conn.execute("CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT)")
         conn.execute("INSERT INTO metadata (key, value) VALUES ('hash', ?)", (target_hash,))
         conn.execute(

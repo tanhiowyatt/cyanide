@@ -16,7 +16,9 @@ class PsCommand(Command):
         """
         profile = getattr(self.fs, "profile", None)
 
-        if profile and "processes" in profile:
+        if hasattr(self.fs, "processes"):
+            processes = list(self.fs.processes)
+        elif profile and "processes" in profile:
             processes = list(profile["processes"])
         else:
             processes = [

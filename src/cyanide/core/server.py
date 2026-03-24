@@ -55,18 +55,22 @@ class ServiceRegistry:
 
 
 class CyanideServer:
-    """Main honeypot server orchestrating SSH, Telnet, and MySQL services."""
+    """Main honeypot server orchestrating SSH, Telnet."""
 
     # Function 38: Initializes the class instance and its attributes.
     def __init__(self, config: Dict[str, Any]):
         """Initialize honeypot server with configuration."""
         self.config = config
+        self.async_logger = AsyncLogger()
 
         try:
             log_dir = config.get("logging", {}).get("directory", "var/log/cyanide")
             logging_config = config.get("logging", {})
             self.logger = CyanideLogger(
-                log_dir, config.get("output", {}), logging_config=logging_config
+                log_dir,
+                config.get("output", {}),
+                logging_config=logging_config,
+                async_logger=self.async_logger,
             )
             self.logger.log_event(
                 "system", "service_init_status", {"message": "Logger initialized"}
@@ -120,7 +124,7 @@ class CyanideServer:
             raise
 
         try:
-            analytics_svc = AnalyticsService(config, self.logger)
+            analytics_svc = AnalyticsService(config, self.logger, session_mgr=session_mgr)
             self.logger.log_event(
                 "system", "service_init_status", {"message": "AnalyticsService initialized"}
             )
@@ -156,8 +160,6 @@ class CyanideServer:
         self.smtp_server: Any = None
         self.metrics_server: Any = None
         self.background_tasks: List[asyncio.Task] = []
-
-        self.async_logger = AsyncLogger()
 
         self.users = config.get("users", [])
 
@@ -243,10 +245,10 @@ class CyanideServer:
                         "src_ip": src_ip,
                     },
                 )
-            except Exception:
-                pass
-        except Exception:
-            pass
+            except Exception as e:
+                logging.debug(f"Failed to log fs_audit event: {e}")
+        except Exception as e:
+            logging.debug(f"Error in _fs_audit_hook: {e}")
 
     # Function 45: Retrieves filesystem data.
     def get_filesystem(self, session_id="unknown", src_ip="unknown"):
@@ -266,6 +268,9 @@ class CyanideServer:
                 audit_callback=audit_hook,
                 stats=self.stats,
                 users=self.users,
+                src_ip=src_ip,
+                session_id=session_id,
+                session_mgr=self.services.session,
             )
             if src_ip != "unknown":
                 self.vfs_cache[src_ip] = fs
@@ -453,15 +458,15 @@ class CyanideServer:
                 writer.write(response)
                 await writer.drain()
                 await asyncio.sleep(0.05)
-            except Exception:
-                pass
+            except Exception as e:
+                logging.debug(f"Metrics writer error: {e}")
         except Exception as e:
             self.logger.log_event("system", "metrics_handler_error", {"error": str(e)})
         finally:
             try:
                 writer.close()
-            except Exception:
-                pass
+            except Exception as e:
+                logging.debug(f"Metrics writer close error: {e}")
 
     # Function 50: Performs operations related to start metrics server.
     async def start_metrics_server(self):
@@ -842,21 +847,59 @@ class CyanideServer:
 
         for task in self.background_tasks:
             task.cancel()
+        if self.background_tasks:
+            try:
+                await asyncio.wait_for(
+                    asyncio.gather(*self.background_tasks, return_exceptions=True), timeout=5.0
+                )
+            except asyncio.TimeoutError:
+                self.logger.log_event(
+                    "system", "warning", {"message": "Background tasks shutdown timeout"}
+                )
+        self.background_tasks = []
 
-        if self.ssh_server:
-            self.ssh_server.close()
-            await self.ssh_server.wait_closed()
-        if self.telnet_server:
-            self.telnet_server.close()
-            await self.telnet_server.wait_closed()
-        if self.smtp_server:
-            self.smtp_server.close()
-            await self.smtp_server.wait_closed()
-        if self.metrics_server:
-            self.metrics_server.close()
-            await self.metrics_server.wait_closed()
+        if hasattr(self, "vm_pool") and self.vm_pool:
+            await self.vm_pool.stop()
 
-        await self.async_logger.stop()
+        ssh_server = getattr(self, "ssh_server", None)
+        if ssh_server:
+            try:
+                ssh_server.close()
+                await asyncio.wait_for(ssh_server.wait_closed(), timeout=5.0)
+            except (asyncio.TimeoutError, Exception) as e:
+                self.logger.log_event("system", "error", {"message": f"SSH shutdown error: {e}"})
+            self.ssh_server = None
+
+        telnet_server = getattr(self, "telnet_server", None)
+        if telnet_server:
+            try:
+                telnet_server.close()
+                await asyncio.wait_for(telnet_server.wait_closed(), timeout=5.0)
+            except (asyncio.TimeoutError, Exception) as e:
+                self.logger.log_event("system", "error", {"message": f"Telnet shutdown error: {e}"})
+            self.telnet_server = None
+
+        smtp_server = getattr(self, "smtp_server", None)
+        if smtp_server:
+            try:
+                smtp_server.close()
+                await asyncio.wait_for(smtp_server.wait_closed(), timeout=5.0)
+            except (asyncio.TimeoutError, Exception) as e:
+                self.logger.log_event("system", "error", {"message": f"SMTP shutdown error: {e}"})
+            self.smtp_server = None
+
+        metrics_server = getattr(self, "metrics_server", None)
+        if metrics_server:
+            metrics_server.close()
+            try:
+                await asyncio.wait_for(metrics_server.wait_closed(), timeout=5.0)
+            except (asyncio.TimeoutError, Exception):
+                pass
+            self.metrics_server = None
+
+        async_logger = getattr(self, "async_logger", None)
+        if async_logger:
+            await async_logger.stop()
 
         if hasattr(self, "_stop_event"):
             self._stop_event.set()
@@ -950,36 +993,96 @@ class SSHServerFactory(asyncssh.SSHServer):
         self.src_ip = conn.get_extra_info("peername")[0]
         self.src_port = conn.get_extra_info("peername")[1]
         self.client_version = conn.get_extra_info("client_version", "unknown")
-
-        algos = conn.get_extra_info("algorithms") or {}
-        self._log_connection_details(conn, algos)
+        self._handshake_logged = False
 
         if not self._check_session_limits(conn):
             return
 
-        self.honeypot.services.session.register_session(self.src_ip)
+        session_id = "conn_" + self.conn_id
+        self.honeypot.services.session.register_session(self.src_ip, session_id=session_id)
 
-        self.fs = self.honeypot.get_filesystem(
-            session_id="conn_" + self.conn_id, src_ip=self.src_ip
+        self.fs = self.honeypot.get_filesystem(session_id=session_id, src_ip=self.src_ip)
+
+        # Initialize TTY and Mirroring early to capture handshake events
+        try:
+            folder_name = f"ssh_{self.src_ip}_{session_id}"
+            log_dir = Path(self.honeypot.logger.log_dir) / "tty" / folder_name
+            log_dir.mkdir(parents=True, exist_ok=True)
+
+            # Register for mirroring immediately
+            self.honeypot.logger.register_session_log(
+                session_id, log_dir / "audit.json", log_dir / "ml_analysis.json", src_ip=self.src_ip
+            )
+        except Exception as e:
+            # Fallback: connection continues but without session-specific audit mirroring
+            import sys
+
+            print(f"ERROR: Failed to initialize session log directory: {e}", file=sys.stderr)
+
+        # Trigger GeoIP lookup (background task)
+        self._background_tasks.add(
+            asyncio.create_task(
+                self.honeypot.services.analytics.log_geoip(session_id, self.src_ip, "ssh")
+            )
         )
 
-    def _log_connection_details(self, conn, algos):
+    async def _log_connection_details(self, conn, algos):
         """Log connection opening and algorithms."""
-        self.honeypot.logger.log_event(
-            "conn_" + self.conn_id,
-            "ssh_conn_open",
-            {"src_ip": self.src_ip, "src_port": self.src_port},
-        )
+        session_id = "conn_" + self.conn_id
+
+        # Enriched GeoIP lookup
+        geo = await self.honeypot.services.analytics.geoip.lookup(self.src_ip)
 
         self.honeypot.logger.log_event(
-            "conn_" + self.conn_id,
+            session_id,
             "ssh.connect",
             {
                 "src_ip": self.src_ip,
                 "src_port": self.src_port,
+                "geoip": geo or {"country": "Unknown", "city": "Unknown"},
+            },
+        )
+
+        fp_str = ",".join(
+            [
+                str(algos.get("kex_algo", "")),
+                str(algos.get("host_key_algo", "")),
+                str(algos.get("encryption_algo", "")),
+                str(algos.get("mac_algo", "")),
+                str(algos.get("compression_algo", "")),
+            ]
+        )
+        import hashlib
+
+        fingerprint = hashlib.md5(fp_str.encode()).hexdigest()
+
+        # Log client fingerprint
+        self.honeypot.logger.log_event(
+            session_id,
+            "client_fingerprint",
+            {
+                "protocol": "ssh",
+                "src_ip": self.src_ip,
                 "client_version": self.client_version,
-                "kex_alg": algos.get("kex_algo"),
-                "key_alg": algos.get("host_key_algo"),
+                "fingerprint": {
+                    "kex": algos.get("kex_algo"),
+                    "key_algo": algos.get("host_key_algo"),
+                    "cipher": algos.get("encryption_algo"),
+                    "mac": algos.get("mac_algo"),
+                    "compression": algos.get("compression_algo"),
+                },
+                "md5": fingerprint,
+            },
+        )
+
+        # Log negotiated algorithms
+        self.honeypot.logger.log_event(
+            session_id,
+            "ssh_negotiated",
+            {
+                "src_ip": self.src_ip,
+                "kex": algos.get("kex_algo"),
+                "key_algo": algos.get("host_key_algo"),
                 "cipher": algos.get("encryption_algo"),
                 "mac": algos.get("mac_algo"),
                 "compression": algos.get("compression_algo"),
@@ -1015,17 +1118,40 @@ class SSHServerFactory(asyncssh.SSHServer):
 
     # Function 59: Performs operations related to connection lost.
     def connection_lost(self, exc):
-        self.honeypot.services.session.unregister_session(self.src_ip)
-        self.honeypot.logger.log_event(
-            "conn_" + self.conn_id,
-            "ssh_connection_lost",
-            {
-                "src_ip": self.src_ip,
-                "active_sessions": self.honeypot.services.session.active_sessions,
-            },
-        )
+        # Cancel and clear session-level background tasks
+        for task in self._background_tasks:
+            task.cancel()
+        self._background_tasks.clear()
 
-    # Function 60: Performs operations related to password auth supported.
+        if self.fs:
+            self.fs.save_ip_history()
+        # Log session summary
+        stats = self.honeypot.services.session.get_session_stats("conn_" + self.conn_id)
+        if stats:
+            duration = time.time() - stats["start_time"]
+            self.honeypot.logger.log_event(
+                "conn_" + self.conn_id,
+                "session.end",
+                {
+                    "src_ip": self.src_ip,
+                    "duration": round(duration, 2),
+                    "commands": stats["commands"],
+                    "file_ops": stats["file_ops"],
+                },
+            )
+
+        self.honeypot.services.session.unregister_session("conn_" + self.conn_id)
+
+    # Function 60: Performs operations related to begin auth.
+    async def begin_auth(self, username):
+        """Called when authentication begins; handshake is guaranteed to be complete."""
+        if not self._handshake_logged:
+            algos = self.conn.get_extra_info("algorithms") or {}
+            await self._log_connection_details(self.conn, algos)
+            self._handshake_logged = True
+        return True
+
+    # Function 61: Performs operations related to password auth supported.
     def password_auth_supported(self):
         return True
 
@@ -1298,6 +1424,11 @@ class SSHSession(asyncssh.SSHServerSession):
     # Function 67: Performs operations related to connection lost.
     def connection_lost(self, exc):
         """Log session disconnect."""
+        # Cancel and clear session-level background tasks
+        for task in self._background_tasks:
+            task.cancel()
+        self._background_tasks.clear()
+
         reason = "clean"
         if exc:
             reason = f"error: {exc}"
@@ -1404,24 +1535,20 @@ class SSHSession(asyncssh.SSHServerSession):
         self.tty_log_path_ml = log_dir / "ml_analysis.json"
         self.last_log_time = time.time()
 
-        # Initialize all 4 files
+        # Initialize remaining files if they don't exist
         for p in [
             self.tty_log_path_json,
             self.tty_log_path,
             self.tty_timing_path,
             self.tty_log_path_ml,
         ]:
-            p.touch()
-
-        # Register paths for mirroring in the central logger
-        self.honeypot.logger.register_session_log(
-            self.session_id, self.tty_log_path_json, self.tty_log_path_ml
-        )
+            if not p.exists():
+                p.touch()
 
         # Log initial session info to the JSONL log
         self.honeypot.logger.log_event(
             self.session_id,
-            "session_init",
+            "session.start",
             {
                 "protocol": "ssh",
                 "src_ip": self.src_ip,
@@ -1753,7 +1880,7 @@ class SSHSession(asyncssh.SSHServerSession):
 
         self.honeypot.logger.log_event(
             self.session_id,
-            "session_end",
+            "session.end",
             {
                 "protocol": "ssh",
                 "src_ip": self.src_ip,

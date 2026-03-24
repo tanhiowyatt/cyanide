@@ -10,7 +10,7 @@ class Context:
     kernel_version: str
     hostname: str
     arch: str
-    ssh_banner: str = "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5"
+    ssh_banner: str = "SSH-2.0-OpenSSH_8.0"
     version_id: str = ""
     os_id: str = ""
     install_date: str = ""

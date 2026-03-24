@@ -26,8 +26,19 @@ class GeoIP:
             ...
         }
         """
-        if ip in ("127.0.0.1", "localhost", "::1"):
-            return None
+        if (
+            ip in ("127.0.0.1", "localhost", "::1")
+            or ip.startswith("192.168.")
+            or ip.startswith("10.")
+        ):
+            return {
+                "country": "Local Network",
+                "city": "Internal",
+                "isp": "Private IP Space",
+                "lat": 0.0,
+                "lon": 0.0,
+                "org": "Internal",
+            }
 
         if ip in self.cache:
             return cast(Dict[Any, Any], self.cache[ip])
@@ -54,3 +65,19 @@ class GeoIP:
             pass
 
         return None
+
+    # Function 34: Performs operations related to lookup ptr.
+    async def lookup_ptr(self, ip: str) -> Optional[str]:
+        """Perform Reverse DNS (PTR) lookup for an IP."""
+        if ip in ("127.0.0.1", "localhost", "::1"):
+            return "localhost"
+
+        try:
+            import asyncio
+
+            loop = asyncio.get_event_loop()
+            # nosemgrep: python.lang.security.audit.network.socket-getnameinfo
+            result = await loop.getnameinfo((ip, 0))
+            return result[0]
+        except Exception:
+            return None

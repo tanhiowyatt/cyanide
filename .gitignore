@@ -48,3 +48,6 @@ data/quarantine/
 test_results
 .mypy_cache
 configs/profiles/*/.compiled.db
+.ruff_cache
+.venv
+example_prod_log.json   

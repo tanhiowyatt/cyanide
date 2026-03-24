@@ -45,23 +45,26 @@ async def test_log_correlation(advanced_config: dict[str, Any]) -> None:
         await asyncio.sleep(1)
 
         log_dir = Path(advanced_config["logging"]["directory"])
-        server_log = log_dir / "cyanide-server.json"
         fs_log = log_dir / "cyanide-fs.json"
-
-        with open(server_log, "r") as f:
-            server_entries = [json.loads(line) for line in f if line.strip()]
-
-        session_ids = [
-            e["session"] for e in server_entries if "session" in e and e["session"] != "system"
-        ]
-        assert len(session_ids) > 0
-        target_session = session_ids[0]
 
         with open(fs_log, "r") as f:
             fs_entries = [json.loads(line) for line in f if line.strip()]
 
-        found_correlation = any(e["session"] == target_session for e in fs_entries)
-        assert found_correlation, f"Session ID {target_session} not found in fs log"
+        session_ids = [
+            e["session"] for e in fs_entries if "session" in e and e["session"] != "system"
+        ]
+        assert len(session_ids) > 0
+        target_session = session_ids[0]
+
+        # Correlate with session-specific audit log
+        audit_log = log_dir / "tty" / f"ssh_127.0.0.1_{target_session}" / "audit.json"
+        assert audit_log.exists(), f"Audit log {audit_log} not found"
+
+        with open(audit_log, "r") as f:
+            audit_entries = [json.loads(line) for line in f if line.strip()]
+
+        found_correlation = any(e["session"] == target_session for e in audit_entries)
+        assert found_correlation, f"Session ID {target_session} not found in audit log"
 
     finally:
         await server.stop()

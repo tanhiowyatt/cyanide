@@ -28,8 +28,19 @@ class AsyncLogger:
         """Stop the background worker and flush remaining logs."""
         self._stop_event.set()
         if self._worker_task:
-            await self.queue.join()
-            await self._worker_task
+            try:
+                # Give it a few seconds to flush remaining logs
+                await asyncio.wait_for(self.queue.join(), timeout=3.0)
+            except asyncio.TimeoutError:
+                pass
+
+            # Cancel the worker if it's still running
+            if not self._worker_task.done():
+                self._worker_task.cancel()
+                try:
+                    await self._worker_task
+                except asyncio.CancelledError:
+                    pass
 
     # Function 12: Handles event logging and telemetry.
     def log(self, filepath: Path, content: Union[str, bytes], mode: str = "a"):
@@ -53,12 +64,24 @@ class AsyncLogger:
                 try:
                     async with aiofiles.open(filepath, mode) as f:
                         await f.write(content)
-                except Exception:
-                    pass
+                except Exception as e:
+                    import sys
+
+                    print(f"ERROR: AsyncLogger failed to write to {filepath}: {e}", file=sys.stderr)
                 finally:
                     self.queue.task_done()
 
             except asyncio.TimeoutError:
                 continue
-            except Exception:
-                pass
+            except asyncio.CancelledError:
+                # Log to stderr since logging system might be closing
+                import sys
+
+                print("AsyncLogger worker cancelled, finishing queue...", file=sys.stderr)
+                break
+            except Exception as e:
+                import sys
+
+                print(f"AsyncLogger worker error: {e}", file=sys.stderr)
+                await asyncio.sleep(0.1)  # Prevent tight loop on persistent error
+                continue

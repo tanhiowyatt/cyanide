@@ -7,9 +7,10 @@ class AnalyticsService:
     """
 
     # Function 181: Initializes the class instance and its attributes.
-    def __init__(self, config: Dict, logger):
+    def __init__(self, config: Dict, logger, session_mgr=None):
         self.config = config
         self.logger = logger
+        self.session_mgr = session_mgr
         self.logger.log_event(
             "system",
             "service_init",
@@ -78,20 +79,28 @@ class AnalyticsService:
             self.ml_enabled = False
 
     # Function 183: Performs operations related to analyze command.
-    def analyze_command(
-        self,
-        cmd: str,
-        src_ip: str,
-        session_id: str,
-        is_bot: bool = False,
-    ):
-        """Run command through ML pipeline and alert if anomaly."""
+    def analyze_command(self, cmd: str, src_ip: str, session_id: str, is_bot: bool = False):
+        """Analyze a command string for tools and anomalies."""
+        # Record command in session stats
+        if self.session_mgr:
+            self.session_mgr.record_command(session_id)
+
+        # Automated Tool Detection
+        automated_tools = ["wget", "curl", "python ", "perl ", "ruby ", "gcc ", "chmod +x"]
+        detected_tool = next((tool.strip() for tool in automated_tools if tool in cmd), None)
+        if detected_tool:
+            self.logger.log_event(
+                session_id,
+                "tool_detection",
+                {"src_ip": src_ip, "tool": detected_tool, "command": cmd},
+            )
+
+        # ML Anomaly Detection
         if not self.ml_enabled or self.ml_pipeline is None:
             return
 
         try:
             result = self.ml_pipeline.analyze_command(cmd)
-
             is_anomaly = result["is_anomaly"]
             source_type = "bot" if is_bot else "human"
 
@@ -174,13 +183,26 @@ class AnalyticsService:
     async def log_geoip(self, session_id: str, ip: str, protocol: str):
         """Async GeoIP enrichment logging."""
         geo_data = await self.geoip.lookup(ip)
+        ptr_data = await self.geoip.lookup_ptr(ip)
+
+        threat_intel = []
+        if ptr_data:
+            low_ptr = ptr_data.lower()
+            if "shodan" in low_ptr:
+                threat_intel.append("Shodan Scanner")
+            if "censys" in low_ptr:
+                threat_intel.append("Censys Scanner")
+            if "shadowserver" in low_ptr:
+                threat_intel.append("Shadowserver Scanner")
+            if "bolt" in low_ptr or "crawl" in low_ptr:
+                threat_intel.append("Bot/Crawler")
+
         if geo_data:
-            self.logger.log_event(
-                session_id,
-                "client_geo",
-                {
-                    "protocol": protocol,
-                    "src_ip": ip,
-                    "geo": geo_data,
-                },
-            )
+            # Populate logger cache for automatic enrichment of future events
+            if hasattr(self.logger, "geoip_cache"):
+                # Also include PTR and Threat Intel in the cache
+                enriched_geo = geo_data.copy()
+                enriched_geo["ptr"] = ptr_data
+                if threat_intel:
+                    enriched_geo["threat_intel"] = threat_intel
+                self.logger.geoip_cache[ip] = enriched_geo

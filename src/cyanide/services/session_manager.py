@@ -1,6 +1,6 @@
 import time
 import uuid
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 class SessionManager:
@@ -21,6 +21,7 @@ class SessionManager:
 
         self.active_sessions = 0
         self.sessions_per_ip: Dict[str, int] = {}
+        self.sessions: Dict[str, Dict[str, Any]] = {}
 
         self.banned_ips: Dict[str, float] = {}
         self.connection_history: Dict[str, List[float]] = {}
@@ -64,25 +65,53 @@ class SessionManager:
         return True, ""
 
     # Function 192: Performs operations related to register session.
-    def register_session(self, ip: str) -> str:
+    def register_session(self, ip: str, session_id: Optional[str] = None) -> str:
         """
-        Register a new session.
-        Returns: session_id
+        Register a new session and return its ID.
         """
         self.active_sessions += 1
         self.sessions_per_ip[ip] = self.sessions_per_ip.get(ip, 0) + 1
-        return str(uuid.uuid4())[:8]
+        if session_id is None:
+            session_id = str(uuid.uuid4())[:8]
+
+        self.sessions[session_id] = {
+            "ip": ip,
+            "start_time": time.time(),
+            "commands": 0,
+            "file_ops": 0,
+        }
+        return session_id
 
     # Function 193: Performs operations related to unregister session.
-    def unregister_session(self, ip: str):
+    def unregister_session(self, session_id: str):
         """
-        Unregister a session.
+        Unregister a session and cleanup stats.
         """
+        if session_id not in self.sessions:
+            return
+
+        session_data = self.sessions.pop(session_id)
+        ip = session_data["ip"]
+
         self.active_sessions = max(0, self.active_sessions - 1)
         if ip in self.sessions_per_ip:
             self.sessions_per_ip[ip] = max(0, self.sessions_per_ip[ip] - 1)
             if self.sessions_per_ip[ip] == 0:
                 del self.sessions_per_ip[ip]
+
+    def record_command(self, session_id: str):
+        """Increment command counter for a session."""
+        if session_id in self.sessions:
+            self.sessions[session_id]["commands"] += 1
+
+    def record_file_op(self, session_id: str):
+        """Increment file operation counter for a session."""
+        if session_id in self.sessions:
+            self.sessions[session_id]["file_ops"] += 1
+
+    def get_session_stats(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """Return session statistics."""
+        return self.sessions.get(session_id)
 
     # Function 194: Performs operations related to ban ip.
     def ban_ip(self, ip: str, duration: Optional[int] = None):

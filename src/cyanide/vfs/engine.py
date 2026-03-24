@@ -40,18 +40,25 @@ class SqliteBackend(VFSBackend):
         self.db_path = db_path
         self._conn = sqlite3.connect(db_path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
+        from opentelemetry import trace
+
+        self.tracer = trace.get_tracer(__name__)
 
     def get_config(self, path: str) -> Optional[Dict[str, Any]]:
-        cursor = self._conn.execute(
-            "SELECT type, content, owner, group_name as 'group', perm, size, mtime FROM vfs WHERE path = ?",
-            (path,),
-        )
-        row = cursor.fetchone()
-        return dict(row) if row else None
+        with self.tracer.start_as_current_span("vfs.get_config") as span:
+            span.set_attribute("vfs.path", path)
+            cursor = self._conn.execute(
+                "SELECT type, content, owner, group_name as 'group', perm, size, mtime FROM vfs WHERE path = ?",
+                (path,),
+            )
+            row = cursor.fetchone()
+            return dict(row) if row else None
 
     def list_dir(self, path: str) -> List[str]:
-        cursor = self._conn.execute("SELECT name FROM vfs WHERE parent_path = ?", (path,))
-        return [row["name"] for row in cursor.fetchall()]
+        with self.tracer.start_as_current_span("vfs.list_dir") as span:
+            span.set_attribute("vfs.path", path)
+            cursor = self._conn.execute("SELECT name FROM vfs WHERE parent_path = ?", (path,))
+            return [row["name"] for row in cursor.fetchall()]
 
     def exists(self, path: str) -> bool:
         cursor = self._conn.execute("SELECT 1 FROM vfs WHERE path = ?", (path,))
@@ -123,7 +130,6 @@ class VirtualDirectory(Directory):
 class FakeFilesystem:
     """Modern Simulated Linux filesystem using Template + Context model."""
 
-    # Function 288: Initializes the class instance and its attributes.
     def __init__(
         self,
         os_profile: Optional[str] = None,
@@ -131,11 +137,17 @@ class FakeFilesystem:
         audit_callback=None,
         stats=None,
         users: Optional[List[Dict[str, Any]]] = None,
+        src_ip: str = "unknown",
+        session_id: str = "unknown",
+        session_mgr=None,
     ):
         self.root_dir = Path(root_dir)
         self.audit_callback = audit_callback
         self.stats = stats
         self.users = users or []
+        self.src_ip = src_ip
+        self.session_id = session_id
+        self.session_mgr = session_mgr
 
         self.os_profile = str(os_profile or os.getenv("OS_PROFILE", "ubuntu"))
         self.profile_path = self.root_dir / self.os_profile
@@ -146,9 +158,14 @@ class FakeFilesystem:
 
         self.memory_overlay: Dict[str, Dict[str, Any]] = {}
         self.deleted_paths: Set[str] = set()
+        self.processes: List[Dict[str, Any]] = [
+            {"pid": 1, "tty": "?", "time": "00:00:15", "cmd": "/sbin/init", "user": "root"},
+            {"pid": 2, "tty": "?", "time": "00:00:00", "cmd": "[kthreadd]", "user": "root"},
+        ]
 
         self._load_profile()
         self._generate_system_files()
+        self._load_ip_history()
         self._initialize_user_homes()
 
     def close(self):
@@ -207,6 +224,55 @@ class FakeFilesystem:
             "group": "root",
             "perm": "-rw-r--r--",
         }
+
+    def _load_ip_history(self):
+        """Load persistent history for the source IP."""
+        if self.src_ip == "unknown":
+            return
+
+        history_base = Path("var/lib/cyanide/history") / self.src_ip
+        history_file = history_base / ".bash_history"
+
+        if history_file.exists():
+            try:
+                content = history_file.read_text()
+                self.memory_overlay["/root/.bash_history"] = {
+                    "type": "file",
+                    "content": content,
+                    "owner": "root",
+                    "group": "root",
+                    "perm": "-rw-------",
+                    "size": len(content),
+                    "mtime": datetime.datetime.fromtimestamp(history_file.stat().st_mtime),
+                }
+            except Exception as e:
+                import logging
+
+                logging.debug(f"Failed to load history for {self.src_ip}: {e}")
+
+    def save_ip_history(self):
+        """Save current session history to persistent storage."""
+        if self.src_ip == "unknown":
+            return
+
+        # Handle multiple possible history paths if needed,
+        # but for now we focus on root as it's the most common target.
+        history_path = "/root/.bash_history"
+        if history_path not in self.memory_overlay:
+            return
+
+        content = self.memory_overlay[history_path].get("content", "")
+        if not content:
+            return
+
+        history_base = Path("var/lib/cyanide/history") / self.src_ip
+        try:
+            history_base.mkdir(parents=True, exist_ok=True)
+            (history_base / ".bash_history").write_text(content)
+        except Exception as e:
+            import logging
+
+            logging.error(f"Failed to save history for {self.src_ip}: {e}")
 
     # Function 290: Performs operations related to initialize user homes.
     def _initialize_user_homes(self):
@@ -369,6 +435,8 @@ class FakeFilesystem:
             self.audit_callback("read", path)
         if self.stats:
             self.stats.on_file_op("read", path)
+        if self.session_mgr:
+            self.session_mgr.record_file_op(self.session_id)
 
         if path in self.memory_overlay:
             return str(self.memory_overlay[path].get("content", ""))
@@ -411,6 +479,8 @@ class FakeFilesystem:
             self.deleted_paths.remove(path)
         if self.stats:
             self.stats.on_file_op("write", path)
+        if self.session_mgr:
+            self.session_mgr.record_file_op(self.session_id)
         return VirtualFile(posixpath.basename(path), path, self)
 
     # Function 299: Performs operations related to mkdir p.
@@ -446,6 +516,8 @@ class FakeFilesystem:
             self.audit_callback("delete", path)
         if self.stats:
             self.stats.on_file_op("delete", path)
+        if self.session_mgr:
+            self.session_mgr.record_file_op(self.session_id)
         return True
 
     # Function 301: Performs operations related to resolve.

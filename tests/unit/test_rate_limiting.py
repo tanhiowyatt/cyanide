@@ -58,7 +58,7 @@ def test_per_ip_limit():
     # 1. Allowed
     allowed, reason = mgr.can_accept(ip)
     assert allowed
-    mgr.register_session(ip)
+    session_id = mgr.register_session(ip)
 
     # 2. Blocked by limit
     allowed, reason = mgr.can_accept(ip)
@@ -66,6 +66,6 @@ def test_per_ip_limit():
     assert "per_ip_limit_reached" in reason
 
     # 3. Unregister
-    mgr.unregister_session(ip)
+    mgr.unregister_session(session_id)
     allowed, reason = mgr.can_accept(ip)
     assert allowed

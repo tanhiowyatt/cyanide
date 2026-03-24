@@ -30,8 +30,8 @@ def pool():
 async def test_libvirt_start_stop(pool):
     await pool.start()
     assert len(pool._bg_tasks) == 2
-    pool.stop()
-    assert pool.conn.close.called
+    await pool.stop()
+    assert pool.conn is None
 
 
 def test_sync_vms(pool):

@@ -37,11 +37,12 @@ dependencies = [
     "opentelemetry-api>=1.20.0",
     "opentelemetry-sdk>=1.20.0",
     "opentelemetry-exporter-otlp>=1.20.0",
-    "requests>=2.32.4",
+    "requests>=2.33.0",
     "torch>=2.2.0",
     # Security fixes for transitive dependencies
     "jinja2>=3.1.6",
-    "urllib3>=2.6.3",
+    "urllib3>=2.3.0",
+    "pygments>=2.19.3",
     "certifi>=2024.7.4",
     "idna>=3.7",
     "configobj>=5.0.9",
@@ -74,7 +75,7 @@ dev = [
     "ruff>=0.1.0",
     "types-aiofiles>=23.1.0",
     "types-PyYAML>=6.0.12.12",
-    "types-requests>=2.32.4",
+    "types-requests>=2.33.0",
 ]
 
 outputs = [

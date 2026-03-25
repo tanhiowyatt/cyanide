@@ -94,9 +94,9 @@ jobs:
 
       - name: Lint (Ruff/Black/Isort)
         run: |
-          ruff check src/ tests/
-          black --check src/ tests/
-          isort --check-only src/ tests/
+          ruff check src/
+          black --check src/
+          isort --check-only src/
 
       - name: Type Check
         run: mypy src/

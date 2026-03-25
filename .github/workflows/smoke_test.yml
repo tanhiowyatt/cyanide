@@ -20,7 +20,7 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         context: .
-        file: deployments/docker/Dockerfile
+        file: Dockerfile
         push: false
         load: true
         tags: cyanide:latest
@@ -74,7 +74,7 @@ jobs:
         CYANIDE_TELNET_PORT: 2223
         CYANIDE_SMTP_PORT: 2525
         CYANIDE_METRICS_PORT: 9090
-      run: python3 tests/integration/smoke_test.py
+      run: python3 src/cyanide/tests/integration/smoke_test.py
 
     - name: Check Container Logs (if failed)
       if: failure()

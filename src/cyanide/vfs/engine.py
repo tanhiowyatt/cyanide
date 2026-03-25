@@ -589,6 +589,7 @@ class FakeFilesystem:
             return str(content)
 
         try:
-            return Template(content).render(**self.context.to_dict())
+            rendered = Template(content).render(**self.context.to_dict())
+            return str(rendered)
         except Exception:
-            return content
+            return str(content)

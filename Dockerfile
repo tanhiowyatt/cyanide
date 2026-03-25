@@ -39,9 +39,9 @@ RUN pip install --no-cache-dir /tmp/wheels/*.whl && rm -rf /tmp/wheels
 # Configuration and data setup
 COPY src/cyanide/configs/ configs/
 
-RUN mkdir -p var/log/cyanide/tty var/quarantine var/lib/cyanide/run \
+RUN mkdir -p var/log/cyanide/tty var/quarantine var/lib/cyanide \
     && groupadd -r cyanide && useradd -r -g cyanide cyanide \
-    && chown -R cyanide:cyanide var/log/cyanide var/quarantine var/lib/cyanide/run
+    && chown -R cyanide:cyanide var/log/cyanide var/quarantine var/lib/cyanide
 
 USER cyanide
 EXPOSE 2222 2223

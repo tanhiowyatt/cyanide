@@ -37,13 +37,7 @@ class AsyncLogger:
             # Cancel the worker if it's still running
             if not self._worker_task.done():
                 self._worker_task.cancel()
-                try:
-                    await self._worker_task
-                except asyncio.CancelledError:
-                    # In some environments, we might want to swallow this if we are the ones
-                    # who called .cancel(). However, to satisfy S7497 and ensure proper
-                    # cancellation propagation in complex task hierarchies, we re-raise.
-                    raise
+                await self._worker_task
 
     # Function 12: Handles event logging and telemetry.
     def log(self, filepath: Path, content: Union[str, bytes], mode: str = "a"):

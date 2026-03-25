@@ -49,7 +49,6 @@ def load_hacker_commands(path):
     files.extend(glob.glob(str(Path(path) / "*.jsonl")))
 
     print(f"[*] Loading hacker commands from {len(files)} files in {path}...")
-    count = 0
     for fpath in files:
         try:
             with open(fpath, "r") as f:
@@ -59,7 +58,6 @@ def load_hacker_commands(path):
                         cmd = entry.get("command") or entry.get("cmd") or entry.get("input")
                         if cmd:
                             commands.append(str(cmd))
-                            count += 1
                     except json.JSONDecodeError:
                         continue
         except Exception as e:
@@ -108,9 +106,9 @@ def train_anomaly_detector(force=False):
     model.train()
 
     dataset = CommandDataset(commands, model.tokenizer)
-    dataloader = DataLoader(dataset, batch_size=64, shuffle=True, pin_memory=True)
+    dataloader = DataLoader(dataset, batch_size=64, shuffle=True, pin_memory=True, num_workers=0)
 
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, "min", patience=3, factor=0.5)
     criterion = nn.MSELoss()
 
@@ -174,8 +172,7 @@ def main():
         print("Usage: --train-model [--force]")
         sys.exit(1)
 
-    if args.train_model:
-        train_anomaly_detector(args.force)
+    train_anomaly_detector(args.force)
 
 
 if __name__ == "__main__":

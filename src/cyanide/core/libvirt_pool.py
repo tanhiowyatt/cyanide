@@ -101,10 +101,8 @@ class LibvirtPool:
             for dom_id in domain_ids:
                 dom = self.conn.lookupByID(dom_id)
                 name = dom.name()
-
-            if self.guest_tag in name and name not in self.vms:
-                self.vms[name] = dom
-
+                if self.guest_tag in name and name not in self.vms:
+                    self.vms[name] = dom
         except Exception as e:
             logger.error(f"VM sync failed: {e}")
 

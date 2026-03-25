@@ -102,7 +102,6 @@ include = ["cyanide*"]
 [tool.setuptools.package-data]
 "cyanide.configs" = ["*.yaml", "*.example", "*.env", "*.txt", "profiles/**/*"]
 "cyanide.assets" = ["**/*"]
-"cyanide.docs" = ["**/*"]
 "cyanide.scripts" = ["**/*"]
 "cyanide.tests" = ["**/*"]
 

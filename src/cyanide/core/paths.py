@@ -13,11 +13,13 @@ def get_default_config_path() -> Path:
     2. Home directory (~/.cyanide/app.yaml)
     3. Package internal (cyanide/configs/app.yaml)
     """
-    # 1. Local Dev / CWD
+    # 1. Local Dev / Docker / CWD
     # Search in package-relative ./src/cyanide/configs for dev repo
-    local_path = Path("src/cyanide/configs/app.yaml")
-    if local_path.exists():
-        return local_path
+    # or ./configs for Docker deployments
+    search_paths = [Path("src/cyanide/configs/app.yaml"), Path("configs/app.yaml")]
+    for p in search_paths:
+        if p.exists():
+            return p
 
     # 2. User Home
     home_path = Path.home() / ".cyanide" / "app.yaml"
@@ -41,11 +43,13 @@ def get_profiles_dir() -> Path:
     2. Home directory (~/.cyanide/profiles)
     3. Package internal (cyanide/configs/profiles)
     """
-    # 1. Local Dev / CWD
-    # Search in package-relative ./src/cyanide/configs for dev repo
-    local_path = Path("src/cyanide/configs/profiles")
-    if local_path.is_dir():
-        return local_path
+    # 1. Local Dev / Docker / CWD
+    # Search in package-relative ./src/cyanide/configs/profiles for dev repo
+    # or ./configs/profiles for Docker deployments
+    search_paths = [Path("src/cyanide/configs/profiles"), Path("configs/profiles")]
+    for p in search_paths:
+        if p.is_dir():
+            return p
 
     # 2. User Home
     home_path = Path.home() / ".cyanide" / "profiles"

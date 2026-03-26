@@ -87,7 +87,10 @@ async def test_pool_reserve_release(mock_pool_config):
     assert pool.vms["test-os-1"]["state"] == "rebuilding"
 
     # Give the background task a moment to finish rebuilding
-    await asyncio.sleep(0.1)
+    for _ in range(20):
+        if pool.vms["test-os-1"]["state"] == "ready":
+            break
+        await asyncio.sleep(0.1)
 
     # State should be ready after revert completion
     assert pool.vms["test-os-1"]["state"] == "ready"
@@ -108,7 +111,10 @@ async def test_vm_pool_wrapper(mock_pool_config):
     assert lease is not None
     assert lease.session_id == "wrapper_session"
     await vmpool.release_target(lease)
-    await asyncio.sleep(0.1)
+    for _ in range(20):
+        if vmpool.backend.vms[lease.vm_id]["state"] == "ready":
+            break
+        await asyncio.sleep(0.1)
 
 
 @pytest.mark.asyncio

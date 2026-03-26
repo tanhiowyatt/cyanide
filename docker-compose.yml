@@ -15,6 +15,13 @@ services:
       - ./var/quarantine:/app/var/quarantine
       - ./var/lib/cyanide:/app/var/lib/cyanide
     restart: unless-stopped
+    user: "cyanide"
+    init: true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     read_only: true
     tmpfs:
       - /tmp:mode=1777
@@ -32,7 +39,7 @@ services:
           memory: 128M
     pids_limit: 50
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9090/health"]
+      test: ["CMD", "python", "-c", "import urllib.request as r; r.urlopen('http://localhost:9090/health')"]
       interval: 30s
       timeout: 10s
       retries: 3

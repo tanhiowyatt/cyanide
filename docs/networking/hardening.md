@@ -23,7 +23,13 @@ Strictly limit the honeypot's ability to "call home" or scan other targets:
 
 ### Docker Hardening
 Our `docker-compose.yml` includes several security defaults. Do not weaken them:
-- **Read-Only Filesystem**: The root filesystem is read-only. Data is only written to mounted volumes or `tmpfs`.
+- **Read-Only Filesystem**: The root filesystem is enforced as strictly `read_only`. This means the container itself is immutable.
+- **Writable Volumes**: The only areas where the honeypot can write data are explicitly mounted volumes:
+  - `/app/configs` (for configuration overrides or dynamic profiles)
+  - `/app/var/log/cyanide` (for honeypot logs and audit trails)
+  - `/app/var/quarantine` (for capturing malware artifacts)
+  - `/app/var/lib/cyanide` (for persistent application state)
+  - `tmpfs` at `/tmp` (used for temporary runtime files only)
 - **No New Privileges**: Specifically prevents the container processes from gaining new privileges via `setuid` binaries (`security_opt: [no-new-privileges:true]`).
 - **Capability Dropping**: All Linux capabilities are dropped (`cap_drop: [ALL]`).
 - **Resource Limits**: Memory (e.g., 512M) and CPU (e.g., 0.5) limits prevent DoS of the host machine by a rogue container.

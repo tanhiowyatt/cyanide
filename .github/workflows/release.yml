@@ -22,12 +22,21 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.14"
-      - name: Build and Publish
+      - name: Build
         run: |
           pip install build
           python -m build
+
+      - name: Sign the distribution with Sigstore
+        uses: sigstore/gh-action-sigstore-python@v2.1.1
+        with:
+          inputs: |
+            ./dist/*.tar.gz
+            ./dist/*.whl
+
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+
 
   docker-publish:
     name: Publish Docker Images (Hub)
@@ -38,6 +47,15 @@ jobs:
         arch: [amd64, arm64]
     steps:
       - uses: actions/checkout@v6
+
+      - name: Generate SBOM (Source)
+        uses: CycloneDX/gh-cdxgen-action@v2
+        with:
+          output: bom.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom-source-${{ matrix.arch }}
+          path: bom.json
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -70,6 +88,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          sbom: true
+          provenance: true
 
   github-release:
     name: Create GitHub Release

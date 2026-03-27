@@ -51,6 +51,7 @@ users:
 metrics:
   enabled: true
   port: 9090
+  allow_remote: true
 
 ml:
   enabled: false

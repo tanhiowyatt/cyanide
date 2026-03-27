@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/cyanide
+      url: https://pypi.org/p/cyanide-honeypot
     permissions:
       id-token: write  
     steps:
@@ -81,7 +81,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/cyanide
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/cyanide-honeypot
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}

@@ -97,7 +97,9 @@ def _compile_to_sqlite(manifest: Dict[str, Any], db_path: Path, target_hash: str
     try:
         conn = sqlite3.connect(db_path)
     except (sqlite3.OperationalError, sqlite3.DatabaseError) as e:
-        logger.warning(f"Failed to open '{db_path}' for compilation (e.g. read-only/corrupt db): {e}. Falling back to in-memory db.")
+        logger.warning(
+            f"Failed to open '{db_path}' for compilation (e.g. read-only/corrupt db): {e}. Falling back to in-memory db."
+        )
         # If we can't write to the filesystem, compile the profile strictly in-memory
         conn = sqlite3.connect(":memory:")
 
@@ -392,7 +394,9 @@ def load(profile_name: str, profiles_dir: Path) -> Dict[str, Any]:
             "metadata": metadata,
             "dynamic_files": dynamic_files,
             "honeytokens": honeytokens,
-            "static": manifest if not compiled_db.exists() else None, # pass manifest strictly if memory bound
+            "static": (
+                manifest if not compiled_db.exists() else None
+            ),  # pass manifest strictly if memory bound
         }
         _MEMORY_CACHE[profile_name] = res
         return res

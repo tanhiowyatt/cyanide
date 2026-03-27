@@ -7,7 +7,7 @@ Cyanide implements a raw, highly optimized asynchronous TCP Telnet server built 
 The Telnet protocol (RFC 854) involves in-band signaling using `IAC` (Interpret As Command) bytes (0xFF).
 
 ### Key Iteration Handlers:
-- **`handle_connection`:** The primary entry point. When a TCP connection is established on port 2223, a new handler loop spawns, reading up to 1024 bytes per tick.
+- **`handle_connection`:** The primary entry point. When a TCP connection is established on port 2323, a new handler loop spawns, reading up to 1024 bytes per tick.
 - **IAC Sanitization:** Before the buffer is passed to the emulation layer or the proxy backend, Cyanide intercepts `IAC` sequences (like `WILL ECHO`, `DO LINEMODE`). It logs these negotiation attempts (helpful for identifying automated Telnet scanners like Mirai) and seamlessly strips the bytes to ensure clean string execution on the emulator.
 
 ## 2. Authentication Prompting

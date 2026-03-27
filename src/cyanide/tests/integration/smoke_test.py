@@ -91,7 +91,7 @@ def check_smtp_functional(host, port):
 def smoke_test():
     host = "127.0.0.1"
     ssh_port = int(os.getenv("CYANIDE_SSH_PORT", 2222))
-    telnet_port = int(os.getenv("CYANIDE_TELNET_PORT", 2223))
+    telnet_port = int(os.getenv("CYANIDE_TELNET_PORT", 2323))
     metrics_port = int(os.getenv("CYANIDE_METRICS_PORT", 9090))
     smtp_port = int(os.getenv("CYANIDE_SMTP_PORT", 2525))
 

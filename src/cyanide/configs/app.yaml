@@ -92,7 +92,7 @@ ssh:
 
 telnet:
   enabled: true
-  listen_port: 2223
+  listen_port: 2323
   backend_mode: emulated
 
 smtp:

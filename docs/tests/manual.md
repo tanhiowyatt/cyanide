@@ -11,7 +11,7 @@ This guide provides a step-by-step checklist to manually verify every feature of
     - `ssh root@<ip> -p 2222` (use password `admin`).
     - **Check**: Do you get a prompt? Does `whoami` return `root`?
 2.  **Telnet Login**
-    - `telnet <ip> 2223`.
+    - `telnet <ip> 2323`.
     - **Check**: Do you see the `/etc/issue` banner? Does login work?
 3.  **Basic Command execution**
     - Run `ls -la`, `cd /etc`, `cat /etc/passwd`.

@@ -28,7 +28,7 @@ def mock_config():
             "proc_version": "Test Version",
         },
         "ssh": {"port": 2222, "enabled": True, "backend_mode": "emulated"},
-        "telnet": {"port": 2223, "enabled": True, "backend_mode": "emulated"},
+        "telnet": {"port": 2323, "enabled": True, "backend_mode": "emulated"},
         "users": [{"user": "root", "pass": "admin"}],
         "ml": {
             "enabled": False,

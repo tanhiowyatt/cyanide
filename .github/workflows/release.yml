@@ -28,7 +28,7 @@ jobs:
           python -m build
 
       - name: Sign the distribution with Sigstore
-        uses: sigstore/gh-action-sigstore-python@v2.1.1
+        uses: sigstore/gh-action-sigstore-python@v3.3.0
         with:
           inputs: |
             ./dist/*.tar.gz
@@ -52,7 +52,7 @@ jobs:
         uses: CycloneDX/gh-cdxgen-action@v2
         with:
           output: bom.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sbom-source-${{ matrix.arch }}
           path: bom.json
@@ -71,7 +71,7 @@ jobs:
 
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/cyanide
           tags: |

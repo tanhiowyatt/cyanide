@@ -405,7 +405,9 @@ class CyanideServer:
 
     def _get_health_status(self) -> str:
         ssh_up = self.ssh_server is not None or getattr(self, "ssh_proxy", None) is not None
-        telnet_up = self.telnet_server is not None or getattr(self, "telnet_proxy", None) is not None
+        telnet_up = (
+            self.telnet_server is not None or getattr(self, "telnet_proxy", None) is not None
+        )
         smtp_up = self.smtp_server is not None or getattr(self, "smtp_proxy", None) is not None
 
         is_healthy = True

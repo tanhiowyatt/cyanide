@@ -828,13 +828,19 @@ class CyanideServer:
 
         self._start_vm_pool()
 
-        logging.info(f"[*] Starting SSH service on port {self.config.get('ssh', {}).get('port', 2222)}...")
+        logging.info(
+            f"[*] Starting SSH service on port {self.config.get('ssh', {}).get('port', 2222)}..."
+        )
         await self._start_ssh_service(host_keys)
 
-        logging.info(f"[*] Starting Telnet service on port {self.config.get('telnet', {}).get('port', 2323)}...")
+        logging.info(
+            f"[*] Starting Telnet service on port {self.config.get('telnet', {}).get('port', 2323)}..."
+        )
         await self._start_telnet_service()
 
-        logging.info(f"[*] Starting SMTP service on port {self.config.get('smtp', {}).get('port', 2525)}...")
+        logging.info(
+            f"[*] Starting SMTP service on port {self.config.get('smtp', {}).get('port', 2525)}..."
+        )
         await self._start_smtp_service()
 
         self.background_tasks.append(asyncio.create_task(self._cleanup_loop()))

@@ -34,8 +34,16 @@ jobs:
             ./dist/*.tar.gz
             ./dist/*.whl
 
+      - name: Move Sigstore signatures
+        run: |
+          mkdir -p sigstore-assets
+          mv dist/*.sigstore.json sigstore-assets/
+
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          verify-metadata: true
 
 
   docker-publish:

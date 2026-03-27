@@ -49,7 +49,7 @@ users:
     pass: "123456"
 
 metrics:
-  enabled: false
+  enabled: true
   port: 9090
 
 ml:

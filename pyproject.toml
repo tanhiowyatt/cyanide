@@ -82,10 +82,10 @@ outputs = [
 cyanide = "cyanide.main:main"
 
 [project.urls]
-"Homepage" = "https://github.com/tanhiowyatt/cyanide"
+"Homepage" = "https://github.com/tanhiowyatt/cyanide-honeypot"
 "PyPI" = "https://pypi.org/p/cyanide-honeypot"
-"Bug Tracker" = "https://github.com/tanhiowyatt/cyanide/issues"
-"Documentation" = "https://github.com/tanhiowyatt/cyanide/tree/main/docs"
+"Bug Tracker" = "https://github.com/tanhiowyatt/cyanide-honeypot/issues"
+"Documentation" = "https://github.com/tanhiowyatt/cyanide-honeypot/tree/main/docs"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -1,6 +1,6 @@
 services:
   cyanide:
-    image: ${GITHUB_REPOSITORY_OWNER:-cyanide}/cyanide:latest
+    image: ${GITHUB_REPOSITORY_OWNER:-cyanide}/cyanide-honeypot:latest
     build:
       context: .
       dockerfile: Dockerfile

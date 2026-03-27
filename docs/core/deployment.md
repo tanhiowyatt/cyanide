@@ -15,7 +15,7 @@ The default stack includes the honeypot, a local MailHog instance (for SMTP capt
 
 ```bash
 # Clone and enter the repository
-git clone https://github.com/tanhiowyatt/cyanide.git
+git clone https://github.com/tanhiowyatt/cyanide-honeypot.git
 cd cyanide
 
 # Launch the stack

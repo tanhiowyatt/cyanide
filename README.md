@@ -1,10 +1,10 @@
 <p align="center">
 
-  [![Stars](https://img.shields.io/github/stars/tanhiowyatt/cyanide?style=flat&logo=GitHub&color=yellow)](https://github.com/tanhiowyatt/cyanide/stargazers)
-  [![CI](https://github.com/tanhiowyatt/cyanide/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tanhiowyatt/cyanide/actions/workflows/ci.yml)
-  [![Security Scan](https://github.com/tanhiowyatt/cyanide/actions/workflows/security_scan.yml/badge.svg)](https://github.com/tanhiowyatt/cyanide/actions/workflows/security_scan.yml)
-  [![Quality gate](https://sonarcloud.io/api/project_badges/measure?project=tanhiowyatt_cyanide&metric=alert_status)](https://sonarcloud.io/dashboard?id=tanhiowyatt_cyanide)
-  [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=tanhiowyatt_cyanide&metric=coverage)](https://sonarcloud.io/component_measures/metric/coverage/list?id=tanhiowyatt_cyanide)
+  [![Stars](https://img.shields.io/github/stars/tanhiowyatt/cyanide-honeypot?style=flat&logo=GitHub&color=yellow)](https://github.com/tanhiowyatt/cyanide-honeypot/stargazers)
+  [![CI](https://github.com/tanhiowyatt/cyanide-honeypot/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tanhiowyatt/cyanide-honeypot/actions/workflows/ci.yml)
+  [![Security Scan](https://github.com/tanhiowyatt/cyanide-honeypot/actions/workflows/security_scan.yml/badge.svg)](https://github.com/tanhiowyatt/cyanide-honeypot/actions/workflows/security_scan.yml)
+  [![Quality gate](https://sonarcloud.io/api/project_badges/measure?project=tanhiowyatt_cyanide-honeypot&metric=alert_status)](https://sonarcloud.io/dashboard?id=tanhiowyatt_cyanide-honeypot)
+  [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=tanhiowyatt_cyanide-honeypot&metric=coverage)](https://sonarcloud.io/component_measures/metric/coverage/list?id=tanhiowyatt_cyanide-honeypot)
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
   [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/)
 </p>
@@ -49,10 +49,10 @@
 
  ```bash
 1. Clone the repository
-git clone https://github.com/tanhiowyatt/cyanide.git
+git clone https://github.com/tanhiowyatt/cyanide-honeypot.git
 
 2. Go in docker folder
-cd cyanide
+cd cyanide-honeypot
 
 3. Launch the environment
 docker-compose up -d
@@ -70,7 +70,7 @@ docker-compose up -d --build
 
 ```bash
 1. Install the package
-pip install cyanide
+pip install cyanide-honeypot
 
 2. Run the honeypot
 cyanide

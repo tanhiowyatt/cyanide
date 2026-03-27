@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
 
-echo "Starting Local Smoke Test for Cyanide..."
+echo "Starting Local Smoke Test for Cyanide-Honeypot..."
 
 # 1. Build the Docker Image
-echo "Building Docker image 'cyanide:smoke'..."
-docker build -t cyanide:smoke .
+echo "Building Docker image 'cyanide-honeypot:smoke'..."
+docker build -t cyanide-honeypot:smoke .
 
 # 2. Run Container
 echo "Starting container..."
@@ -25,7 +25,7 @@ docker run -d --name $CONTAINER_NAME \
   -e CYANIDE_TELNET_ENABLED=true \
   -e CYANIDE_TELNET_LISTEN_PORT=2323 \
   -e CYANIDE_USERS='[{"user": "root", "pass": "admin"}]' \
-  cyanide:smoke
+  cyanide-honeypot:smoke
 
 # 3. Cleanup on exit
 trap "echo 'Cleaning up...'; docker stop $CONTAINER_NAME >/dev/null 2>&1 || true; docker rm $CONTAINER_NAME >/dev/null 2>&1 || true; exit" EXIT INT TERM

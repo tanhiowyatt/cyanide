@@ -99,6 +99,7 @@ class SSHConfig(BaseModel):
     )
 
     forwarding_enabled: bool = False
+    forwarding_strict_mode: bool = True
     forward_redirect_enabled: bool = False
     forward_redirect_rules: Dict[str, str] = Field(default_factory=dict)
     forward_tunnel_enabled: bool = False
@@ -125,6 +126,9 @@ class TelnetConfig(BaseModel):
 class MetricsConfig(BaseModel):
     enabled: bool = True
     port: int = 9090
+    host: str = "127.0.0.1"
+    token: Optional[str] = None
+    allow_remote: bool = False
 
     @field_validator("port")
     @classmethod

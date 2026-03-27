@@ -4,12 +4,14 @@ Advanced SSH/Telnet Honeypot Server Implementation.
 
 import asyncio
 import hashlib
+import ipaddress
 import json
 import logging
 import secrets
 import time
 import traceback
 import uuid
+from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -200,7 +202,8 @@ class CyanideServer:
             self.resolved_profile_name = "ubuntu"
 
         self.vfs_persistence = config.get("ssh", {}).get("vfs_persistence", True)
-        self.vfs_cache: Dict[str, FakeFilesystem] = {}
+        self.vfs_cache: OrderedDict[tuple, FakeFilesystem] = OrderedDict()
+        self.vfs_cache_limit = 100
 
     # Function 40: Performs operations related to analyze command.
     def _analyze_command(self, cmd, username, src_ip, session_id, protocol, is_bot=False):
@@ -262,15 +265,19 @@ class CyanideServer:
             logging.debug(f"Error in _fs_audit_hook: {e}")
 
     # Function 45: Retrieves filesystem data.
-    def get_filesystem(self, session_id="unknown", src_ip="unknown"):
-        """Create a fresh filesystem instance for a new session."""
+    def get_filesystem(self, session_id="unknown", src_ip="unknown", username=None):
+        """Create a fresh filesystem instance for a new session with LRU caching."""
+        # composite key for persistence: (ip, user)
+        cache_key = (src_ip, username)
 
         # Function 46: Performs operations related to audit hook.
         def audit_hook(action, path, fs_instance=None):
             self._fs_audit_hook(action, path, fs_instance, session_id, src_ip)
 
-        if self.vfs_persistence and src_ip != "unknown" and src_ip in self.vfs_cache:
-            return self.vfs_cache[src_ip]
+        if self.vfs_persistence and src_ip != "unknown":
+            if cache_key in self.vfs_cache:
+                self.vfs_cache.move_to_end(cache_key)
+                return self.vfs_cache[cache_key]
 
         try:
             fs = FakeFilesystem(
@@ -283,8 +290,10 @@ class CyanideServer:
                 session_id=session_id,
                 session_mgr=self.services.session,
             )
-            if src_ip != "unknown":
-                self.vfs_cache[src_ip] = fs
+            if self.vfs_persistence and src_ip != "unknown":
+                if len(self.vfs_cache) >= self.vfs_cache_limit:
+                    self.vfs_cache.popitem(last=False)  # Remove oldest (LRU)
+                self.vfs_cache[cache_key] = fs
             return fs
         except Exception as e:
             self.logger.log_event(
@@ -436,12 +445,34 @@ class CyanideServer:
 
             try:
                 header_str = header_data.decode("utf-8", "ignore")
-                parts = header_str.splitlines()[0].split()
+                lines = header_str.splitlines()
+                if not lines:
+                    return
+                parts = lines[0].split()
                 if len(parts) < 2:
                     return
                 path = parts[1]
             except Exception:
                 return
+
+            # Token Auth Check
+            token = self.config.get("metrics", {}).get("token")
+            if token and path != "/health":
+                auth_header = next(
+                    (line for line in lines if line.lower().startswith("authorization:")), None
+                )
+                if not auth_header or f"Bearer {token}" not in auth_header:
+                    response = (
+                        "HTTP/1.1 401 Unauthorized\r\n"
+                        "Content-Type: text/plain\r\n"
+                        "Content-Length: 12\r\n"
+                        "Connection: close\r\n"
+                        "\r\n"
+                        "Unauthorized"
+                    ).encode()
+                    writer.write(response)
+                    await writer.drain()
+                    return
 
             content, content_type = self._route_metrics_request(path)
 
@@ -476,12 +507,17 @@ class CyanideServer:
             return
 
         port = metrics_conf.get("port", 9090)
+        host = metrics_conf.get("host", "127.0.0.1")
+        if metrics_conf.get("allow_remote", False):
+            host = "0.0.0.0"
 
         try:
             self.metrics_server = await asyncio.start_server(
-                self._handle_metrics_request, "0.0.0.0", port
+                self._handle_metrics_request, host, port
             )
-            self.logger.log_event("system", "service_started", {"service": "metrics", "port": port})
+            self.logger.log_event(
+                "system", "service_started", {"service": "metrics", "host": host, "port": port}
+            )
             async with self.metrics_server:
                 await self.metrics_server.serve_forever()
         except Exception as e:
@@ -588,7 +624,7 @@ class CyanideServer:
             ):
                 continue
             except Exception as e:
-                print(f"DEBUG: CyanideProcess stdin loop error: {e}", flush=True)
+                logging.debug(f"CyanideProcess stdin loop error: {e}")
                 break
 
         sess.session_ended()
@@ -641,7 +677,7 @@ class CyanideServer:
             else:
                 await CyanideServer._handle_exec_session(process, sess, factory, command)
         except Exception as e:
-            print(f"DEBUG: CyanideProcess EXCEPTION: {e}", flush=True)
+            logging.debug(f"CyanideProcess EXCEPTION: {e}")
             traceback.print_exc()
             process.exit(1)
 
@@ -1007,7 +1043,9 @@ class SSHServerFactory(asyncssh.SSHServer):
 
         session_id = "conn_" + self.conn_id
         self.honeypot.services.session.register_session(self.src_ip, session_id=session_id)
-        self.fs = self.honeypot.get_filesystem(session_id=session_id, src_ip=self.src_ip)
+        self.fs = self.honeypot.get_filesystem(
+            session_id=session_id, src_ip=self.src_ip, username=self.username
+        )
 
         self._init_session_logging(session_id)
 
@@ -1057,9 +1095,7 @@ class SSHServerFactory(asyncssh.SSHServer):
             )
         except Exception as e:
             # Fallback: connection continues but without session-specific audit mirroring
-            import sys
-
-            print(f"ERROR: Failed to initialize session log directory: {e}", file=sys.stderr)
+            logging.error(f"Failed to initialize session log directory: {e}")
             task = asyncio.create_task(self.honeypot.services.analytics.log_geoip(self.src_ip))
             self._background_tasks.add(task)
             task.add_done_callback(self._background_tasks.discard)
@@ -1232,6 +1268,11 @@ class SSHServerFactory(asyncssh.SSHServer):
         )
 
         if success:
+            # Re-fetch VFS now that we have a verified username to support user-specific persistence
+            self.fs = self.honeypot.get_filesystem(
+                session_id="conn_" + self.conn_id, src_ip=self.src_ip, username=self.username
+            )
+
             ssh_conf = self.honeypot.config.get("ssh", {})
             auth_delay = ssh_conf.get("auth_delay", 1.0)
             if auth_delay > 0:
@@ -1241,7 +1282,7 @@ class SSHServerFactory(asyncssh.SSHServer):
 
     # Function 63: Performs operations related to session requested.
     def session_requested(self):
-        print(f"DEBUG: session_requested for {self.src_ip}", flush=True)
+        logging.debug(f"session_requested for {self.src_ip}")
         sess = SSHSession(self.honeypot, self.fs, self.src_ip, self.src_port, self.conn_id)
         self.sessions[self.conn_id] = sess
         return sess
@@ -1307,13 +1348,17 @@ class SSHServerFactory(asyncssh.SSHServer):
             chan.close()
 
     def _get_forward_target(self, dest_host, dest_port):
-        """Apply redirect and tunnel rules to get the actual target."""
+        """Apply redirect and tunnel rules with strict security checks."""
         ssh_conf = self.honeypot.config.get("ssh", {})
+        strict_mode = ssh_conf.get("forwarding_strict_mode", True)
+
         target_host = dest_host
         target_port = dest_port
         mode = "allowed"
         port_str = str(dest_port)
 
+        # 1. Check for explicit rules
+        rule_found = False
         for rule_type in ["forward_redirect", "forward_tunnel"]:
             if ssh_conf.get(f"{rule_type}_enabled"):
                 rules = ssh_conf.get(f"{rule_type}_rules", {})
@@ -1325,7 +1370,26 @@ class SSHServerFactory(asyncssh.SSHServer):
                     else:
                         target_host = target_str
                     mode = rule_type.split("_")[1]
+                    rule_found = True
                     break
+
+        # 2. Security: Anti-Pivot / Localhost Protection
+        try:
+            ip = ipaddress.ip_address(target_host)
+            if ip.is_loopback or ip.is_private or ip.is_link_local or ip.is_multicast:
+                # Unless it was explicitly allowed by a rule, block it
+                if not rule_found:
+                    return "127.0.0.1", 0, "anti_pivot_block"
+        except ValueError:
+            # It's a hostname. Block local-sounding names if strict
+            if not rule_found and strict_mode:
+                if target_host.lower() in ["localhost", "127.0.0.1", "::1"]:
+                    return "127.0.0.1", 0, "anti_pivot_block"
+
+        # 3. Default Policy: If not explicitly allowed by a rule, and strict mode is on, block.
+        if not rule_found and strict_mode:
+            return "127.0.0.1", 0, "strict_policy_block"
+
         return target_host, target_port, mode
 
     async def _forward_stream(self, reader, writer, close_writer: bool = True):
@@ -1367,7 +1431,7 @@ class SSHSession(asyncssh.SSHServerSession):
 
     # Function 64: Initializes the class instance and its attributes.
     def __init__(self, honeypot: CyanideServer, fs: FakeFilesystem, src_ip, src_port, conn_id: str):
-        print(f"DEBUG: SSHSession.__init__ starting for {src_ip}")
+        logging.debug(f"SSHSession.__init__ starting for {src_ip}")
         self.honeypot = honeypot
         self.fs = fs
         self.src_ip = src_ip
@@ -1501,7 +1565,7 @@ class SSHSession(asyncssh.SSHServerSession):
 
     # Function 69: Performs operations related to shell requested.
     def shell_requested(self):
-        print(f"DEBUG: shell_requested called for {self.src_ip}", flush=True)
+        logging.debug(f"shell_requested called for {self.src_ip}")
 
         # Function 70: Performs operations related to q hook.
         def q_hook(f, c):
@@ -1837,7 +1901,8 @@ class SSHSession(asyncssh.SSHServerSession):
                 self.honeypot.save_quarantine_file(f, c, self.session_id, self.src_ip)
 
             shell = ShellEmulator(
-                self.fs or self.honeypot.get_filesystem(self.session_id, self.src_ip),
+                self.fs
+                or self.honeypot.get_filesystem(self.session_id, self.src_ip, self.username),
                 self.username,
                 quarantine_callback=q_hook,
                 config=self.honeypot.config,

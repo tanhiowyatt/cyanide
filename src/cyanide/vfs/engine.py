@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Union
 
-from jinja2 import Template
+from jinja2.sandbox import SandboxedEnvironment
 
 from ..core.paths import get_profiles_dir
 from .context import Context
@@ -164,6 +164,7 @@ class FakeFilesystem:
             {"pid": 1, "tty": "?", "time": "00:00:15", "cmd": "/sbin/init", "user": "root"},
             {"pid": 2, "tty": "?", "time": "00:00:00", "cmd": "[kthreadd]", "user": "root"},
         ]
+        self.jinja_env = SandboxedEnvironment()
 
         self._load_profile()
         self._generate_system_files()
@@ -589,7 +590,7 @@ class FakeFilesystem:
             return str(content)
 
         try:
-            rendered = Template(content).render(**self.context.to_dict())
+            rendered = self.jinja_env.from_string(content).render(**self.context.to_dict())
             return str(rendered)
         except Exception:
             return str(content)

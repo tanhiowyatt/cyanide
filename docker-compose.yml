@@ -39,7 +39,7 @@ services:
           memory: 128M
     pids_limit: 50
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request as r; r.urlopen('http://localhost:9090/health')"]
+      test: [ "CMD", "python", "-c", "import urllib.request as r; r.urlopen('http://localhost:9090/health')" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -67,6 +67,9 @@ services:
       - CYANIDE_OTEL_ENABLED=false
       - CYANIDE_METRICS_ENABLED=true
       - CYANIDE_METRICS_PORT=9090
+      - CYANIDE_METRICS_ALLOW_REMOTE=true
+      - CYANIDE_METRICS_TOKEN=change_me_to_a_secure_token
+      - CYANIDE_SSH_FORWARDING_STRICT_MODE=true
       - CYANIDE_VIRUSTOTAL_ENABLED=false
       - CYANIDE_SMTP_ENABLED=true
       - CYANIDE_SMTP_PORT=2525

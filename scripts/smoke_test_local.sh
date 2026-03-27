@@ -18,6 +18,8 @@ docker run -d --name $CONTAINER_NAME \
   -e LOG_LEVEL=DEBUG \
   -e CYANIDE_METRICS_ENABLED=true \
   -e CYANIDE_METRICS_PORT=9090 \
+  -e CYANIDE_METRICS_ALLOW_REMOTE=true \
+  -e CYANIDE_METRICS_TOKEN=smoke-token-123 \
   -e CYANIDE_SSH_ENABLED=true \
   -e CYANIDE_SSH_LISTEN_PORT=2222 \
   -e CYANIDE_TELNET_ENABLED=true \
@@ -60,6 +62,26 @@ done
 if [ $READY -eq 0 ]; then
   echo "❌ Timeout: App never became healthy."
   docker logs $CONTAINER_NAME
+  exit 1
+fi
+
+# 5.1 Verify Metrics Protection
+echo "Verifying metrics protection..."
+# /stats should return 401 without token
+STATS_NO_TOKEN=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9090/stats)
+if [ "$STATS_NO_TOKEN" == "401" ]; then
+  echo "✅ /stats is protected (401 Unauthorized)"
+else
+  echo "❌ /stats is NOT protected! (Status: $STATS_NO_TOKEN)"
+  exit 1
+fi
+
+# /stats should return 200 with token
+STATS_WITH_TOKEN=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer smoke-token-123" http://127.0.0.1:9090/stats)
+if [ "$STATS_WITH_TOKEN" == "200" ]; then
+  echo "✅ /stats is accessible with token"
+else
+  echo "❌ /stats with token failed! (Status: $STATS_WITH_TOKEN)"
   exit 1
 fi
 

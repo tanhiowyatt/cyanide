@@ -192,7 +192,8 @@ def test_fs_audit_hook(server):
 def test_get_filesystem(server):
     # With persistence and cached IP
     server.vfs_persistence = True
-    server.vfs_cache["127.0.0.1"] = "cached_fs"
+    # Key is now (ip, user)
+    server.vfs_cache[("127.0.0.1", None)] = "cached_fs"
     assert server.get_filesystem("session1", "127.0.0.1") == "cached_fs"
 
     # New FS

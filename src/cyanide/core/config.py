@@ -354,6 +354,9 @@ def load_config(path: Any = None):
             "forwarding_enabled": get_val(
                 "ssh", "forwarding_enabled", "SSH_FORWARDING_ENABLED", False, bool
             ),
+            "forwarding_strict_mode": get_val(
+                "ssh", "forwarding_strict_mode", "SSH_FORWARDING_STRICT_MODE", True, bool
+            ),
             "forward_redirect_enabled": get_val(
                 "ssh", "forward_redirect_enabled", "SSH_FORWARD_REDIRECT_ENABLED", False, bool
             ),
@@ -384,6 +387,9 @@ def load_config(path: Any = None):
         "metrics": {
             "enabled": get_val("metrics", "enabled", "METRICS_ENABLED", True, bool),
             "port": get_val("metrics", "port", "METRICS_PORT", 9090, int),
+            "host": get_val("metrics", "host", "METRICS_HOST", "127.0.0.1"),
+            "token": get_val("metrics", "token", "METRICS_TOKEN", None),
+            "allow_remote": get_val("metrics", "allow_remote", "METRICS_ALLOW_REMOTE", False, bool),
         },
         "smtp": {
             "enabled": get_val("smtp", "enabled", "SMTP_ENABLED", False, bool),

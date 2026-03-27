@@ -404,8 +404,8 @@ class CyanideServer:
             )
 
     def _get_health_status(self) -> str:
-        ssh_up = self.ssh_server is not None
-        telnet_up = self.telnet_server is not None
+        ssh_up = self.ssh_server is not None or getattr(self, "ssh_proxy", None) is not None
+        telnet_up = self.telnet_server is not None or getattr(self, "telnet_proxy", None) is not None
         smtp_up = self.smtp_server is not None or getattr(self, "smtp_proxy", None) is not None
 
         is_healthy = True
@@ -457,7 +457,8 @@ class CyanideServer:
 
             # Token Auth Check
             token = self.config.get("metrics", {}).get("token")
-            if token and path != "/health":
+            is_health_check = path.startswith("/health")
+            if token and not is_health_check:
                 auth_header = next(
                     (line for line in lines if line.lower().startswith("authorization:")), None
                 )
@@ -512,6 +513,7 @@ class CyanideServer:
             host = "0.0.0.0"
 
         try:
+            logging.info(f"[*] Starting Metrics service on port {port}...")
             self.metrics_server = await asyncio.start_server(
                 self._handle_metrics_request, host, port
             )
@@ -756,7 +758,7 @@ class CyanideServer:
         elif backend_mode == "proxy" or backend_mode == "pool":
             t_host = ssh_conf.get("target_host", "127.0.0.1")
             t_port = ssh_conf.get("target_port", 22)
-            ssh_proxy = TCPProxy(
+            self.ssh_proxy = TCPProxy(
                 "0.0.0.0",
                 ssh_port,
                 target_host=t_host,
@@ -764,7 +766,7 @@ class CyanideServer:
                 protocol_name="ssh_proxy",
                 pool=self.vm_pool if backend_mode == "pool" else None,
             )
-            await ssh_proxy.start()
+            await self.ssh_proxy.start()
             self.logger.log_event(
                 "system",
                 "service_started",
@@ -793,7 +795,7 @@ class CyanideServer:
         elif backend_mode == "pool" or backend_mode == "proxy":
             t_host = telnet_conf.get("target_host", "127.0.0.1")
             t_port = int(telnet_conf.get("target_port", 2323))
-            telnet_proxy = TCPProxy(
+            self.telnet_proxy = TCPProxy(
                 "0.0.0.0",
                 telnet_port,
                 target_host=t_host,
@@ -801,7 +803,7 @@ class CyanideServer:
                 protocol_name="telnet_proxy",
                 pool=self.vm_pool if backend_mode == "pool" else None,
             )
-            await telnet_proxy.start()
+            await self.telnet_proxy.start()
             self.logger.log_event(
                 "system",
                 "service_started",
@@ -1255,6 +1257,12 @@ class SSHServerFactory(asyncssh.SSHServer):
         self.username = username
         success = self.honeypot.is_valid_user(username, password)
         self.honeypot.stats.on_auth(username, password, success)
+        log_password = password
+        ssh_conf = self.honeypot.config.get("ssh", {})
+        if not ssh_conf.get("log_passwords", False):
+            pass_hash = hashlib.sha256(password.encode()).hexdigest()
+            log_password = f"sha256:{pass_hash} (len:{len(password)})"
+
         self.honeypot.logger.log_event(
             "conn_" + self.conn_id,
             "auth",
@@ -1262,7 +1270,7 @@ class SSHServerFactory(asyncssh.SSHServer):
                 "protocol": "ssh",
                 "src_ip": self.src_ip,
                 "username": username,
-                "password": password,
+                "password": log_password,
                 "success": success,
             },
         )

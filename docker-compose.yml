@@ -34,10 +34,10 @@ services:
         limits:
           cpus: '0.50'
           memory: 512M
+          pids: 50
         reservations:
           cpus: '0.10'
           memory: 128M
-    pids_limit: 50
     healthcheck:
       test: [ "CMD", "python", "-c", "import urllib.request as r; r.urlopen('http://localhost:9090/health')" ]
       interval: 30s

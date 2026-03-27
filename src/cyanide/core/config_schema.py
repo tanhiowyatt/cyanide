@@ -100,6 +100,7 @@ class SSHConfig(BaseModel):
 
     forwarding_enabled: bool = False
     forwarding_strict_mode: bool = True
+    log_passwords: bool = False
     forward_redirect_enabled: bool = False
     forward_redirect_rules: Dict[str, str] = Field(default_factory=dict)
     forward_tunnel_enabled: bool = False
@@ -109,6 +110,7 @@ class SSHConfig(BaseModel):
 class TelnetConfig(BaseModel):
     enabled: bool = False
     port: int = 2323
+    log_passwords: bool = False
     backend_mode: str = Field(default="emulated", pattern="^(emulated|proxy|pool)$")
     target_host: Optional[str] = "127.0.0.1"
     target_port: Optional[int] = 23

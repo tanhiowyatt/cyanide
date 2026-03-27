@@ -305,7 +305,11 @@ def load_config(path: Any = None):
         "fs_yaml": get_val("honeypot", "fs_yaml", "FS_YAML", None),
         "ssh": {
             "port": get_val(
-                "ssh", "port", "SSH_PORT", get_val("ssh", "listen_port", "SSH_PORT", 2222, int), int
+                "ssh",
+                "port",
+                "SSH_PORT",
+                get_val("ssh", "listen_port", "SSH_LISTEN_PORT", 2222, int),
+                int,
             ),
             "enabled": get_val("ssh", "enabled", "SSH_ENABLED", True, bool),
             "backend_mode": get_val("ssh", "backend_mode", "SSH_BACKEND", "emulated"),
@@ -357,6 +361,7 @@ def load_config(path: Any = None):
             "forwarding_strict_mode": get_val(
                 "ssh", "forwarding_strict_mode", "SSH_FORWARDING_STRICT_MODE", True, bool
             ),
+            "log_passwords": get_val("ssh", "log_passwords", "SSH_LOG_PASSWORDS", False, bool),
             "forward_redirect_enabled": get_val(
                 "ssh", "forward_redirect_enabled", "SSH_FORWARD_REDIRECT_ENABLED", False, bool
             ),
@@ -371,14 +376,17 @@ def load_config(path: Any = None):
             ),
         },
         "telnet": {
+            "enabled": get_val("telnet", "enabled", "TELNET_ENABLED", False, bool),
+            "log_passwords": get_val(
+                "telnet", "log_passwords", "TELNET_LOG_PASSWORDS", False, bool
+            ),
             "port": get_val(
                 "telnet",
                 "port",
                 "TELNET_PORT",
-                get_val("telnet", "listen_port", "TELNET_PORT", 2323, int),
+                get_val("telnet", "listen_port", "TELNET_LISTEN_PORT", 2323, int),
                 int,
             ),
-            "enabled": get_val("telnet", "enabled", "TELNET_ENABLED", False, bool),
             "backend_mode": get_val("telnet", "backend_mode", "TELNET_BACKEND", "emulated"),
             "target_host": get_val("telnet", "target_host", "TELNET_TARGET_HOST", "127.0.0.1"),
             "target_port": get_val("telnet", "target_port", "TELNET_TARGET_PORT", 23, int),

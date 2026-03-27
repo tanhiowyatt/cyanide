@@ -35,6 +35,7 @@
       - CYANIDE_TELNET_ENABLED=true
       - CYANIDE_TELNET_LISTEN_PORT=2223
       - CYANIDE_TELNET_BACKEND_MODE=emulated
+      - CYANIDE_TELNET_LOG_PASSWORDS=false
 
       # -----------------------------------------------------------------------
       # C. MACHINE LEARNING (CyanideML)
@@ -55,6 +56,8 @@
       # -----------------------------------------------------------------------
       - CYANIDE_METRICS_ENABLED=true
       - CYANIDE_METRICS_PORT=9090
+      - CYANIDE_METRICS_ALLOW_REMOTE=false
+      - CYANIDE_METRICS_TOKEN=your_secure_token_here
       
       - CYANIDE_OTEL_ENABLED=true
       - CYANIDE_OTEL_EXPORTER=otlp
@@ -180,6 +183,10 @@
       - CYANIDE_SSH_KEX_ALGS=["curve25519-sha256", "ecdh-sha2-nistp256", "diffie-hellman-group-exchange-sha256"]
       - CYANIDE_SSH_HOST_KEY_ALGS=["ssh-ed25519", "rsa-sha2-512", "rsa-sha2-256"]
       - CYANIDE_SSH_PUBLIC_KEY_ALGS=["ssh-ed25519", "rsa-sha2-512", "rsa-sha2-256"]
+
+      # Security & Hardening (New)
+      - CYANIDE_SSH_FORWARDING_STRICT_MODE=true
+      - CYANIDE_SSH_LOG_PASSWORDS=false
 
       # Persistence & Security Limits
       - CYANIDE_SSH_DATA_PATH=/app/var/lib/cyanide/keys

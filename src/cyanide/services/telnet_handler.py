@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import random
 import time
 import traceback
@@ -226,11 +227,18 @@ class TelnetHandler:
         success = self.server.is_valid_user(username, password)
         self.stats.on_auth(username, password, success)
         log_common = {"protocol": "telnet", "username": username, "success": success}
+
+        log_password = password
+        telnet_conf = self.config.get("telnet", {})
+        if not telnet_conf.get("log_passwords", False):
+            pass_hash = hashlib.sha256(password.encode()).hexdigest()
+            log_password = f"sha256:{pass_hash} (len:{len(password)})"
+
         self.logger.log_event(
             session_id, "auth_attempt", {**log_common, "password_len": len(password)}
         )
         self.logger.log_event(
-            session_id, "auth", {**log_common, "src_ip": src_ip, "password": password}
+            session_id, "auth", {**log_common, "src_ip": src_ip, "password": log_password}
         )
 
         if success:

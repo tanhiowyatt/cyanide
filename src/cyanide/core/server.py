@@ -1357,50 +1357,52 @@ class SSHServerFactory(asyncssh.SSHServer):
             )
             chan.close()
 
+    def _apply_forward_rules(self, ssh_conf, port_str):
+        """Apply redirect and tunnel rules for the given port."""
+        for rule_type in ["forward_redirect", "forward_tunnel"]:
+            if not ssh_conf.get(f"{rule_type}_enabled"):
+                continue
+            rules = ssh_conf.get(f"{rule_type}_rules", {})
+            if port_str in rules:
+                target_str = rules[port_str]
+                if ":" in target_str:
+                    host, p_str = target_str.split(":", 1)
+                    return host, int(p_str), rule_type.split("_")[1]
+                return target_str, int(port_str), rule_type.split("_")[1]
+        return None, None, None
+
+    def _is_safe_target(self, host, rule_found, strict_mode):
+        """Check if the target host is safe for forwarding."""
+        try:
+            ip = ipaddress.ip_address(host)
+            if ip.is_loopback or ip.is_private or ip.is_link_local or ip.is_multicast:
+                # Unless it was explicitly allowed by a rule, block it
+                return rule_found
+        except ValueError:
+            # It's a hostname. Block local-sounding names if strict
+            if not rule_found and strict_mode:
+                return host.lower() not in ["localhost", "127.0.0.1", "::1"]
+        return True
+
     def _get_forward_target(self, dest_host, dest_port):
         """Apply redirect and tunnel rules with strict security checks."""
         ssh_conf = self.honeypot.config.get("ssh", {})
         strict_mode = ssh_conf.get("forwarding_strict_mode", True)
 
-        target_host = dest_host
-        target_port = dest_port
-        mode = "allowed"
-        port_str = str(dest_port)
+        t_host, t_port, mode = self._apply_forward_rules(ssh_conf, str(dest_port))
 
-        # 1. Check for explicit rules
-        rule_found = False
-        for rule_type in ["forward_redirect", "forward_tunnel"]:
-            if ssh_conf.get(f"{rule_type}_enabled"):
-                rules = ssh_conf.get(f"{rule_type}_rules", {})
-                if port_str in rules:
-                    target_str = rules[port_str]
-                    if ":" in target_str:
-                        target_host, p_str = target_str.split(":", 1)
-                        target_port = int(p_str)
-                    else:
-                        target_host = target_str
-                    mode = rule_type.split("_")[1]
-                    rule_found = True
-                    break
+        rule_found = t_host is not None
+        if not rule_found:
+            t_host, t_port, mode = dest_host, dest_port, "allowed"
 
-        # 2. Security: Anti-Pivot / Localhost Protection
-        try:
-            ip = ipaddress.ip_address(target_host)
-            if ip.is_loopback or ip.is_private or ip.is_link_local or ip.is_multicast:
-                # Unless it was explicitly allowed by a rule, block it
-                if not rule_found:
-                    return "127.0.0.1", 0, "anti_pivot_block"
-        except ValueError:
-            # It's a hostname. Block local-sounding names if strict
-            if not rule_found and strict_mode:
-                if target_host.lower() in ["localhost", "127.0.0.1", "::1"]:
-                    return "127.0.0.1", 0, "anti_pivot_block"
+        if not self._is_safe_target(t_host, rule_found, strict_mode):
+            return "127.0.0.1", 0, "anti_pivot_block"
 
         # 3. Default Policy: If not explicitly allowed by a rule, and strict mode is on, block.
         if not rule_found and strict_mode:
             return "127.0.0.1", 0, "strict_policy_block"
 
-        return target_host, target_port, mode
+        return t_host, t_port, mode
 
     async def _forward_stream(self, reader, writer, close_writer: bool = True):
         """Generic stream forwarding from reader to writer."""

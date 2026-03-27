@@ -99,7 +99,7 @@ def _compile_to_sqlite(manifest: Dict[str, Any], db_path: Path, target_hash: str
 
     try:
         conn = sqlite3.connect(db_path)
-    except (sqlite3.OperationalError, sqlite3.DatabaseError) as e:
+    except sqlite3.DatabaseError as e:
         logger.warning(
             f"Failed to open '{db_path}' for compilation (e.g. read-only/corrupt db): {e}. Falling back to in-memory db."
         )

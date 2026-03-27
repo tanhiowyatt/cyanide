@@ -11,13 +11,13 @@
 
 
 <p align="center">
-  <a target="_blank" href="/README.md">ENG</a> &nbsp; | &nbsp;
-  <a target="_blank" href="/docs/translations/readme-pl.md">PL</a>
+  <a target="_blank" href="https://github.com/tanhiowyatt/cyanide-honeypot/blob/main/README.md">ENG</a> &nbsp; | &nbsp;
+  <a target="_blank" href="https://github.com/tanhiowyatt/cyanide-honeypot/blob/main/docs/translations/readme-pl.md">PL</a>
 </p>
 
 
 <p align="center">
-  <img src="../../src/cyanide/assets/branding/name.png" alt="Cyanide" width="500" height="auto">
+  <img src="https://raw.githubusercontent.com/tanhiowyatt/cyanide-honeypot/main/src/cyanide/assets/branding/name.png" alt="Cyanide" width="500" height="auto">
 </p>
 
 # Cyanide – Ханипот SSH и Telnet среднего уровня взаимодействия

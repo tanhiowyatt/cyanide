@@ -191,36 +191,34 @@ jobs:
           fi
           echo "Container is running."
 
-          # 2. Wait for metrics port 9090 to be ready (up to 90s)
-          echo "Waiting for metrics server on port 9090 (up to 90s)..."
-          for i in $(seq 1 30); do
-            if python3 -c "import socket; s=socket.socket(); s.settimeout(2); s.connect(('127.0.0.1', 9090)); s.close()" 2>/dev/null; then
-              echo "Port 9090 is open after ~$((i*3))s"
-              break
-            fi
-            if [ $i -eq 30 ]; then
-              echo "Timeout: Port 9090 never opened. Container logs:"
-              docker logs smoke-test
-              exit 1
+          # 2. Universal Readiness Check (wait for app to respond to /health, up to 120s)
+          echo "Waiting for app to be healthy on port 9090 (up to 120s)..."
+          READY=0
+          for i in $(seq 1 40); do
+            # Use curl to check both connectivity and HTTP 200
+            RESPONSE=$(curl -s -f http://127.0.0.1:9090/health)
+            if [ $? -eq 0 ]; then
+              # Check if the JSON says 'healthy'
+              if echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); sys.exit(0 if d.get('status')=='healthy' else 1)" 2>/dev/null; then
+                echo "App is HEALTHY after ~$((i*3))s"
+                READY=1
+                break
+              else
+                echo "App is UP but UNHEALTHY (attempt $i/40): $RESPONSE"
+              fi
+            else
+              echo "App is not responding yet (attempt $i/40)..."
             fi
             sleep 3
           done
 
-          # 3. Check /health returns 200 with healthy status
-          echo "Checking /health returns healthy JSON..."
-          HEALTH=$(curl -sf http://127.0.0.1:9090/health) || {
-            echo "Health endpoint returned non-200. Container logs:"
+          if [ $READY -eq 0 ]; then
+            echo "Timeout: App never became healthy. Container logs:"
             docker logs smoke-test
             exit 1
-          }
-          echo "Health response: $HEALTH"
-          echo "$HEALTH" | python3 -c "import sys,json; d=json.load(sys.stdin); sys.exit(0 if d.get('status')=='healthy' else 1)" || {
-            echo "Health status is not 'healthy'. Logs:"
-            docker logs smoke-test
-            exit 1
-          }
+          fi
 
-          # 4. Check SSH and Telnet ports via TCP connect
+          # 3. Check SSH and Telnet ports connectability
           echo "Testing TCP sockets for SSH (2222) and Telnet (2323)..."
           python3 -c 'import socket; s=socket.socket(); s.settimeout(5); s.connect(("127.0.0.1", 2222)); s.close()' || exit 1
           python3 -c 'import socket; s=socket.socket(); s.settimeout(5); s.connect(("127.0.0.1", 2323)); s.close()' || exit 1

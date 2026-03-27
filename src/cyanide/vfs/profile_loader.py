@@ -33,9 +33,12 @@ def _compute_hash(base_file: Path, static_file: Path, rootfs_dir: Optional[Path]
             h.update(f.read())
 
     if rootfs_dir and rootfs_dir.exists():
-        # For large directories, we only hash the mtime of the directory
-        # to detect changes quickly without a full scan
-        h.update(str(rootfs_dir.stat().st_mtime).encode())
+        # Directory mtime is unstable in Docker (chown reset or layer caching).
+        # We instead hash only the existence and an optional marker file for development.
+        h.update(b"rootfs_exists")
+        marker = rootfs_dir / ".cyanide_vfs_marker"
+        if marker.exists():
+            h.update(str(marker.stat().st_mtime).encode())
 
     return h.hexdigest()
 

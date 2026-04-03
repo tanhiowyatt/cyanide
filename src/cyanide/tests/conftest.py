@@ -51,6 +51,7 @@ def mock_fs():
     fs.mkdir_p("/etc")
     return fs
 
+
 @pytest.fixture
 def mock_logger(mocker, tmp_path):
     """Return a mocked CyanideLogger."""
@@ -58,6 +59,7 @@ def mock_logger(mocker, tmp_path):
     logger.log_event = mocker.MagicMock()
     logger.log_dir = str(tmp_path / "var/log/cyanide")
     return logger
+
 
 @pytest.fixture
 def mock_server(mock_config, mock_logger, mocker):

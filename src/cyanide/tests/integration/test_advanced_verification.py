@@ -23,8 +23,9 @@ def advanced_config(tmp_path: Path) -> dict[str, Any]:
         "users": [{"user": "root", "pass": "toor"}],
         "max_connections_per_minute": 1000,
         "max_sessions_per_ip": 100,
-        "shell": {"max_chain_depth": 50, "max_output_size": 1024}, 
+        "shell": {"max_chain_depth": 50, "max_output_size": 1024},
     }
+
 
 @pytest.mark.asyncio
 async def test_log_correlation(advanced_config: dict[str, Any]) -> None:

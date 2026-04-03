@@ -74,12 +74,14 @@ class RestrictedUnpickler(pickle.Unpickler):
             f"RestrictedUnpickler: Unsafe class '{module}.{name}' detected."
         )
 
+
 Unpickler = RestrictedUnpickler
 
 
 def load(file_obj, **kwargs):
     """Secure replacement for pickle.load()"""
     return RestrictedUnpickler(file_obj).load()
+
 
 def loads(data):
     """Secure replacement for pickle.loads()"""

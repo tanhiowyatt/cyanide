@@ -43,13 +43,14 @@ def mock_config():
 @pytest.fixture
 def mock_fs():
     """Return a fresh FakeFilesystem instance."""
-    fs = FakeFilesystem(os_profile="ubuntu")
+    fs = FakeFilesystem(os_profile="debian")
     fs.mkdir_p("/home/testuser")
     fs.mkdir_p("/home/admin")
     fs.mkdir_p("/root")
     fs.mkdir_p("/tmp")
     fs.mkdir_p("/etc")
-    return fs
+    yield fs
+    fs.close()
 
 
 @pytest.fixture

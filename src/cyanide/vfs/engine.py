@@ -145,7 +145,7 @@ class FakeFilesystem:
         self.session_id = session_id
         self.session_mgr = session_mgr
 
-        self.os_profile = str(os_profile or os.getenv("OS_PROFILE", "ubuntu"))
+        self.os_profile = str(os_profile or os.getenv("OS_PROFILE", "debian"))
         self.profile_path = self.root_dir / self.os_profile
 
         self.context: Optional[Context] = None

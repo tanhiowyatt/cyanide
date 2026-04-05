@@ -20,14 +20,14 @@ def list_profiles() -> List[str]:
     """List all available OS profiles (subdirectories in configs/profiles)."""
     fs_dir = get_fs_config_dir()
     if not fs_dir.exists():
-        return ["ubuntu"]
+        return ["debian"]
 
     profiles = []
     for item in fs_dir.iterdir():
         if item.is_dir() and (item / "base.yaml").exists():
             profiles.append(item.name)
 
-    return profiles or ["ubuntu"]
+    return profiles or ["debian"]
 
 
 def resolve_os_profile(profile_name: str) -> str:
@@ -45,4 +45,4 @@ def resolve_os_profile(profile_name: str) -> str:
     if profile_name in profiles:
         return profile_name
 
-    return "ubuntu"
+    return "debian"

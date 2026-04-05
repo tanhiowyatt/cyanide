@@ -14,6 +14,7 @@ class Context:
     version_id: str = ""
     os_id: str = ""
     install_date: str = ""
+    uptime: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert context to dictionary for Jinja2 rendering."""

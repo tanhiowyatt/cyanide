@@ -185,7 +185,7 @@ class PoolConfig(BaseModel):
     share_guests: bool = True
     libvirt_uri: str = "qemu:///system"
     guest_config: str = "configs/pool/default_guest.xml"
-    guest_tag: str = "ubuntu18.04"
+    guest_tag: str = "debian18.04"
     guest_ssh_port: int = 22
     guest_telnet_port: int = 23
     use_nat: bool = True

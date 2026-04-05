@@ -36,22 +36,22 @@ async def test_libvirt_start_stop(pool):
 def test_sync_vms(pool):
     pool.conn.listDomainsID.return_value = [1]
     dom = MagicMock()
-    dom.name.return_value = "ubuntu18.04-1"
+    dom.name.return_value = "debian18.04-1"
     pool.conn.lookupByID.return_value = dom
     pool._sync_vms()
-    assert "ubuntu18.04-1" in pool.vms
+    assert "debian18.04-1" in pool.vms
 
 
 @pytest.mark.asyncio
 async def test_reserve_release(pool):
     # reserve when empty
     lease1 = await pool.reserve_target("sess1", "ssh")
-    assert lease1.vm_id == "ubuntu18.04-1"
-    assert pool.vms["ubuntu18.04-1"]["state"] == "leased"
+    assert lease1.vm_id == "debian18.04-1"
+    assert pool.vms["debian18.04-1"]["state"] == "leased"
 
     # max vms
     lease2 = await pool.reserve_target("sess2", "ssh")
-    assert lease2.vm_id == "ubuntu18.04-2"
+    assert lease2.vm_id == "debian18.04-2"
 
     lease3 = await pool.reserve_target("sess3", "ssh")
     assert lease3 is None  # exhausted
@@ -59,7 +59,7 @@ async def test_reserve_release(pool):
     # release
     await pool.release_target(lease1)
     assert "sess1" not in pool.leases
-    assert pool.vms["ubuntu18.04-1"]["state"] == "rebuilding"
+    assert pool.vms["debian18.04-1"]["state"] == "rebuilding"
 
 
 @pytest.mark.asyncio

@@ -41,7 +41,7 @@ class LibvirtPool:
         self.max_vms = self.config.get("max_vms", 5)
         self.recycle_period = self.config.get("recycle_period", 1500)
         self.vm_unused_timeout = self.config.get("vm_unused_timeout", 600)
-        self.guest_tag = self.config.get("guest_tag", "ubuntu18.04")
+        self.guest_tag = self.config.get("guest_tag", "debian18.04")
         self.guest_ssh_port = self.config.get("guest_ssh_port", 22)
         self.guest_telnet_port = self.config.get("guest_telnet_port", 23)
         self.use_nat = self.config.get("use_nat", True)

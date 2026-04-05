@@ -49,9 +49,9 @@ def motd_provider(context: Any, args: Optional[Dict[str, Any]] = None) -> str:
 
     if "Ubuntu" in os_name:
         banner_parts.append(f"Welcome to {os_name} (GNU/Linux {kernel} {arch})\r\n\r\n")
-        banner_parts.append(" * Documentation:  https://help.ubuntu.com\r\n")
+        banner_parts.append(" * Documentation:  https://help.debian.com\r\n")
         banner_parts.append(" * Management:     https://landscape.canonical.com\r\n")
-        banner_parts.append(" * Support:        https://ubuntu.com/advantage\r\n")
+        banner_parts.append(" * Support:        https://debian.com/advantage\r\n")
     elif "CentOS" in os_name:
         banner_parts.append(f"Welcome to {os_name} (GNU/Linux {kernel} {arch})\r\n\r\n")
         banner_parts.append(" * Documentation:  https://docs.centos.org\r\n")

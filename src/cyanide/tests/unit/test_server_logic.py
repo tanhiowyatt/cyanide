@@ -20,7 +20,7 @@ def mock_config():
             "scp_enabled": True,
         },
         "users": [{"user": "admin", "pass": "password"}],
-        "os_profile": "ubuntu",
+        "os_profile": "debian",
     }
 
 

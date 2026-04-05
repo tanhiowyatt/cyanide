@@ -15,7 +15,7 @@ def shell(mock_fs):
 
 @pytest.mark.asyncio
 async def test_rpm_basic(shell, mock_fs):
-    mock_fs.os_profile = "centos"
+    mock_fs.os_profile = "rhel"
     cmd = RpmCommand(shell)
     stdout, stderr, rc = await cmd.execute([])
     assert "RPM version" in stdout
@@ -39,7 +39,7 @@ async def test_rpm_basic(shell, mock_fs):
 
 @pytest.mark.asyncio
 async def test_dpkg_basic(shell, mock_fs):
-    mock_fs.os_profile = "ubuntu"
+    mock_fs.os_profile = "debian"
     cmd = DpkgCommand(shell)
 
     stdout, stderr, rc = await cmd.execute([])
@@ -58,7 +58,7 @@ async def test_dpkg_basic(shell, mock_fs):
 
 @pytest.mark.asyncio
 async def test_apt_basic(shell, mock_fs):
-    mock_fs.os_profile = "ubuntu"
+    mock_fs.os_profile = "debian"
     cmd = AptCommand(shell)
 
     stdout, stderr, rc = await cmd.execute(["update"])

@@ -10,7 +10,7 @@ from cyanide.core.server import CyanideServer
 
 async def smoke_test():
     config = {
-        "os_profile": "ubuntu",
+        "os_profile": "debian",
         "logging": {"directory": "var/log/cyanide"},
         "users": [{"user": "root", "pass": "root"}],
     }

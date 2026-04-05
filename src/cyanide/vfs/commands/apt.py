@@ -33,15 +33,15 @@ class AptCommand(Command):
 
     def _is_apt_os(self) -> bool:
         """Check if the current OS profile supports apt."""
-        os_profile = getattr(self.fs, "os_profile", "ubuntu").lower()
-        return os_profile in ["ubuntu", "debian", "kali", "custom"]
+        os_profile = getattr(self.fs, "os_profile", "debian").lower()
+        return os_profile in ["debian", "debian", "kali", "custom"]
 
     def _handle_update(self) -> tuple[str, str, int]:
         """Handle 'apt update' command."""
         output = (
-            "Hit:1 http://archive.ubuntu.com/ubuntu jammy InRelease\n"
-            "Get:2 http://security.ubuntu.com/ubuntu jammy-security InRelease [110 kB]\n"
-            "Get:3 http://archive.ubuntu.com/ubuntu jammy-updates InRelease [119 kB]\n"
+            "Hit:1 http://archive.debian.com/debian jammy InRelease\n"
+            "Get:2 http://security.debian.com/debian jammy-security InRelease [110 kB]\n"
+            "Get:3 http://archive.debian.com/debian jammy-updates InRelease [119 kB]\n"
             "Fetched 229 kB in 1s (229 kB/s)\n"
             "Reading package lists... Done\n"
             "Building dependency tree... Done\n"

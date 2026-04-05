@@ -11,23 +11,23 @@ def test_get_fs_config_dir():
 
 def test_list_profiles_empty():
     with patch("pathlib.Path.exists", return_value=False):
-        assert list_profiles() == ["ubuntu"]
+        assert list_profiles() == ["debian"]
 
 
 def test_list_profiles_with_data(tmp_path):
     profile_dir = tmp_path / "profiles"
     profile_dir.mkdir()
-    ubuntu_dir = profile_dir / "ubuntu"
-    ubuntu_dir.mkdir()
-    (ubuntu_dir / "base.yaml").write_text("dummy")
+    debian_dir = profile_dir / "debian"
+    debian_dir.mkdir()
+    (debian_dir / "base.yaml").write_text("dummy")
 
     with patch("cyanide.core.fs_utils.get_fs_config_dir", return_value=profile_dir):
         profiles = list_profiles()
-        assert "ubuntu" in profiles
+        assert "debian" in profiles
 
 
 def test_resolve_os_profile():
-    with patch("cyanide.core.fs_utils.list_profiles", return_value=["ubuntu", "centos"]):
-        assert resolve_os_profile("ubuntu") == "ubuntu"
-        assert resolve_os_profile("random") in ["ubuntu", "centos"]
-        assert resolve_os_profile("nonexistent") == "ubuntu"
+    with patch("cyanide.core.fs_utils.list_profiles", return_value=["debian", "rhel"]):
+        assert resolve_os_profile("debian") == "debian"
+        assert resolve_os_profile("random") in ["debian", "rhel"]
+        assert resolve_os_profile("nonexistent") == "debian"

@@ -26,8 +26,8 @@ class DpkgCommand(Command):
 
     def _is_dpkg_os(self) -> bool:
         """Check if the current OS profile supports dpkg."""
-        os_profile = getattr(self.fs, "os_profile", "ubuntu").lower()
-        return os_profile in ["ubuntu", "debian", "kali", "custom"]
+        os_profile = getattr(self.fs, "os_profile", "debian").lower()
+        return os_profile in ["debian", "debian", "kali", "custom"]
 
     def _handle_install(self, targets: list[str]) -> tuple[str, str, int]:
         """Handle package installation."""
@@ -70,7 +70,7 @@ class DpkgCommand(Command):
                 "|/ Err?=(none)/Reinst-required (Status,Err: uppercase=bad)\n"
                 "||/ Name           Version      Architecture Description\n"
                 "+++-==============-============-============-=================================\n"
-                "ii  bash           5.1-6ubuntu1 amd64        GNU Bourne Again SHell\n"
+                "ii  bash           5.1-6debian1 amd64        GNU Bourne Again SHell\n"
                 "ii  coreutils      8.32-4.1ubun amd64        GNU core utilities\n"
             ),
             "",

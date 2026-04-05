@@ -15,7 +15,7 @@ def base_config():
         "metrics": {"enabled": False},
         "logging": {"directory": "/tmp/cyanide_stress_logs"},
         "profiles_dir": "configs/profiles",
-        "os_profile": "ubuntu",
+        "os_profile": "debian",
         "users": [{"user": "root", "pass": "toor"}],
         "max_sessions_per_ip": 100,
         "rate_limit": {"max_connections_per_minute": 1000},

@@ -292,7 +292,7 @@ def load_config(path: Any = None):
             "share_guests": get_val("pool", "share_guests", True, bool),
             "libvirt_uri": get_val("pool", "libvirt_uri", "qemu:///system"),
             "guest_config": get_val("pool", "guest_config", "configs/pool/default_guest.xml"),
-            "guest_tag": get_val("pool", "guest_tag", "ubuntu18.04"),
+            "guest_tag": get_val("pool", "guest_tag", "debian18.04"),
             "guest_ssh_port": get_val("pool", "guest_ssh_port", 22, int),
             "guest_telnet_port": get_val("pool", "guest_telnet_port", 23, int),
             "use_nat": get_val("pool", "use_nat", True, bool),

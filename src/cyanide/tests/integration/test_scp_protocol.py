@@ -38,7 +38,7 @@ async def scp_server(tmp_path):
             {"user": "root", "pass": "admin"},
         ],
         "logging": {"directory": str(log_dir)},
-        "os_profile": "ubuntu",
+        "os_profile": "debian",
     }
 
     server = CyanideServer(config)

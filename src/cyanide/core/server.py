@@ -172,7 +172,7 @@ class CyanideServer:
         from .fs_utils import resolve_os_profile
         from .paths import get_profiles_dir
 
-        self.os_profile = resolve_os_profile(config.get("os_profile", "ubuntu"))
+        self.os_profile = resolve_os_profile(config.get("os_profile", "debian"))
         self.vfs_root = config.get("vfs_root", get_profiles_dir())
 
         try:
@@ -193,7 +193,7 @@ class CyanideServer:
                 {"profile": self.os_profile, "error": str(e)},
             )
             self.profile = DEFAULT_METADATA.copy()
-            self.resolved_profile_name = "ubuntu"
+            self.resolved_profile_name = "debian"
 
         self.vfs_persistence = config.get("ssh", {}).get("vfs_persistence", True)
         self.vfs_cache: OrderedDict[tuple, FakeFilesystem] = OrderedDict()

@@ -19,7 +19,7 @@ def advanced_config(tmp_path: Path) -> dict[str, Any]:
         "metrics": {"enabled": False},
         "logging": {"directory": str(log_dir)},
         "profiles_dir": "configs/profiles",
-        "os_profile": "ubuntu",
+        "os_profile": "debian",
         "users": [{"user": "root", "pass": "toor"}],
         "max_connections_per_minute": 1000,
         "max_sessions_per_ip": 100,

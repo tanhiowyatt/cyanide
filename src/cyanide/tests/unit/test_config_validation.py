@@ -11,7 +11,7 @@ def valid_config(tmp_path):
     cfg_path = tmp_path / "cyanide.yaml"
     cfg_content = """
 server:
-  os_profile: ubuntu
+  os_profile: debian
   max_sessions: 100
   max_sessions_per_ip: 5
   session_timeout: 300

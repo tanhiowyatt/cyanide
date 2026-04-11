@@ -1,9 +1,8 @@
-from datetime import datetime
 import json
 import logging
 import time
+from datetime import datetime
 from typing import Any, Dict
-
 
 import requests
 import urllib3

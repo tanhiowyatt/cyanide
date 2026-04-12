@@ -44,7 +44,7 @@ class Plugin(OutputPlugin):
         if self.db is None:
             return None
         return self.db[self.collection]
-    
+
     def write(self, event: Dict[str, Any]):
         if not self.client:
             self._connect()
@@ -55,7 +55,7 @@ class Plugin(OutputPlugin):
         if collection is None:
             logging.error("[MongoDB] Collection not available")
             return
-        
+
         try:
             collection.insert_one(event.copy())
         except Exception as e:

@@ -23,7 +23,16 @@ class Plugin(OutputPlugin):
 
     def _connect(self):
         try:
-            self.client = pymongo.MongoClient(self.uri, serverSelectionTimeoutMS=5000)
+            self.client = pymongo.MongoClient(
+                self.uri,
+                serverSelectionTimeoutMS=5000,
+                maxPoolSize=10,
+                minPoolSize=1,
+                maxIdleTimeMS=60000,
+                socketTimeoutMS=30000,
+                connectTimeoutMS=5000,
+                retryWrites=True,
+            )
             if self.client:
                 self.client.admin.command("ping")
                 self.db = self.client[self.database]
@@ -31,14 +40,24 @@ class Plugin(OutputPlugin):
             logging.error(f"[MongoDB] Connection failed: {e}")
             self.client = None
 
+    def _get_collection(self) -> Optional[pymongo.collection.Collection]:
+        if self.db is None:
+            return None
+        return self.db[self.collection]
+
     def write(self, event: Dict[str, Any]):
-        if not self.client or not self.db:
+        if not self.client:
             self._connect()
-            if not self.client or not self.db:
+            if not self.client:
                 return
 
+        collection = self._get_collection()
+        if collection is None:
+            logging.error("[MongoDB] Collection not available")
+            return
+
         try:
-            self.db[self.collection].insert_one(event.copy())
+            collection.insert_one(event.copy())
         except Exception as e:
             logging.error(f"[MongoDB] Write failure: {e}")
             self.client = None

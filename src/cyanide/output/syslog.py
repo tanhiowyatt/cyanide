@@ -32,9 +32,7 @@ class Plugin(OutputPlugin):
             "local7": logging.handlers.SysLogHandler.LOG_LOCAL7,
             "user": logging.handlers.SysLogHandler.LOG_USER,
         }
-        fac = facility_map.get(
-            self.facility.lower(), logging.handlers.SysLogHandler.LOG_USER
-        )
+        fac = facility_map.get(self.facility.lower(), logging.handlers.SysLogHandler.LOG_USER)
 
         self.logger = logging.getLogger("cyanide_syslog_plugin")
         self.logger.setLevel(logging.INFO)
@@ -48,14 +46,10 @@ class Plugin(OutputPlugin):
             if isinstance(self.address, str):
                 if self.address == "/dev/log":
                     if not self._check_dev_log():
-                        logging.warning(
-                            "[Syslog] /dev/log not accessible, disabling plugin"
-                        )
+                        logging.warning("[Syslog] /dev/log not accessible, disabling plugin")
                         self.enabled = False
                         return
-                handler = logging.handlers.SysLogHandler(
-                    address=self.address, facility=fac
-                )
+                handler = logging.handlers.SysLogHandler(address=self.address, facility=fac)
 
             elif isinstance(self.address, (list, tuple)) and len(self.address) == 2:
                 handler = logging.handlers.SysLogHandler(

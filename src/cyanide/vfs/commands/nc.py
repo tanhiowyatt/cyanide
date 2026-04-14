@@ -8,9 +8,7 @@ class NcCommand(Command):
         await asyncio.sleep(0.5)
 
         if self.emulator.logger:
-            self.emulator.logger.log_event(
-                self.emulator.session_id, "nc_execution", {"args": args}
-            )
+            self.emulator.logger.log_event(self.emulator.session_id, "nc_execution", {"args": args})
 
         if "--help" in args or "-h" in args:
             return "Usage: nc [options] [hostname] [port]\n", "", 0

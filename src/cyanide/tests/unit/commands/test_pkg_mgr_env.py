@@ -16,9 +16,7 @@ async def test_package_manager_override(monkeypatch):
     assert "rpm" in config["package_managers"]
     assert "apt" not in config["package_managers"]
 
-    fs = FakeFilesystem(
-        os_profile="debian"
-    )  # Profile is debian, which would normally have apt
+    fs = FakeFilesystem(os_profile="debian")  # Profile is debian, which would normally have apt
     emulator = ShellEmulator(fs, username="root", config=config)
 
     # apt should now be NOT FOUND even on debian profile

@@ -55,9 +55,7 @@ class MkdirCommand(Command):
             if code != 0:
                 return "", error_msg, code
 
-            self._log_event(
-                "mkdir_success", {"path": resolved, "parents": parsed.parents}
-            )
+            self._log_event("mkdir_success", {"path": resolved, "parents": parsed.parents})
         return "", "", 0
 
     def _do_mkdir(self, resolved, original_path, parents):

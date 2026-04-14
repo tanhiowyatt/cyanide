@@ -68,6 +68,8 @@ async def test_concurrent_sessions_load(load_test_server):
         avg_latency = sum(latencies) / len(latencies)
         print(f"[Load Test] Avg Latency: {avg_latency:.4f}s")
 
+    # fmt: off
     assert success_count >= concurrency * 0.9, (
         f"Success rate too low: {success_count}/{concurrency}"
     )
+    # fmt: on

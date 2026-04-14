@@ -4,9 +4,7 @@ from .base import Command
 
 
 class AptCommand(Command):
-    async def execute(
-        self, args: list[str], input_data: str = ""
-    ) -> tuple[str, str, int]:
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the apt command."""
         await asyncio.sleep(0)
         if not self.is_pkg_mgr_supported("apt"):
@@ -58,9 +56,7 @@ class AptCommand(Command):
         )
         return output, "", 0
 
-    def _handle_install_remove(
-        self, subcommand: str, packages: list[str]
-    ) -> tuple[str, str, int]:
+    def _handle_install_remove(self, subcommand: str, packages: list[str]) -> tuple[str, str, int]:
         """Handle 'apt install' and 'apt remove' commands."""
         if not packages:
             return "", "E: No packages found\n", 100

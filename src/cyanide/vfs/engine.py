@@ -58,18 +58,14 @@ class SqliteBackend(VFSBackend):
     def list_dir(self, path: str) -> List[str]:
         with self.tracer.start_as_current_span("vfs.list_dir") as span:
             span.set_attribute("vfs.path", path)
-            cursor = self._conn.execute(
-                "SELECT name FROM vfs WHERE parent_path = ?", (path,)
-            )
+            cursor = self._conn.execute("SELECT name FROM vfs WHERE parent_path = ?", (path,))
             return [row["name"] for row in cursor.fetchall()]
 
     def exists(self, path: str) -> bool:
         cursor = self._conn.execute("SELECT 1 FROM vfs WHERE path = ?", (path,))
         if cursor.fetchone():
             return True
-        cursor = self._conn.execute(
-            "SELECT 1 FROM vfs WHERE parent_path = ? LIMIT 1", (path,)
-        )
+        cursor = self._conn.execute("SELECT 1 FROM vfs WHERE parent_path = ? LIMIT 1", (path,))
         return cursor.fetchone() is not None
 
     def is_dir(self, path: str) -> bool:
@@ -116,9 +112,7 @@ class VirtualDirectory(Directory):
         fs: "FakeFilesystem",
         config: Optional[Dict[str, Any]] = None,
     ):
-        super().__init__(
-            name, children_getter=lambda: self._lazy_children(), **(config or {})
-        )
+        super().__init__(name, children_getter=lambda: self._lazy_children(), **(config or {}))
         self.path = path
         self.fs = fs
 
@@ -266,9 +260,7 @@ class FakeFilesystem:
                     "group": "root",
                     "perm": "-rw-------",
                     "size": len(content),
-                    "mtime": datetime.datetime.fromtimestamp(
-                        history_file.stat().st_mtime
-                    ),
+                    "mtime": datetime.datetime.fromtimestamp(history_file.stat().st_mtime),
                 }
             except Exception as e:
                 import logging
@@ -327,9 +319,7 @@ class FakeFilesystem:
                 # Setup .ssh directory
                 ssh_path = f"{home_path}/.ssh"
                 if not self.exists(ssh_path):
-                    self.mkdir_p(
-                        ssh_path, owner=username, group=username, perm="drwx------"
-                    )
+                    self.mkdir_p(ssh_path, owner=username, group=username, perm="drwx------")
                 else:
                     self.chown(ssh_path, owner=username, group=username)
                     self.chmod(ssh_path, "drwx------")
@@ -370,9 +360,7 @@ class FakeFilesystem:
             )
 
         if path in self.dynamic_files:
-            return VirtualFile(
-                os.path.basename(path), path, self, self.dynamic_files[path]
-            )
+            return VirtualFile(os.path.basename(path), path, self, self.dynamic_files[path])
 
         if self.backend:
             backend_config = self.backend.get_config(path)
@@ -462,13 +450,9 @@ class FakeFilesystem:
                 rel = p[len(prefix) :].split("/")[0]
                 contents.add(rel)
 
-        return sorted(
-            [c for c in contents if posixpath.join(path, c) not in self.deleted_paths]
-        )
+        return sorted([c for c in contents if posixpath.join(path, c) not in self.deleted_paths])
 
-    def get_content(
-        self, path: str, args: Optional[Dict[str, Any]] = None
-    ) -> Union[str, bytes]:
+    def get_content(self, path: str, args: Optional[Dict[str, Any]] = None) -> Union[str, bytes]:
         path = self.resolve(path)
         if path in self.deleted_paths:
             return ""
@@ -574,9 +558,7 @@ class FakeFilesystem:
         self.memory_overlay[path]["perm"] = perm
         return True
 
-    def chown(
-        self, path: str, owner: Optional[str] = None, group: Optional[str] = None
-    ) -> bool:
+    def chown(self, path: str, owner: Optional[str] = None, group: Optional[str] = None) -> bool:
         """Change ownership of a file or directory, persisting in memory overlay."""
         path = self.resolve(path)
         node = self.get_node(path)
@@ -654,9 +636,7 @@ class FakeFilesystem:
             for item in self.list_dir(src):
                 # When calling recursively, the sub-items are already targeted correctly
                 # BUT we must pass recursive=True and NOT trigger the "into existing" logic again for children
-                self._copy_recursive(
-                    posixpath.join(src, item), posixpath.join(dst, item)
-                )
+                self._copy_recursive(posixpath.join(src, item), posixpath.join(dst, item))
             return True
         else:
             self.mkfile(dst, content=self.get_content(src))
@@ -668,9 +648,7 @@ class FakeFilesystem:
             if not self.exists(dst):
                 self.mkdir_p(dst)
             for item in self.list_dir(src):
-                self._copy_recursive(
-                    posixpath.join(src, item), posixpath.join(dst, item)
-                )
+                self._copy_recursive(posixpath.join(src, item), posixpath.join(dst, item))
         else:
             self.mkfile(dst, content=self.get_content(src))
         return True
@@ -697,9 +675,7 @@ class FakeFilesystem:
             return str(content)
 
         try:
-            rendered = self.jinja_env.from_string(content).render(
-                **self.context.to_dict()
-            )
+            rendered = self.jinja_env.from_string(content).render(**self.context.to_dict())
             return str(rendered)
         except Exception:
             return str(content)

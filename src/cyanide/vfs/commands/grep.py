@@ -20,9 +20,7 @@ class GrepCommand(Command):
         if error_msg:
             return "", error_msg, 2
 
-        output = self._filter_lines(
-            lines, parsed.pattern, parsed.ignore_case, parsed.invert_match
-        )
+        output = self._filter_lines(lines, parsed.pattern, parsed.ignore_case, parsed.invert_match)
 
         rc = 0 if output else 1
         return output, "", rc
@@ -75,10 +73,7 @@ class GrepCommand(Command):
                 for filepath in all_files:
                     content = self.fs.get_content(filepath)
                     lines.extend(
-                        [
-                            f"{filepath}:{line}"
-                            for line in content.splitlines(keepends=True)
-                        ]
+                        [f"{filepath}:{line}" for line in content.splitlines(keepends=True)]
                     )
             elif self.fs.is_file(path):
                 content = self.get_content_str(path)

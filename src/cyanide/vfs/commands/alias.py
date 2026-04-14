@@ -4,9 +4,7 @@ from .base import Command
 
 
 class AliasCommand(Command):
-    async def execute(
-        self, args: list[str], input_data: str = ""
-    ) -> tuple[str, str, int]:
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the alias command."""
         if not args:
             return self._list_aliases(), "", 0

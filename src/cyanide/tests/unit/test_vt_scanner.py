@@ -20,9 +20,7 @@ async def test_scan_clean_file(scanner):
             "data": {
                 "attributes": {
                     "last_analysis_stats": {"malicious": 0, "suspicious": 0},
-                    "popular_threat_classification": {
-                        "suggested_threat_label": "clean"
-                    },
+                    "popular_threat_classification": {"suggested_threat_label": "clean"},
                 }
             }
         }

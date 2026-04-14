@@ -32,16 +32,10 @@ async def test_telnet_auth_success(telnet_handler, mock_server):
     writer.wait_closed = AsyncMock()
     writer.get_extra_info.return_value = ("1.2.3.4", 12345)
 
-    with patch.object(
-        telnet_handler, "_prepare_session", return_value=("s1", MagicMock(), True)
-    ):
+    with patch.object(telnet_handler, "_prepare_session", return_value=("s1", MagicMock(), True)):
         with patch.object(telnet_handler, "_send_banner", return_value=5):
-            with patch.object(
-                telnet_handler, "_perform_auth", return_value=(True, "root", 10, 10)
-            ):
-                with patch.object(
-                    telnet_handler, "_run_shell", return_value=(10, 10, ["ls"])
-                ):
+            with patch.object(telnet_handler, "_perform_auth", return_value=(True, "root", 10, 10)):
+                with patch.object(telnet_handler, "_run_shell", return_value=(10, 10, ["ls"])):
                     await telnet_handler.handle_connection(reader, writer)
                     writer.close.assert_called()
 
@@ -54,13 +48,9 @@ async def test_telnet_auth_failure(telnet_handler, mock_server):
     writer.wait_closed = AsyncMock()
     writer.get_extra_info.return_value = ("1.2.3.4", 12345)
 
-    with patch.object(
-        telnet_handler, "_prepare_session", return_value=("s1", MagicMock(), True)
-    ):
+    with patch.object(telnet_handler, "_prepare_session", return_value=("s1", MagicMock(), True)):
         with patch.object(telnet_handler, "_send_banner", return_value=0):
-            with patch.object(
-                telnet_handler, "_perform_auth", return_value=(False, "", 10, 10)
-            ):
+            with patch.object(telnet_handler, "_perform_auth", return_value=(False, "", 10, 10)):
                 await telnet_handler.handle_connection(reader, writer)
                 writer.close.assert_called()
 
@@ -73,17 +63,13 @@ async def test_telnet_perform_auth(telnet_handler, mock_server):
 
     reader.readuntil.side_effect = [b"root\n", b"cyanide\n"]
     mock_server.is_valid_user.return_value = True
-    success, user, b_in, b_out = await telnet_handler._perform_auth(
-        reader, writer, "s1", "1.2.3.4"
-    )
+    success, user, b_in, b_out = await telnet_handler._perform_auth(reader, writer, "s1", "1.2.3.4")
     assert success is True
     assert user == "root"
 
     reader.readuntil.side_effect = [b"root\n", b"wrong\n"]
     mock_server.is_valid_user.return_value = False
-    success, user, b_in, b_out = await telnet_handler._perform_auth(
-        reader, writer, "s1", "1.2.3.4"
-    )
+    success, user, b_in, b_out = await telnet_handler._perform_auth(reader, writer, "s1", "1.2.3.4")
     assert success is False
 
 
@@ -146,9 +132,7 @@ async def test_telnet_command_not_found(telnet_handler):
     shell.execute.return_value = ("", "command not found\n", 127)
 
     reader.readuntil.side_effect = [b"nonexistent\n", b"exit\n"]
-    await telnet_handler._run_shell(
-        reader, writer, shell, MagicMock(), "s1", "1.2.3.4", "root"
-    )
+    await telnet_handler._run_shell(reader, writer, shell, MagicMock(), "s1", "1.2.3.4", "root")
     assert telnet_handler.stats.on_command_not_found.called
 
 

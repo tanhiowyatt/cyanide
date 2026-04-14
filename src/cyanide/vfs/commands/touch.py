@@ -4,9 +4,7 @@ from .base import Command
 
 
 class TouchCommand(Command):
-    async def execute(
-        self, args: list[str], input_data: str = ""
-    ) -> tuple[str, str, int]:
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         await asyncio.sleep(0)
         if not args:
             return "", "touch: missing file operand\n", 1

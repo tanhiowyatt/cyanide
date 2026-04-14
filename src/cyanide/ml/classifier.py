@@ -192,27 +192,17 @@ class KnowledgeBase:
     def _get_related_groups(self, technique_id):
         groups = []
         for rel in self.relationships.get("uses", []):
-            if (
-                rel.get("target_id") == technique_id
-                and rel.get("source_type") == "group"
-            ):
+            if rel.get("target_id") == technique_id and rel.get("source_type") == "group":
                 group_info = self.group_db.get(rel["source_id"], {})
-                groups.append(
-                    {"id": rel["source_id"], "name": group_info.get("name", "Unknown")}
-                )
+                groups.append({"id": rel["source_id"], "name": group_info.get("name", "Unknown")})
         return groups[:5]
 
     def _get_related_malware(self, technique_id):
         malware = []
         for rel in self.relationships.get("uses", []):
-            if (
-                rel.get("target_id") == technique_id
-                and rel.get("source_type") == "malware"
-            ):
+            if rel.get("target_id") == technique_id and rel.get("source_type") == "malware":
                 mal_info = self.malware_db.get(rel["source_id"], {})
-                malware.append(
-                    {"id": rel["source_id"], "name": mal_info.get("name", "Unknown")}
-                )
+                malware.append({"id": rel["source_id"], "name": mal_info.get("name", "Unknown")})
         return malware[:5]
 
     def classify_command(self, command):

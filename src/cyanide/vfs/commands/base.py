@@ -108,9 +108,7 @@ class Command:
         for _ in range(count):
             remote_ip = f"{rng.randint(1, 254)}.{rng.randint(1, 254)}.{rng.randint(1, 254)}.{rng.randint(1, 254)}"
             remote_port = rng.randint(1024, 65535)
-            local_port = rng.choice(
-                [22, 80] if rng.random() > 0.5 else [rng.randint(30000, 60000)]
-            )
+            local_port = rng.choice([22, 80] if rng.random() > 0.5 else [rng.randint(30000, 60000)])
             connections.append(
                 {
                     "proto": "tcp",
@@ -123,9 +121,7 @@ class Command:
             )
         return connections
 
-    async def execute(
-        self, args: list[str], input_data: str = ""
-    ) -> tuple[str, str, int]:
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the command logic. Must be implemented by subclasses."""
         raise NotImplementedError
 
@@ -160,15 +156,11 @@ class Command:
 
         return await self.execute(args, input_data=input_data)
 
-    async def _on_password_auth(
-        self, args: list[str], input_data: str
-    ) -> tuple[str, str, int]:
+    async def _on_password_auth(self, args: list[str], input_data: str) -> tuple[str, str, int]:
         self.emulator.username = "root"
         return await self.execute(args, input_data=input_data)
 
-    async def _execute_subcommand(
-        self, args: list[str], input_data: str
-    ) -> tuple[str, str, int]:
+    async def _execute_subcommand(self, args: list[str], input_data: str) -> tuple[str, str, int]:
         """Execute the sub-command args as a fresh emulator call.
         Note: This is intended for delegation commands like sudo/doas/pkexec.
         """

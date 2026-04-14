@@ -4,9 +4,7 @@ from .base import Command
 
 
 class DpkgCommand(Command):
-    async def execute(
-        self, args: list[str], input_data: str = ""
-    ) -> tuple[str, str, int]:
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         await asyncio.sleep(0)
         """Execute the dpkg command."""
         if not self.is_pkg_mgr_supported("dpkg"):

@@ -56,19 +56,14 @@ async def test_all_commands_covered(emulator):
     files = [
         f
         for f in os.listdir(cmd_dir)
-        if f.endswith(".py")
-        and f != "__init__.py"
-        and f != "base.py"
-        and f != "network.py"
+        if f.endswith(".py") and f != "__init__.py" and f != "base.py" and f != "network.py"
     ]
 
     registered_classes = [cls.__name__ for cls in COMMAND_MAP.values()]
 
     for f in files:
         module_name = f[:-3]
-        expected_class = (
-            "".join(word.capitalize() for word in module_name.split("_")) + "Command"
-        )
+        expected_class = "".join(word.capitalize() for word in module_name.split("_")) + "Command"
         if expected_class not in registered_classes:
             print(
                 f"Warning: Module {module_name} might not be registered in COMMAND_MAP (expected {expected_class})"

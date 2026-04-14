@@ -94,9 +94,7 @@ async def test_sudo(shell, mock_fs):
     shell.username = "root"
     # Note: sudo.py imports ShellEmulator inside _handle_command
     # To avoid recursion or dependency issues in tests, we can mock the inner execute
-    with patch(
-        "cyanide.core.emulator.ShellEmulator.execute", return_value=("guest\n", "", 0)
-    ):
+    with patch("cyanide.core.emulator.ShellEmulator.execute", return_value=("guest\n", "", 0)):
         stdout, stderr, rc = await cmd.execute(["-u", "guest", "whoami"])
         assert rc == 0
         assert stdout == "guest\n"

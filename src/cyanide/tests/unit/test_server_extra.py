@@ -38,10 +38,7 @@ def test_get_ssh_info_fallbacks(session):
 
     conn.get_extra_info.return_value = None
     conn._internal = b"internal_val"
-    assert (
-        session._get_ssh_info(conn, "test_key", "_internal", decode=True)
-        == "internal_val"
-    )
+    assert session._get_ssh_info(conn, "test_key", "_internal", decode=True) == "internal_val"
 
 
 def test_log_ssh_details(session):

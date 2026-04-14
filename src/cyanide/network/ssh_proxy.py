@@ -264,9 +264,7 @@ class ProxyServerSession(asyncssh.SSHServerSession):
     def terminal_window_resized(self, width, height, pixwidth, pixheight):
         """Handle window resize."""
         if self.backend_channel:
-            self.backend_channel.change_terminal_size(
-                width, height, pixwidth, pixheight
-            )
+            self.backend_channel.change_terminal_size(width, height, pixwidth, pixheight)
 
     def break_received(self, msec):
         """Handle break signal."""
@@ -391,22 +389,16 @@ async def main():
 
     key = generate_private_key("ssh-rsa")
 
-    logger.info(
-        f"Starting SSH Proxy on 0.0.0.0:{listen_port} -> {dst_host}:{dst_port}..."
-    )
+    logger.info(f"Starting SSH Proxy on 0.0.0.0:{listen_port} -> {dst_host}:{dst_port}...")
 
     fs = FakeFilesystem()
 
     stop_event = asyncio.Event()
 
     def factory():
-        return CyanideSSHServer(
-            pool=None, target_host=dst_host, target_port=dst_port, fs=fs
-        )
+        return CyanideSSHServer(pool=None, target_host=dst_host, target_port=dst_port, fs=fs)
 
-    await asyncssh.create_server(
-        factory, "0.0.0.0", listen_port, server_host_keys=[key]
-    )
+    await asyncssh.create_server(factory, "0.0.0.0", listen_port, server_host_keys=[key])
 
     await stop_event.wait()
 

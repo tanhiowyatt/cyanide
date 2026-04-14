@@ -51,11 +51,7 @@ def load_hacker_commands(path):
                 for line in f:
                     try:
                         entry = json.loads(line)
-                        cmd = (
-                            entry.get("command")
-                            or entry.get("cmd")
-                            or entry.get("input")
-                        )
+                        cmd = entry.get("command") or entry.get("cmd") or entry.get("input")
                         if cmd:
                             commands.append(str(cmd))
                     except json.JSONDecodeError:
@@ -105,14 +101,10 @@ def train_anomaly_detector(force=False):
     model.train()
 
     dataset = CommandDataset(commands, model.tokenizer)
-    dataloader = DataLoader(
-        dataset, batch_size=64, shuffle=True, pin_memory=True, num_workers=0
-    )
+    dataloader = DataLoader(dataset, batch_size=64, shuffle=True, pin_memory=True, num_workers=0)
 
     optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, "min", patience=3, factor=0.5
-    )
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, "min", patience=3, factor=0.5)
     criterion = nn.MSELoss()
 
     epochs = 20
@@ -165,9 +157,7 @@ def train_anomaly_detector(force=False):
 
 def main():
     parser = argparse.ArgumentParser(description="Cyanide ML Training Manager")
-    parser.add_argument(
-        "--train-model", action="store_true", help="Train anomaly detector"
-    )
+    parser.add_argument("--train-model", action="store_true", help="Train anomaly detector")
     parser.add_argument("--force", action="store_true", help="Force training")
 
     args = parser.parse_args()

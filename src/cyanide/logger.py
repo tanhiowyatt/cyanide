@@ -103,9 +103,7 @@ class CyanideLogger:
                 continue
 
             if plugin_name not in VALID_PLUGINS:
-                logging.warning(
-                    f"Prevented loading of untrusted output plugin: {plugin_name}"
-                )
+                logging.warning(f"Prevented loading of untrusted output plugin: {plugin_name}")
                 continue
 
             try:

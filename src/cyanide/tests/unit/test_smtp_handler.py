@@ -60,9 +60,7 @@ async def test_smtp_mail_rcpt_commands(smtp_handler, mock_streams):
         reader, writer, ["FROM:<test@example.com>"], "1.2.3.4", "test-host"
     )
     writer.write.assert_any_call(b"250 2.1.0 Ok\r\n")
-    await smtp_handler._cmd_rcpt(
-        reader, writer, ["TO:<rcpt@example.com>"], "1.2.3.4", "test-host"
-    )
+    await smtp_handler._cmd_rcpt(reader, writer, ["TO:<rcpt@example.com>"], "1.2.3.4", "test-host")
     writer.write.assert_any_call(b"250 2.1.5 Ok\r\n")
 
 
@@ -81,9 +79,7 @@ async def test_smtp_data_command(smtp_handler, mock_streams):
 @pytest.mark.asyncio
 async def test_smtp_quit_command(smtp_handler, mock_streams):
     reader, writer = mock_streams
-    should_continue = await smtp_handler._cmd_quit(
-        reader, writer, [], "1.2.3.4", "test-host"
-    )
+    should_continue = await smtp_handler._cmd_quit(reader, writer, [], "1.2.3.4", "test-host")
     assert should_continue is False
     writer.write.assert_called_with(b"221 2.0.0 Bye\r\n")
 

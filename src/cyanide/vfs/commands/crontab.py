@@ -5,9 +5,7 @@ from .base import Command
 
 
 class CrontabCommand(Command):
-    async def execute(
-        self, args: list[str], input_data: str = ""
-    ) -> tuple[str, str, int]:
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute the crontab command."""
         cron_dir = "/var/spool/cron/crontabs"
         cron_file = f"{cron_dir}/{self.emulator.username}"
@@ -83,9 +81,7 @@ class CrontabCommand(Command):
         if raw_line == "DONE":
             cron_dir = "/var/spool/cron/crontabs"
             cron_file = f"{cron_dir}/{self.emulator.username}"
-            content = (
-                "\n".join(self._capture_lines) + "\n" if self._capture_lines else ""
-            )
+            content = "\n".join(self._capture_lines) + "\n" if self._capture_lines else ""
             self.fs.mkfile(cron_file, content=content, owner=self.emulator.username)
 
             # Initiate background simulation of cron jobs

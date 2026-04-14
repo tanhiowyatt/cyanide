@@ -34,9 +34,7 @@ def _parse_val(v):
     return v
 
 
-def _try_map_env_to_dict(
-    remainder: str, env_val: Any, data: dict, override_keys: list
-) -> bool:
+def _try_map_env_to_dict(remainder: str, env_val: Any, data: dict, override_keys: list) -> bool:
     for top_key, top_val in data.items():
         if not remainder.startswith(top_key + "_") or not isinstance(top_val, dict):
             continue
@@ -196,9 +194,7 @@ def load_config(path: Any = None):
         "max_sessions": get_val("server", "max_sessions", 100, int),
         "max_sessions_per_ip": get_val("server", "max_sessions_per_ip", 5, int),
         "session_timeout": get_val("server", "session_timeout", 300, int),
-        "quarantine_max_size_mb": get_val(
-            "honeypot", "quarantine_max_size_mb", 500, int
-        ),
+        "quarantine_max_size_mb": get_val("honeypot", "quarantine_max_size_mb", 500, int),
         "dns_cache_ttl": get_val("honeypot", "dns_cache_ttl", 60, int),
         "allow_local_network": get_val("honeypot", "allow_local_network", False, bool),
         "fs_yaml": get_val("honeypot", "fs_yaml", None),
@@ -227,9 +223,7 @@ def load_config(path: Any = None):
                 ["hmac-sha2-512-etm@openssh.com", "hmac-sha2-256-etm@openssh.com"],
                 cast="json",
             ),
-            "compression": get_val(
-                "ssh", "compression", ["none", "zlib@openssh.com"], cast="json"
-            ),
+            "compression": get_val("ssh", "compression", ["none", "zlib@openssh.com"], cast="json"),
             "kex_algs": get_val("ssh", "kex_algs", ["curve25519-sha256"], cast="json"),
             "host_key_algs": get_val(
                 "ssh",
@@ -249,22 +243,12 @@ def load_config(path: Any = None):
             "idle_timeout": get_val("ssh", "idle_timeout", 3600, int),
             "rekey_limit": get_val("ssh", "rekey_limit", "1G"),
             "forwarding_enabled": get_val("ssh", "forwarding_enabled", False, bool),
-            "forwarding_strict_mode": get_val(
-                "ssh", "forwarding_strict_mode", True, bool
-            ),
+            "forwarding_strict_mode": get_val("ssh", "forwarding_strict_mode", True, bool),
             "log_passwords": get_val("ssh", "log_passwords", False, bool),
-            "forward_redirect_enabled": get_val(
-                "ssh", "forward_redirect_enabled", False, bool
-            ),
-            "forward_redirect_rules": get_val(
-                "ssh", "forward_redirect_rules", {}, cast="json"
-            ),
-            "forward_tunnel_enabled": get_val(
-                "ssh", "forward_tunnel_enabled", False, bool
-            ),
-            "forward_tunnel_rules": get_val(
-                "ssh", "forward_tunnel_rules", {}, cast="json"
-            ),
+            "forward_redirect_enabled": get_val("ssh", "forward_redirect_enabled", False, bool),
+            "forward_redirect_rules": get_val("ssh", "forward_redirect_rules", {}, cast="json"),
+            "forward_tunnel_enabled": get_val("ssh", "forward_tunnel_enabled", False, bool),
+            "forward_tunnel_rules": get_val("ssh", "forward_tunnel_rules", {}, cast="json"),
         },
         "telnet": {
             "enabled": get_val("telnet", "enabled", False, bool),
@@ -298,9 +282,7 @@ def load_config(path: Any = None):
                 str(get_package_root() / "assets" / "models" / "cyanideML.pkl"),
             ),
             "online_learning": get_val("ml", "online_learning", False, bool),
-            "retraining_interval_days": get_val(
-                "ml", "retraining_interval_days", 7, int
-            ),
+            "retraining_interval_days": get_val("ml", "retraining_interval_days", 7, int),
             "training_data": {"hacker_methods": Path(DEFAULT_LOG_PATH)},
         },
         "cleanup": {
@@ -322,18 +304,14 @@ def load_config(path: Any = None):
             "vm_unused_timeout": get_val("pool", "vm_unused_timeout", 600, int),
             "share_guests": get_val("pool", "share_guests", True, bool),
             "libvirt_uri": get_val("pool", "libvirt_uri", "qemu:///system"),
-            "guest_config": get_val(
-                "pool", "guest_config", "configs/pool/default_guest.xml"
-            ),
+            "guest_config": get_val("pool", "guest_config", "configs/pool/default_guest.xml"),
             "guest_tag": get_val("pool", "guest_tag", "debian18.04"),
             "guest_ssh_port": get_val("pool", "guest_ssh_port", 22, int),
             "guest_telnet_port": get_val("pool", "guest_telnet_port", 23, int),
             "use_nat": get_val("pool", "use_nat", True, bool),
             "nat_public_ip": get_val("pool", "nat_public_ip", "192.168.1.40"),
             "save_snapshots": get_val("pool", "save_snapshots", False, bool),
-            "snapshot_path": get_val(
-                "pool", "snapshot_path", "var/lib/cyanide/snapshots"
-            ),
+            "snapshot_path": get_val("pool", "snapshot_path", "var/lib/cyanide/snapshots"),
             "targets": get_val("pool", "targets", ""),
         },
         "rate_limit": {
@@ -373,13 +351,9 @@ def load_config(path: Any = None):
 
     try:
         model = CyanideConfig(**config)
-        _CONFIG_EVENTS.append(
-            {"action": "config_schema_validated", "data": {"ok": True}}
-        )
+        _CONFIG_EVENTS.append({"action": "config_schema_validated", "data": {"ok": True}})
         final_config = model.model_dump()
         return stringify_paths(final_config)
     except ValidationError as e:
-        _CONFIG_EVENTS.append(
-            {"action": "config_schema_error", "data": {"error": str(e)}}
-        )
+        _CONFIG_EVENTS.append({"action": "config_schema_error", "data": {"error": str(e)}})
         raise

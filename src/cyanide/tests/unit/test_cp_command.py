@@ -24,9 +24,7 @@ async def test_cp_basic(shell, mock_fs):
     assert rc == 1
     assert "missing file operand" in stderr
 
-    with patch.object(
-        shell, "resolve_path", side_effect=["/root/file2.txt", "/root/file1.txt"]
-    ):
+    with patch.object(shell, "resolve_path", side_effect=["/root/file2.txt", "/root/file1.txt"]):
         stdout, stderr, rc = await cmd.execute(["file1.txt", "file2.txt"])
         assert rc == 0
         assert mock_fs.exists("/root/file2.txt")

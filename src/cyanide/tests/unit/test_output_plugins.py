@@ -48,9 +48,7 @@ def test_logger_plugin_broadcast(tmp_path):
 
         output_config = {"mock_plugin": {"enabled": True, "some_setting": "val"}}
 
-        logger = CyanideLogger(
-            {"logging": {"directory": str(log_dir)}, "output": output_config}
-        )
+        logger = CyanideLogger({"logging": {"directory": str(log_dir)}, "output": output_config})
 
         assert len(logger.plugins) == 1
         assert isinstance(logger.plugins[0], MockPlugin)
@@ -136,9 +134,7 @@ def test_individual_plugin_instantiation_safety():
     Verify that individual plugins can be instantiated even if dependencies are missing,
     as long as they are mocked correctly for the test environment.
     """
-    with patch.dict(
-        "sys.modules", {"mysql": MagicMock(), "mysql.connector": MagicMock()}
-    ):
+    with patch.dict("sys.modules", {"mysql": MagicMock(), "mysql.connector": MagicMock()}):
         from cyanide.output.mysql import Plugin as MySQLPlugin
 
         config = {"enabled": True, "host": "127.0.0.1"}

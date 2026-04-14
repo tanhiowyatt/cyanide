@@ -66,11 +66,7 @@ class WgetCommand(Command):
         filename = parsed.output_document or PurePosixPath(url).name or "index.html"
         full_path = self.emulator.resolve_path(filename)
 
-        output_msg = (
-            self._generate_header(url, resolved_ip, filename)
-            if not parsed.quiet
-            else ""
-        )
+        output_msg = self._generate_header(url, resolved_ip, filename) if not parsed.quiet else ""
 
         try:
             content = await self._download_file(url)
@@ -111,9 +107,7 @@ class WgetCommand(Command):
 
     async def _download_file(self, url):
         async with aiohttp.ClientSession() as session:
-            async with session.get(
-                url, timeout=aiohttp.ClientTimeout(total=10)
-            ) as resp:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
                 if resp.status != 200:
                     raise RuntimeError(f"HTTP {resp.status}")
                 return await resp.read()

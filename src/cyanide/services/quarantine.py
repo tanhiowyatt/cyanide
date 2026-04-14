@@ -60,9 +60,7 @@ class QuarantineService:
                 await f.write(content)
 
             if sub_dir:
-                log_dir_conf = self.config.get("logging", {}).get(
-                    "directory", "var/log/cyanide"
-                )
+                log_dir_conf = self.config.get("logging", {}).get("directory", "var/log/cyanide")
                 log_base = Path(log_dir_conf) / "tty" / sub_dir
                 target_base_session = log_base / "quarantine"
                 target_base_session.mkdir(parents=True, exist_ok=True)
@@ -84,12 +82,8 @@ class QuarantineService:
                 self._background_tasks.add(task)
                 task.add_done_callback(self._background_tasks.discard)
 
-            if hasattr(self.logger, "services") and hasattr(
-                self.logger.services, "analytics"
-            ):
-                self.logger.services.analytics.analyze_file(
-                    filename, content, session_id, src_ip
-                )
+            if hasattr(self.logger, "services") and hasattr(self.logger.services, "analytics"):
+                self.logger.services.analytics.analyze_file(filename, content, session_id, src_ip)
             return str(target_path_main)
         except Exception as e:
             self.logger.log_event(
@@ -97,9 +91,7 @@ class QuarantineService:
             )
             return None
 
-    async def _scan_and_log(
-        self, filename: str, content: bytes, session_id: str, src_ip: str
-    ):
+    async def _scan_and_log(self, filename: str, content: bytes, session_id: str, src_ip: str):
         """Background task to scan file and log results."""
         if not self.vt_scanner:
             return

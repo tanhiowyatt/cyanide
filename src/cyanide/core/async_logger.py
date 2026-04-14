@@ -52,9 +52,7 @@ class AsyncLogger:
         except Exception:
             return None
 
-    async def _write_log_item(
-        self, filepath: Path, content: Union[str, bytes], mode: str
-    ):
+    async def _write_log_item(self, filepath: Path, content: Union[str, bytes], mode: str):
         """Helper to safely perform file I/O and mark task completion."""
         try:
             try:
@@ -96,9 +94,7 @@ class AsyncLogger:
             except asyncio.CancelledError:
                 import sys
 
-                print(
-                    "AsyncLogger worker cancelled, finishing queue...", file=sys.stderr
-                )
+                print("AsyncLogger worker cancelled, finishing queue...", file=sys.stderr)
                 raise
             except Exception as e:
                 import sys

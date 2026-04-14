@@ -6,9 +6,7 @@ from .base import Command
 class SudoCommand(Command):
     """Execute a command as another user (mock)."""
 
-    async def execute(
-        self, args: list[str], input_data: str = ""
-    ) -> tuple[str, str, int]:
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         """Execute command as root or switch user."""
         result = self._parse_sudo_args(args)
         if "err" in result:
@@ -79,9 +77,7 @@ class SudoCommand(Command):
 
         from cyanide.core.emulator import ShellEmulator
 
-        temp_shell = ShellEmulator(
-            self.fs, target_user, self.emulator.quarantine_callback
-        )
+        temp_shell = ShellEmulator(self.fs, target_user, self.emulator.quarantine_callback)
         if not interactive:
             temp_shell.cwd = self.emulator.cwd
 

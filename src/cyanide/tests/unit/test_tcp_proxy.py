@@ -7,9 +7,7 @@ from cyanide.network.tcp_proxy import TCPProxy
 
 @pytest.fixture
 def tcp_proxy():
-    return TCPProxy(
-        listen_host="0.0.0.0", listen_port=8080, target_host="1.2.3.4", target_port=80
-    )
+    return TCPProxy(listen_host="0.0.0.0", listen_port=8080, target_host="1.2.3.4", target_port=80)
 
 
 @pytest.mark.asyncio

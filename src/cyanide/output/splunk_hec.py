@@ -58,8 +58,6 @@ class Plugin(OutputPlugin):
                 timeout=5,
             )
             if resp.status_code not in (200, 201, 202):
-                logging.error(
-                    f"[Splunk] Write error: status={resp.status_code} text={resp.text}"
-                )
+                logging.error(f"[Splunk] Write error: status={resp.status_code} text={resp.text}")
         except Exception as e:
             logging.error(f"[Splunk] Delivery failure: {e}")

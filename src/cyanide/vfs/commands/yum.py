@@ -4,9 +4,7 @@ from .base import Command
 
 
 class YumCommand(Command):
-    async def execute(
-        self, args: list[str], input_data: str = ""
-    ) -> tuple[str, str, int]:
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         await asyncio.sleep(0)
         if not self.is_pkg_mgr_supported("yum"):
             return "", f"bash: {args[0] if args else 'yum'}: command not found\n", 127
@@ -46,9 +44,7 @@ class YumCommand(Command):
             0,
         )
 
-    def _handle_install_remove(
-        self, subcommand: str, packages: list[str]
-    ) -> tuple[str, str, int]:
+    def _handle_install_remove(self, subcommand: str, packages: list[str]) -> tuple[str, str, int]:
         """Handle install, remove, and erase subcommands."""
         if not packages:
             return (
@@ -84,9 +80,7 @@ class YumCommand(Command):
         )
 
         for pkg in packages:
-            output += (
-                f"---> Package {pkg}.x86_64 0:1.0-1.el7 will be {action.lower()}\n"
-            )
+            output += f"---> Package {pkg}.x86_64 0:1.0-1.el7 will be {action.lower()}\n"
 
         output += (
             "--> Finished Dependency Resolution\n\n"

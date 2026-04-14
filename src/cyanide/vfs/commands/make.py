@@ -7,9 +7,9 @@ class MakeCommand(Command):
     async def execute(self, args, input_data=""):
         await asyncio.sleep(0.5)
 
-        makefile_exists = self.fs.exists(
-            self.emulator.resolve_path("Makefile")
-        ) or self.fs.exists(self.emulator.resolve_path("makefile"))
+        makefile_exists = self.fs.exists(self.emulator.resolve_path("Makefile")) or self.fs.exists(
+            self.emulator.resolve_path("makefile")
+        )
 
         if not makefile_exists:
             return (

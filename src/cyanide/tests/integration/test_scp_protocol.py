@@ -70,9 +70,7 @@ async def test_scp_upload_download(scp_server, username, password, target_dir):
     Verify content integrity and VFS visibility.
     """
     filename = f"test_scp_updown_{username}_{target_dir.replace('/', '_')}.txt"
-    content = (
-        f"Content for {username} in {target_dir} - unique id {os.urandom(4).hex()}"
-    )
+    content = f"Content for {username} in {target_dir} - unique id {os.urandom(4).hex()}"
 
     with tempfile.TemporaryDirectory() as tmpdir:
         local_upload_path = Path(tmpdir) / "upload.txt"

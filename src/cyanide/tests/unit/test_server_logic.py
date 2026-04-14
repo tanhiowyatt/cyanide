@@ -178,15 +178,11 @@ def test_analyze_command(server):
 
 def test_fs_audit_hook(server):
     # normal
-    server._fs_audit_hook(
-        "open", "/tmp/file", session_id="session1", src_ip="127.0.0.1"
-    )
+    server._fs_audit_hook("open", "/tmp/file", session_id="session1", src_ip="127.0.0.1")
     server.logger.log_event.assert_any_call("session1", "fs_audit", ANY)
 
     # honeytokens
-    server._fs_audit_hook(
-        "open", "/etc/shadow", session_id="session1", src_ip="127.0.0.1"
-    )
+    server._fs_audit_hook("open", "/etc/shadow", session_id="session1", src_ip="127.0.0.1")
     server.stats.on_honeytoken.assert_called_with("/etc/shadow")
     server.logger.log_event.assert_any_call("session1", "CRITICAL_ALERT", ANY)
 
@@ -285,9 +281,7 @@ async def test_start_metrics_server(server):
 async def test_cleanup_loop(server):
     with (
         patch("cyanide.core.cleanup.CleanupManager") as mock_manager,
-        patch(
-            "asyncio.sleep", side_effect=[None, asyncio.CancelledError]
-        ) as mock_sleep,
+        patch("asyncio.sleep", side_effect=[None, asyncio.CancelledError]) as mock_sleep,
     ):
         mock_manager.return_value.enabled = False
         try:

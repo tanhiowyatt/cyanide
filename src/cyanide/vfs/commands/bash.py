@@ -6,9 +6,7 @@ from .base import Command
 class BashCommand(Command):
     """Bourne-Again SHell."""
 
-    async def execute(
-        self, args: list[str], input_data: str = ""
-    ) -> tuple[str, str, int]:
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         if "-c" in args:
             cmd_index = args.index("-c") + 1
             if cmd_index < len(args):

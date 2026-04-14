@@ -19,9 +19,7 @@ CACHE_FORMAT_VERSION = 3
 COMPILED_DB_NAME = ".compiled.db"
 
 
-def _compute_hash(
-    base_file: Path, static_file: Path, rootfs_dir: Optional[Path] = None
-) -> str:
+def _compute_hash(base_file: Path, static_file: Path, rootfs_dir: Optional[Path] = None) -> str:
     """Compute SHA-256 hash of base.yaml, static.yaml, and optionally rootfs/ contents."""
     h = hashlib.sha256()
 
@@ -120,9 +118,7 @@ def _compile_to_sqlite(manifest: Dict[str, Any], db_path: Path, target_hash: str
         conn.execute("CREATE INDEX IF NOT EXISTS idx_parent ON vfs(parent_path)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_name ON vfs(name)")
         conn.execute("CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT)")
-        conn.execute(
-            "INSERT INTO metadata (key, value) VALUES ('hash', ?)", (target_hash,)
-        )
+        conn.execute("INSERT INTO metadata (key, value) VALUES ('hash', ?)", (target_hash,))
         conn.execute(
             "INSERT INTO metadata (key, value) VALUES ('v', ?)",
             (str(CACHE_FORMAT_VERSION),),
@@ -249,9 +245,7 @@ def _parse_yaml_profile(base_file: Path, static_file: Path) -> Dict[str, Any]:
     honeytokens = base_data.get("honeytokens", [])
     static_manifest: Dict[str, Any] = {}
 
-    _parse_tree_folders(
-        static_manifest, base_data.get("static_files", {}).get("tree_folders")
-    )
+    _parse_tree_folders(static_manifest, base_data.get("static_files", {}).get("tree_folders"))
 
     if static_file.exists():
         with open(static_file, "r", encoding="utf-8") as f:
@@ -279,16 +273,11 @@ def _parse_yaml_profile(base_file: Path, static_file: Path) -> Dict[str, Any]:
     }
 
 
-def _check_memory_cache(
-    profile_name: str, target_hash: str
-) -> Optional[Dict[str, Any]]:
+def _check_memory_cache(profile_name: str, target_hash: str) -> Optional[Dict[str, Any]]:
     """Return memory-cached profile if valid."""
     if profile_name in _MEMORY_CACHE:
         cached_data = _MEMORY_CACHE[profile_name]
-        if (
-            cached_data.get("hash") == target_hash
-            and cached_data.get("v") == CACHE_FORMAT_VERSION
-        ):
+        if cached_data.get("hash") == target_hash and cached_data.get("v") == CACHE_FORMAT_VERSION:
             return cached_data
     return None
 
@@ -353,13 +342,9 @@ def _build_manifest(
 
     if base_file.exists():
         logger.info(f"Compiling YAML manifest to SQLite for '{profile_name}'...")
-        return cast(
-            Dict[str, Any], _parse_yaml_profile(base_file, static_file)["static"]
-        )
+        return cast(Dict[str, Any], _parse_yaml_profile(base_file, static_file)["static"])
 
-    raise FileNotFoundError(
-        f"No valid profile source found for '{profile_name}' in {profiles_dir}"
-    )
+    raise FileNotFoundError(f"No valid profile source found for '{profile_name}' in {profiles_dir}")
 
 
 def load(profile_name: str, profiles_dir: Path) -> Dict[str, Any]:
@@ -382,9 +367,7 @@ def load(profile_name: str, profiles_dir: Path) -> Dict[str, Any]:
             return res
 
         logger.info(f"Rebuilding SQLite VFS cache for profile '{profile_name}'...")
-        manifest = _build_manifest(
-            profile_name, rootfs_dir, base_file, static_file, profiles_dir
-        )
+        manifest = _build_manifest(profile_name, rootfs_dir, base_file, static_file, profiles_dir)
         _compile_to_sqlite(manifest, compiled_db, target_hash)
         metadata, dynamic_files, honeytokens = {}, {}, []
         if base_file.exists():

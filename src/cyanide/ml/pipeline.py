@@ -15,9 +15,7 @@ class CyanideML:
 
     def __init__(self, model_dir="assets/models"):
         self.model_dir = Path(model_dir)
-        self.anomaly_detector = CommandAutoencoder.load(
-            self.model_dir / "cyanideML.pkl"
-        )
+        self.anomaly_detector = CommandAutoencoder.load(self.model_dir / "cyanideML.pkl")
 
         self.kb = KnowledgeBase()
         self.kb.load(self.model_dir / "knowledge_base.pkl")
@@ -33,10 +31,8 @@ class CyanideML:
         rule_result = self.rule_engine.evaluate(command)
         context_results = self._get_context_results(command)
 
-        is_anomaly, verdict, final_score, source, context_triggered = (
-            self._fusion_analysis(
-                is_anomaly_ml, float(score), rule_result, context_results
-            )
+        is_anomaly, verdict, final_score, source, context_triggered = self._fusion_analysis(
+            is_anomaly_ml, float(score), rule_result, context_results
         )
 
         classification, severity = self._get_classification(
@@ -132,9 +128,7 @@ class CyanideML:
             )
 
         # Priority 2: Context-based enrichment
-        elif context_result_path.get("matched") and not classification.get(
-            "classified"
-        ):
+        elif context_result_path.get("matched") and not classification.get("classified"):
             classification = self._format_kb_entry(
                 context_result_path["techniques"][0],
                 0.8,

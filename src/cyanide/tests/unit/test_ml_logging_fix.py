@@ -84,9 +84,7 @@ def test_ml_file_analysis_logging(analytics_svc):
         "severity": "CRITICAL",
     }
 
-    analytics_svc.analyze_file(
-        "malware.sh", b"#!/bin/bash\nrm -rf /", "sess2", "2.2.2.2"
-    )
+    analytics_svc.analyze_file("malware.sh", b"#!/bin/bash\nrm -rf /", "sess2", "2.2.2.2")
 
     log_path = Path(analytics_svc.logger.log_dir) / "cyanide-ml.json"
 

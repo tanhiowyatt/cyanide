@@ -121,9 +121,7 @@ class TelnetHandler:
                 bytes_out,
             )
 
-    async def _prepare_session(
-        self, src_ip: str, writer
-    ) -> Tuple[str, Optional[object], bool]:
+    async def _prepare_session(self, src_ip: str, writer) -> Tuple[str, Optional[object], bool]:
         """Check session limits, register session, and prepare log directory."""
         await asyncio.sleep(0)
         accepted, reason = self.services.session.can_accept(src_ip)
@@ -136,9 +134,7 @@ class TelnetHandler:
                     "src_ip": src_ip,
                     "reason": reason,
                     "active_sessions": self.services.session.active_sessions,
-                    "per_ip_sessions": self.services.session.sessions_per_ip.get(
-                        src_ip, 0
-                    ),
+                    "per_ip_sessions": self.services.session.sessions_per_ip.get(src_ip, 0),
                 },
             )
             writer.close()
@@ -201,11 +197,7 @@ class TelnetHandler:
             if not raw:
                 return 0
 
-            banner = (
-                raw.replace("\\n", hostname)
-                .replace("\\l", "pts/0")
-                .replace("\n", "\r\n")
-            )
+            banner = raw.replace("\\n", hostname).replace("\\l", "pts/0").replace("\n", "\r\n")
             if not banner.endswith("\r\n"):
                 banner += "\r\n"
             writer.write(banner.encode())
@@ -214,9 +206,7 @@ class TelnetHandler:
         except Exception:
             return 0
 
-    async def _perform_auth(
-        self, reader, writer, session_id, src_ip
-    ) -> Tuple[bool, str, int, int]:
+    async def _perform_auth(self, reader, writer, session_id, src_ip) -> Tuple[bool, str, int, int]:
         """Handle login/password prompts and user validation."""
         bytes_in, bytes_out = 0, 0
         try:
@@ -295,9 +285,7 @@ class TelnetHandler:
 
         while True:
             try:
-                line = await asyncio.wait_for(
-                    reader.readuntil(b"\n"), timeout=self.session_timeout
-                )
+                line = await asyncio.wait_for(reader.readuntil(b"\n"), timeout=self.session_timeout)
                 bytes_in += len(line)
                 self.stats.on_traffic("in", len(line))
                 cmd = line.decode().strip()

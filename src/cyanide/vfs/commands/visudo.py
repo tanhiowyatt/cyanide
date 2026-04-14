@@ -36,9 +36,7 @@ class VisudoCommand(Command):
 
         if raw_line == "DONE":
             target_file = "/etc/sudoers"
-            content = (
-                "\n".join(self._capture_lines) + "\n" if self._capture_lines else ""
-            )
+            content = "\n".join(self._capture_lines) + "\n" if self._capture_lines else ""
             self.fs.mkfile(target_file, content=content, owner="root")
             if self.emulator.logger:
                 self.emulator.logger.log_event(

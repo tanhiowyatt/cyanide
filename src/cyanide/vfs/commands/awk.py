@@ -12,9 +12,7 @@ class AwkCommand(Command):
     Supports -F and simple {print $N}.
     """
 
-    async def execute(
-        self, args: list[str], input_data: str = ""
-    ) -> tuple[str, str, int]:
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         await asyncio.sleep(0)
         """Execute the awk command."""
         parsed, rc = self._parse_awk_args(args)
@@ -34,18 +32,14 @@ class AwkCommand(Command):
 
         output_lines = []
         for line in lines:
-            processed = self._process_line(
-                line, parsed.field_separator, fields_to_print
-            )
+            processed = self._process_line(line, parsed.field_separator, fields_to_print)
             if processed:
                 output_lines.append(processed)
 
         result = "\n".join(output_lines)
         return result + ("\n" if output_lines else ""), "", 0
 
-    def _parse_awk_args(
-        self, args: list[str]
-    ) -> tuple[Optional[argparse.Namespace], int]:
+    def _parse_awk_args(self, args: list[str]) -> tuple[Optional[argparse.Namespace], int]:
         """Parse awk arguments."""
         parser = argparse.ArgumentParser(prog="awk", add_help=False)
         parser.add_argument("-F", "--field-separator", default=" ")
@@ -110,9 +104,7 @@ class AwkCommand(Command):
                     return [], ("", f"awk: {f}: Is a directory\n", 2)
         return lines, None
 
-    def _process_line(
-        self, line: str, separator: str, fields_to_print: list[int]
-    ) -> Optional[str]:
+    def _process_line(self, line: str, separator: str, fields_to_print: list[int]) -> Optional[str]:
         """Process a single line and extract requested fields."""
         if not line.strip():
             return None

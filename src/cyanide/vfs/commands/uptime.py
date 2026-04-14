@@ -7,9 +7,7 @@ from .base import Command
 class UptimeCommand(Command):
     """Tell how long the system has been running."""
 
-    async def execute(
-        self, args: list[str], input_data: str = ""
-    ) -> tuple[str, str, int]:
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         await asyncio.sleep(0)
         uptime_content = self.fs.get_content("/proc/uptime")
         if not uptime_content:
@@ -26,7 +24,5 @@ class UptimeCommand(Command):
 
         up_str = f"{hours}:{minutes:02}" if hours > 0 else f"{minutes} min"
 
-        output = (
-            f" {current_time} up {up_str},  1 user,  load average: 0.00, 0.01, 0.05\n"
-        )
+        output = f" {current_time} up {up_str},  1 user,  load average: 0.00, 0.01, 0.05\n"
         return output, "", 0

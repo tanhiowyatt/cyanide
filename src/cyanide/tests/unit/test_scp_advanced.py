@@ -100,9 +100,7 @@ async def test_scp_source_send_file(mock_session, mock_process):
     rc = await handler.handle("scp -f /src.txt")
 
     assert rc == 0
-    all_writes = "".join(
-        [call[0][0] for call in mock_process.channel.write.call_args_list]
-    )
+    all_writes = "".join([call[0][0] for call in mock_process.channel.write.call_args_list])
     assert "source data" in all_writes
     assert "C0644" in all_writes
 

@@ -23,13 +23,24 @@ class ChmodCommand(Command):
                 )
 
             if mode.isdigit():
-                node.perm = "-rwxrwxrwx" if mode == "777" else node.perm
+                current_perm = node.perm
+                # Simple mapping for common octal modes
+                mapping = {
+                    "777": "rwxrwxrwx",
+                    "755": "rwxr-xr-x",
+                    "644": "rw-r--r--",
+                    "600": "rw-------",
+                }
+                suffix = mapping.get(mode, current_perm[1:])
+                prefix = "d" if node.is_dir() else "-"
+                new_perm = prefix + suffix
+                self.fs.chmod(path, new_perm)
             else:
                 if "+x" in mode:
                     p = list(node.perm)
                     p[3] = "x"
                     p[6] = "x"
                     p[9] = "x"
-                    node.perm = "".join(p)
+                    self.fs.chmod(path, "".join(p))
 
         return "", "", 0

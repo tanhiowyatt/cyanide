@@ -6,7 +6,9 @@ from .base import Command
 class CdCommand(Command):
     """Change the current working directory."""
 
-    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+    async def execute(
+        self, args: list[str], input_data: str = ""
+    ) -> tuple[str, str, int]:
         await asyncio.sleep(0)
         """Execute the cd command.
 

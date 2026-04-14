@@ -1,7 +1,5 @@
 import asyncio
 
-from cyanide.vfs.nodes import Directory
-
 from .base import Command
 
 
@@ -22,16 +20,21 @@ class RmdirCommand(Command):
                     1,
                 )
 
-            if not isinstance(node, Directory):
+            if not self.fs.is_dir(path):
                 return "", f"rmdir: failed to remove '{arg}': Not a directory\n", 1
 
-            if node.children:
+            if self.fs.list_dir(path):
                 return (
                     "",
                     f"rmdir: failed to remove '{arg}': Directory not empty\n",
                     1,
                 )
 
-            node.parent.remove_child(node.name)
+            if not self.fs.remove(path):
+                return (
+                    "",
+                    f"rmdir: failed to remove '{arg}': Operation not permitted\n",
+                    1,
+                )
 
         return "", "", 0

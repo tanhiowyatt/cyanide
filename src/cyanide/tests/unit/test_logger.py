@@ -22,15 +22,24 @@ def test_logger_plain_handlers(temp_log_dir):
     server_logger = logging.getLogger("cyanide_server")
     assert len(server_logger.handlers) == 1
     assert isinstance(server_logger.handlers[0], logging.FileHandler)
-    assert not isinstance(server_logger.handlers[0], logging.handlers.RotatingFileHandler)
-    assert not isinstance(server_logger.handlers[0], logging.handlers.TimedRotatingFileHandler)
+    assert not isinstance(
+        server_logger.handlers[0], logging.handlers.RotatingFileHandler
+    )
+    assert not isinstance(
+        server_logger.handlers[0], logging.handlers.TimedRotatingFileHandler
+    )
 
 
 def test_logger_time_rotating_handlers(temp_log_dir):
     """Test TimedRotatingFileHandler instantiation."""
     config = {
         "logtype": "rotating",
-        "rotation": {"strategy": "time", "when": "midnight", "interval": 1, "backup_count": 7},
+        "rotation": {
+            "strategy": "time",
+            "when": "midnight",
+            "interval": 1,
+            "backup_count": 7,
+        },
     }
 
     CyanideLogger({"logging": {"directory": temp_log_dir, **config}})

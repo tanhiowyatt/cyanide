@@ -6,7 +6,9 @@ from .base import Command
 class HelpCommand(Command):
     """Display information about builtin commands."""
 
-    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+    async def execute(
+        self, args: list[str], input_data: str = ""
+    ) -> tuple[str, str, int]:
         await asyncio.sleep(0)
         """Execute the help command.
 

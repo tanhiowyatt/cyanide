@@ -29,7 +29,18 @@ Context analysis enriches raw detection outcomes by considering the surrounding 
 - If a seemingly benign command (`cat`) is executed against a critically sensitive target (`/etc/shadow`), the semantic consequence is inherently severe.
 - **Smart Bot Detection**: The `ContextAnalyzer` assesses the timing behavior of attacker patterns. It calculates a multi-factor **Bot Score** based on keystroke jitter (standard deviation of delays) and "paste" events. A very low standard deviation (even if delays are long) indicates a scripted orchestration, while high variance suggests a human.
 
-## Layer 4: GeoIP Enrichment
+## Layer 4: Proactive Defense (IPS Mode)
+
+Beyond passive logging, Cyanide can act as an **IPS (Intrusion Prevention System)** to neutralize threats within the emulated environment. This is most prominent in the automation subsystem.
+
+### Crontab Guard
+Automation via `crontab` is a primary persistence mechanism for malware. Cyanide's `CrontabCommand` implements an ML-driven simulation filter:
+1. **Implicit Recording**: All commands entered via `crontab -e` are saved to the VFS. This allows for full artifact gathering.
+2. **Behavioral Simulation**: Innocent commands (e.g., `echo "ok" >> status.log`) are scheduled and executed after a realistic delay.
+3. **ML Interception**: Before a scheduled task runs, its command string is passed to Layer 2. If the ML model flags an **Anomaly** (high reconstruction error or severe classification), the execution is **preemptively blocked**.
+4. **Cloaking**: To the attacker, the crontab appears installed and functional (`crontab -l` shows the malicious entry), but the background execution is suppressed, preventing simulated "damage" or noisy network activity while still capturing the intent.
+
+## Layer 5: GeoIP Enrichment
 
 Modern threat intel requires geographic context. The `AnalyticsService` seamlessly integrates with IP-based geolocation databases (e.g., MaxMind).
 - When a new attacker connects, their source IP is instantly queried against the local GeoIP database.

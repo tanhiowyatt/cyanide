@@ -32,12 +32,14 @@ class ShellEmulator:
         logger=None,
         session_id=None,
         src_ip=None,
+        analytics=None,
     ):
         self.fs = fs
         self.username = username
         self.config = config or {}
         self.quarantine_callback = quarantine_callback
         self.logger = logger
+        self.analytics = analytics
         self.session_id = session_id
         self.src_ip = src_ip
         self.dns_cache: dict[str, tuple[str, float]] = {}
@@ -53,7 +55,9 @@ class ShellEmulator:
             self.cwd = "/"
 
         self.max_chain_depth = self.config.get("shell", {}).get("max_chain_depth", 100)
-        self.max_output_size = self.config.get("shell", {}).get("max_output_size", 1024 * 1024)
+        self.max_output_size = self.config.get("shell", {}).get(
+            "max_output_size", 1024 * 1024
+        )
         self.pending_input_callback = None
         self.pending_input_prompt = None
 
@@ -173,7 +177,11 @@ class ShellEmulator:
                             "start_time": time.time(),
                         }
                     )
-                stdout, stderr, rc = f"[{secrets.SystemRandom().randint(1, 10)}] {pid}\n", "", 0
+                stdout, stderr, rc = (
+                    f"[{secrets.SystemRandom().randint(1, 10)}] {pid}\n",
+                    "",
+                    0,
+                )
             else:
                 stdout, stderr, rc = await self._execute_pipeline(node.cmd_line)
 
@@ -182,7 +190,9 @@ class ShellEmulator:
             last_rc = rc
 
             if len(full_stdout) > self.max_output_size:
-                full_stdout = full_stdout[: self.max_output_size] + "\n[output truncated]\n"
+                full_stdout = (
+                    full_stdout[: self.max_output_size] + "\n[output truncated]\n"
+                )
                 full_stderr += "shell: maximum output size exceeded\n"
                 last_rc = 1
                 break
@@ -192,14 +202,8 @@ class ShellEmulator:
         return full_stdout, full_stderr, last_rc
 
     async def execute(self, command_line: str) -> tuple[str, str, int]:
-        """Execute a shell command line dealing with chains, pipes, and redirections.
-
-        Args:
-            command_line: Complete command line string.
-
-        Returns:
-            tuple: (stdout, stderr, return_code) - Aggregated from the executed chain.
-        """
+        """Execute a shell command line dealing with chains, pipes, and redirections."""
+        # print(f"DEBUG: execute('{command_line}')")
         if self.pending_input_callback:
             callback = self.pending_input_callback
             self.pending_input_callback = None
@@ -213,7 +217,6 @@ class ShellEmulator:
             return "", "", 0
 
         self.history.append(command_line.strip())
-
         command_line = self._expand_vars(command_line)
 
         try:
@@ -234,7 +237,9 @@ class ShellEmulator:
             return command_line[i]
         return None
 
-    def _update_quote_state(self, char: str, in_quote: bool, quote_char: str) -> tuple[bool, str]:
+    def _update_quote_state(
+        self, char: str, in_quote: bool, quote_char: str
+    ) -> tuple[bool, str]:
         """Returns new (in_quote, quote_char) boolean states."""
         if not in_quote:
             return True, char
@@ -254,7 +259,9 @@ class ShellEmulator:
             char = command_line[i]
 
             if char in ("'", '"'):
-                in_quote, quote_char = self._update_quote_state(char, in_quote, quote_char)
+                in_quote, quote_char = self._update_quote_state(
+                    char, in_quote, quote_char
+                )
                 current_token += char
                 i += 1
                 continue
@@ -351,12 +358,16 @@ class ShellEmulator:
         try:
             from typing import cast
 
-            result = await self.commands[cmd_name].auth_and_execute(params, input_data=input_data)
+            result = await self.commands[cmd_name].auth_and_execute(
+                params, input_data=input_data
+            )
             return cast(tuple[str, str, int], result)
         except Exception as e:
             return "", f"Command execution error: {e}\n", 1
 
-    async def _execute_single_command(self, cmd_line: str, input_data: str) -> tuple[str, str, int]:
+    async def _execute_single_command(
+        self, cmd_line: str, input_data: str
+    ) -> tuple[str, str, int]:
         try:
             args = shlex.split(cmd_line)
         except ValueError:
@@ -399,7 +410,9 @@ class ShellEmulator:
     def _write_file(self, path: str, content: str):
         """Helper to write to fake fs."""
         abs_path = self.resolve_path(path)
-        self.fs.mkfile(abs_path, content=content, owner=self.username, group=self.username)
+        self.fs.mkfile(
+            abs_path, content=content, owner=self.username, group=self.username
+        )
 
     def _expand_vars(self, s: str) -> str:
         """Expand environment variables $VAR or ${VAR} in string."""

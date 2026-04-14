@@ -2,9 +2,21 @@ from .base import Command
 
 
 class PkexecCommand(Command):
-
     async def execute(self, args, input_data=""):
-        if self.emulator.username == "root":
-            return "", "", 0
+        if not args:
+            return "", "pkexec: must specify a program to execute\n", 1
 
-        return await self.auth_and_execute(args, input_data=input_data, paths_to_check=["/root"])
+        if self.emulator.username == "root":
+            return await self._execute_subcommand(args, input_data)
+
+        self.emulator.pending_input_callback = lambda _: self._on_delegated_auth(
+            args, input_data
+        )
+        self.emulator.pending_input_prompt = f"==== AUTHENTICATING FOR org.freedesktop.policykit.exec ====\nAuthentication is required to run {args[0]} as the super user\nAuthenticating as: {self.emulator.username}\nPassword: "
+        return self.emulator.pending_input_prompt, "", 0
+
+    async def _on_delegated_auth(
+        self, args: list[str], input_data: str
+    ) -> tuple[str, str, int]:
+        self.emulator.username = "root"
+        return await self._execute_subcommand(args, input_data)

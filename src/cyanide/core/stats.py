@@ -122,15 +122,21 @@ class StatsManager:
     def to_prometheus(self) -> str:
         """Format metrics for Prometheus."""
         lines = []
-        lines.append("# HELP cyanide_active_sessions Number of currently active sessions")
+        lines.append(
+            "# HELP cyanide_active_sessions Number of currently active sessions"
+        )
         lines.append("# TYPE cyanide_active_sessions gauge")
         lines.append(f"cyanide_active_sessions {self.active_sessions}")
 
-        lines.append("# HELP cyanide_total_sessions_total Total number of connections since start")
+        lines.append(
+            "# HELP cyanide_total_sessions_total Total number of connections since start"
+        )
         lines.append("# TYPE cyanide_total_sessions_total counter")
         lines.append(f"cyanide_total_sessions_total {self.total_sessions}")
 
-        lines.append("# HELP cyanide_unique_attackers_total Total number of unique attacker IPs")
+        lines.append(
+            "# HELP cyanide_unique_attackers_total Total number of unique attacker IPs"
+        )
         lines.append("# TYPE cyanide_unique_attackers_total counter")
         lines.append(f"cyanide_unique_attackers_total {len(self.unique_ips)}")
 
@@ -138,7 +144,9 @@ class StatsManager:
         lines.append("# TYPE cyanide_uptime_seconds counter")
         lines.append(f"cyanide_uptime_seconds {int(time.time() - self.start_time)}")
 
-        lines.append("# HELP cyanide_auth_success_total Total successful login attempts")
+        lines.append(
+            "# HELP cyanide_auth_success_total Total successful login attempts"
+        )
         lines.append("# TYPE cyanide_auth_success_total counter")
         lines.append(f"cyanide_auth_success_total {self.auth_success}")
 
@@ -151,7 +159,9 @@ class StatsManager:
         for proto, count in self.protocols.items():
             lines.append(f'cyanide_protocols_total{{protocol="{proto}"}} {count}')
 
-        lines.append("# HELP cyanide_honeytoken_hits_total Total hits on honeytoken paths")
+        lines.append(
+            "# HELP cyanide_honeytoken_hits_total Total hits on honeytoken paths"
+        )
         lines.append("# TYPE cyanide_honeytoken_hits_total counter")
         for path, count in self.honeytoken_triggers.items():
             lines.append(f'cyanide_honeytoken_hits_total{{path="{path}"}} {count}')
@@ -160,26 +170,40 @@ class StatsManager:
         lines.append("# TYPE cyanide_malware_scans_total counter")
         lines.append(f"cyanide_malware_scans_total {sum(self.malware_scans.values())}")
 
-        lines.append("# HELP cyanide_malicious_files_total Total malicious files detected")
+        lines.append(
+            "# HELP cyanide_malicious_files_total Total malicious files detected"
+        )
         lines.append("# TYPE cyanide_malicious_files_total counter")
-        lines.append(f"cyanide_malicious_files_total {sum(self.malicious_files.values())}")
+        lines.append(
+            f"cyanide_malicious_files_total {sum(self.malicious_files.values())}"
+        )
 
-        lines.append("# HELP cyanide_file_ops_total Total filesystem operations by type")
+        lines.append(
+            "# HELP cyanide_file_ops_total Total filesystem operations by type"
+        )
         lines.append("# TYPE cyanide_file_ops_total counter")
         for op, count in self.file_ops.items():
             lines.append(f'cyanide_file_ops_total{{op="{op}"}} {count}')
 
-        lines.append("# HELP cyanide_traffic_bytes_in_total Total inbound traffic in bytes")
+        lines.append(
+            "# HELP cyanide_traffic_bytes_in_total Total inbound traffic in bytes"
+        )
         lines.append("# TYPE cyanide_traffic_bytes_in_total counter")
         lines.append(f"cyanide_traffic_bytes_in_total {self.bytes_in}")
 
-        lines.append("# HELP cyanide_traffic_bytes_out_total Total outbound traffic in bytes")
+        lines.append(
+            "# HELP cyanide_traffic_bytes_out_total Total outbound traffic in bytes"
+        )
         lines.append("# TYPE cyanide_traffic_bytes_out_total counter")
         lines.append(f"cyanide_traffic_bytes_out_total {self.bytes_out}")
 
-        lines.append("# HELP cyanide_command_not_found_total Total count of commands not found")
+        lines.append(
+            "# HELP cyanide_command_not_found_total Total count of commands not found"
+        )
         lines.append("# TYPE cyanide_command_not_found_total counter")
-        lines.append(f"cyanide_command_not_found_total {sum(self.command_not_found.values())}")
+        lines.append(
+            f"cyanide_command_not_found_total {sum(self.command_not_found.values())}"
+        )
 
         for cmd, count in self.command_not_found.items():
             lines.append(f'cyanide_missing_commands_total{{command="{cmd}"}} {count}')

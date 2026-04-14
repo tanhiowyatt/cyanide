@@ -137,7 +137,10 @@ class RsyncHandler:
             self._write(struct.pack("<i", 12345678))
             self._log_event(
                 "rsync_handshake",
-                {"client_version": client_version, "server_version": self.protocol_version},
+                {
+                    "client_version": client_version,
+                    "server_version": self.protocol_version,
+                },
             )
 
             if is_sender:
@@ -170,12 +173,18 @@ class RsyncHandler:
             self._log_event("rsync_error", {"op": "file_list_parsing", "error": str(e)})
 
         if not rsync_cfg.get("allow_upload", True):
-            self._log_event("rsync_denied", {"direction": "upload", "reason": "upload_disabled"})
+            self._log_event(
+                "rsync_denied", {"direction": "upload", "reason": "upload_disabled"}
+            )
         else:
             await asyncio.sleep(0.5)
-            self._log_event("rsync_denied", {"direction": "upload", "reason": "target_readonly"})
+            self._log_event(
+                "rsync_denied", {"direction": "upload", "reason": "target_readonly"}
+            )
 
-        err_msg = f"rsync: [receiver] push to {dest_path} failed: Permission denied (13)\n"
+        err_msg = (
+            f"rsync: [receiver] push to {dest_path} failed: Permission denied (13)\n"
+        )
         if self.process:
             self.process.channel.write_stderr(err_msg.encode())
         else:
@@ -233,7 +242,9 @@ class RsyncHandler:
             {"direction": "download", "path": src_path, "reason": "download_disabled"},
         )
 
-        err_msg = f"rsync: [sender] slice of {src_path} failed: Permission denied (13)\n"
+        err_msg = (
+            f"rsync: [sender] slice of {src_path} failed: Permission denied (13)\n"
+        )
         if self.process:
             self.process.channel.write_stderr(err_msg.encode())
         else:

@@ -61,7 +61,11 @@ class CurlCommand(Command):
                         return "", err_msg, 22
 
                     content = await resp.read()
-                    q_filename = filename if filename else PurePosixPath(url).name or "index.html"
+                    q_filename = (
+                        filename
+                        if filename
+                        else PurePosixPath(url).name or "index.html"
+                    )
                     if self.emulator.quarantine_callback:
                         self.emulator.quarantine_callback(q_filename, content)
 
@@ -80,9 +84,14 @@ class CurlCommand(Command):
         parser = argparse.ArgumentParser(prog="curl", add_help=False)
         parser.add_argument("-o", "--output", dest="output", help="write to file")
         parser.add_argument(
-            "-O", "--remote-name", action="store_true", help="write to file named like remote file"
+            "-O",
+            "--remote-name",
+            action="store_true",
+            help="write to file named like remote file",
         )
-        parser.add_argument("-I", "--head", action="store_true", help="show headers only")
+        parser.add_argument(
+            "-I", "--head", action="store_true", help="show headers only"
+        )
         parser.add_argument("-s", "--silent", action="store_true", help="silent mode")
         parser.add_argument("url", nargs="?", help="URL to fetch")
 
@@ -116,7 +125,9 @@ class CurlCommand(Command):
 
     def _handle_head_response(self, resp):
         """Format header output for HEAD requests."""
-        version_str = f"{resp.version.major}.{resp.version.minor}" if resp.version else "1.1"
+        version_str = (
+            f"{resp.version.major}.{resp.version.minor}" if resp.version else "1.1"
+        )
         headers_out = f"HTTP/{version_str} {resp.status} {resp.reason}\r\n"
         for k, v in resp.headers.items():
             headers_out += f"{k}: {v}\r\n"
@@ -133,7 +144,9 @@ class CurlCommand(Command):
 
         if (
             self.fs.mkfile(
-                full_path, content=content.decode("utf-8", errors="ignore"), owner=self.username
+                full_path,
+                content=content.decode("utf-8", errors="ignore"),
+                owner=self.username,
             )
             is None
         ):

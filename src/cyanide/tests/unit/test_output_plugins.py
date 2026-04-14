@@ -48,7 +48,9 @@ def test_logger_plugin_broadcast(tmp_path):
 
         output_config = {"mock_plugin": {"enabled": True, "some_setting": "val"}}
 
-        logger = CyanideLogger({"logging": {"directory": str(log_dir)}, "output": output_config})
+        logger = CyanideLogger(
+            {"logging": {"directory": str(log_dir)}, "output": output_config}
+        )
 
         assert len(logger.plugins) == 1
         assert isinstance(logger.plugins[0], MockPlugin)
@@ -115,7 +117,10 @@ def test_plugin_resiliency_on_failure(tmp_path):
         mock_import.return_value = mock_module
 
         logger = CyanideLogger(
-            {"logging": {"directory": str(log_dir)}, "output": {"failer": {"enabled": True}}}
+            {
+                "logging": {"directory": str(log_dir)},
+                "output": {"failer": {"enabled": True}},
+            }
         )
         logger.log_event("s", "e", "d")
 
@@ -131,7 +136,9 @@ def test_individual_plugin_instantiation_safety():
     Verify that individual plugins can be instantiated even if dependencies are missing,
     as long as they are mocked correctly for the test environment.
     """
-    with patch.dict("sys.modules", {"mysql": MagicMock(), "mysql.connector": MagicMock()}):
+    with patch.dict(
+        "sys.modules", {"mysql": MagicMock(), "mysql.connector": MagicMock()}
+    ):
         from cyanide.output.mysql import Plugin as MySQLPlugin
 
         config = {"enabled": True, "host": "127.0.0.1"}
@@ -151,7 +158,11 @@ def test_splunk_plugin_payload_format():
         config = {"enabled": True, "url": "http://splunk", "token": "abc"}
         plugin = SplunkPlugin(config)
 
-        event = {"timestamp": "2023-01-01T12:00:00+00:00", "session": "s1", "eventid": "ev"}
+        event = {
+            "timestamp": "2023-01-01T12:00:00+00:00",
+            "session": "s1",
+            "eventid": "ev",
+        }
         plugin.write(event)
 
         args, kwargs = mock_post.call_args

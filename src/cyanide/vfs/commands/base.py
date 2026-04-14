@@ -15,9 +15,52 @@ class Command:
         self.fs = emulator.fs
         self.username = emulator.username
 
+    def get_content_str(self, path: str) -> str:
+        """Get file content as string, handles bytes by decoding."""
+        content = self.fs.get_content(path)
+        if isinstance(content, bytes):
+            return content.decode("utf-8", errors="replace")
+        return str(content)
+
     def get_ip_addr(self) -> str:
         """Get the simulated IP address of the honeypot."""
         return str(self.emulator.config.get("ip_address", "192.168.1.15"))
+
+    def is_pkg_mgr_supported(self, mgr: str) -> bool:
+        """Check if the given package manager is supported by current profile or env."""
+        config_mgrs = self.emulator.config.get("package_managers", [])
+
+        if config_mgrs:
+            if "none" in config_mgrs:
+                return False
+            if "all" in config_mgrs or mgr in config_mgrs:
+                return True
+
+            # Family checks
+            if mgr in ["apt", "apt-get", "dpkg"] and (
+                "apt" in config_mgrs or "debian" in config_mgrs
+            ):
+                return True
+            if mgr in ["yum", "dnf", "rpm"] and (
+                "yum" in config_mgrs or "rhel" in config_mgrs or "centos" in config_mgrs
+            ):
+                return True
+            return False
+
+        os_profile = getattr(self.fs, "os_profile", "debian").lower()
+        if mgr in ["apt", "apt-get", "dpkg"]:
+            return os_profile in ["debian", "kali", "ubuntu", "custom"]
+        if mgr in ["yum", "dnf", "rpm"]:
+            return os_profile in [
+                "centos",
+                "rhel",
+                "fedora",
+                "rocky",
+                "almalinux",
+                "custom",
+            ]
+
+        return True
 
     def generate_mac(self) -> str:
         """Generate a deterministic MAC address for this session."""
@@ -65,7 +108,9 @@ class Command:
         for _ in range(count):
             remote_ip = f"{rng.randint(1, 254)}.{rng.randint(1, 254)}.{rng.randint(1, 254)}.{rng.randint(1, 254)}"
             remote_port = rng.randint(1024, 65535)
-            local_port = rng.choice([22, 80] if rng.random() > 0.5 else [rng.randint(30000, 60000)])
+            local_port = rng.choice(
+                [22, 80] if rng.random() > 0.5 else [rng.randint(30000, 60000)]
+            )
             connections.append(
                 {
                     "proto": "tcp",
@@ -78,12 +123,17 @@ class Command:
             )
         return connections
 
-    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+    async def execute(
+        self, args: list[str], input_data: str = ""
+    ) -> tuple[str, str, int]:
         """Execute the command logic. Must be implemented by subclasses."""
         raise NotImplementedError
 
     async def auth_and_execute(
-        self, args: list[str], input_data: str = "", paths_to_check: Optional[list[str]] = None
+        self,
+        args: list[str],
+        input_data: str = "",
+        paths_to_check: Optional[list[str]] = None,
     ) -> tuple[str, str, int]:
         """Check for root access and prompt for password if needed, otherwise execute."""
         if self.emulator.username == "root":
@@ -110,9 +160,25 @@ class Command:
 
         return await self.execute(args, input_data=input_data)
 
-    async def _on_password_auth(self, args: list[str], input_data: str) -> tuple[str, str, int]:
+    async def _on_password_auth(
+        self, args: list[str], input_data: str
+    ) -> tuple[str, str, int]:
         self.emulator.username = "root"
         return await self.execute(args, input_data=input_data)
+
+    async def _execute_subcommand(
+        self, args: list[str], input_data: str
+    ) -> tuple[str, str, int]:
+        """Execute the sub-command args as a fresh emulator call.
+        Note: This is intended for delegation commands like sudo/doas/pkexec.
+        """
+        from typing import cast
+        import shlex
+
+        if not args:
+            return "", "", 0
+        cmd_line = shlex.join(args)
+        return cast(tuple[str, str, int], await self.emulator.execute(cmd_line))
 
     def validate_url(self, url: str) -> tuple[bool, str, Optional[str]]:
         """Validate URL to prevent SSRF and local file access.

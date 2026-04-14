@@ -39,7 +39,9 @@ async def test_smtp_session_init(smtp_handler, mock_streams):
     assert peer == ("1.2.3.4", 12345)
 
     smtp_handler.logger.log_event.assert_called_with(
-        session_id, "connect", {"protocol": "smtp", "src_ip": "1.2.3.4", "src_port": 12345}
+        session_id,
+        "connect",
+        {"protocol": "smtp", "src_ip": "1.2.3.4", "src_port": 12345},
     )
     smtp_handler.stats.on_connect.assert_called_with("smtp", "1.2.3.4")
 
@@ -58,7 +60,9 @@ async def test_smtp_mail_rcpt_commands(smtp_handler, mock_streams):
         reader, writer, ["FROM:<test@example.com>"], "1.2.3.4", "test-host"
     )
     writer.write.assert_any_call(b"250 2.1.0 Ok\r\n")
-    await smtp_handler._cmd_rcpt(reader, writer, ["TO:<rcpt@example.com>"], "1.2.3.4", "test-host")
+    await smtp_handler._cmd_rcpt(
+        reader, writer, ["TO:<rcpt@example.com>"], "1.2.3.4", "test-host"
+    )
     writer.write.assert_any_call(b"250 2.1.5 Ok\r\n")
 
 
@@ -77,7 +81,9 @@ async def test_smtp_data_command(smtp_handler, mock_streams):
 @pytest.mark.asyncio
 async def test_smtp_quit_command(smtp_handler, mock_streams):
     reader, writer = mock_streams
-    should_continue = await smtp_handler._cmd_quit(reader, writer, [], "1.2.3.4", "test-host")
+    should_continue = await smtp_handler._cmd_quit(
+        reader, writer, [], "1.2.3.4", "test-host"
+    )
     assert should_continue is False
     writer.write.assert_called_with(b"221 2.0.0 Bye\r\n")
 
@@ -112,7 +118,9 @@ async def test_smtp_full_connection_flow(smtp_handler, mock_streams):
     reader.at_eof.side_effect = [False, True]
 
     with patch.object(
-        smtp_handler, "_init_session", return_value=("1.2.3.4", "sess123", "test-host", None)
+        smtp_handler,
+        "_init_session",
+        return_value=("1.2.3.4", "sess123", "test-host", None),
     ):
         await smtp_handler.handle_connection(reader, writer)
 
@@ -128,7 +136,9 @@ async def test_smtp_error_handling(smtp_handler, mock_streams):
         smtp_handler, "_command_loop", side_effect=Exception("Connection reset by peer")
     ):
         with patch.object(
-            smtp_handler, "_init_session", return_value=("1.2.3.4", "sess_err", "test-host", None)
+            smtp_handler,
+            "_init_session",
+            return_value=("1.2.3.4", "sess_err", "test-host", None),
         ):
             await smtp_handler.handle_connection(reader, writer)
 

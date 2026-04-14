@@ -11,7 +11,9 @@ from .base import Command
 class LsCommand(Command):
     """List directory contents."""
 
-    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+    async def execute(
+        self, args: list[str], input_data: str = ""
+    ) -> tuple[str, str, int]:
         await asyncio.sleep(0)
         """Execute the ls command."""
         show_all, long_format, recursive, paths = self._parse_ls_args(args)
@@ -30,7 +32,9 @@ class LsCommand(Command):
             nodes_to_list = self._collect_nodes(target_node, show_all)
             return self._format_output(nodes_to_list, long_format)
         else:
-            return self._format_recursive(target_path, target_node, show_all, long_format)
+            return self._format_recursive(
+                target_path, target_node, show_all, long_format
+            )
 
     def _parse_ls_args(self, args: list[str]) -> tuple[bool, bool, bool, list[str]]:
         """Parse ls arguments for flags and paths."""
@@ -77,7 +81,9 @@ class LsCommand(Command):
 
         return nodes_to_list
 
-    def _format_output(self, nodes_to_list: list[tuple], long_format: bool) -> tuple[str, str, int]:
+    def _format_output(
+        self, nodes_to_list: list[tuple], long_format: bool
+    ) -> tuple[str, str, int]:
         """Format the collected nodes into the final output string."""
         if long_format:
             return self._format_long(nodes_to_list), "", 0

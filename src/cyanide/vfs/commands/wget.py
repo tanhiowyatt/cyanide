@@ -37,7 +37,11 @@ class WgetCommand(Command):
         is_valid, error, resolved_ip = self.validate_url(parsed.url)
         self._log_event(
             "wget_url_resolve",
-            {"url": parsed.url, "resolved_ip": resolved_ip or "unresolved", "is_valid": is_valid},
+            {
+                "url": parsed.url,
+                "resolved_ip": resolved_ip or "unresolved",
+                "is_valid": is_valid,
+            },
         )
 
         if not is_valid:
@@ -62,7 +66,11 @@ class WgetCommand(Command):
         filename = parsed.output_document or PurePosixPath(url).name or "index.html"
         full_path = self.emulator.resolve_path(filename)
 
-        output_msg = self._generate_header(url, resolved_ip, filename) if not parsed.quiet else ""
+        output_msg = (
+            self._generate_header(url, resolved_ip, filename)
+            if not parsed.quiet
+            else ""
+        )
 
         try:
             content = await self._download_file(url)
@@ -71,7 +79,9 @@ class WgetCommand(Command):
 
             if (
                 self.fs.mkfile(
-                    full_path, content=content.decode("utf-8", errors="ignore"), owner=self.username
+                    full_path,
+                    content=content.decode("utf-8", errors="ignore"),
+                    owner=self.username,
                 )
                 is None
             ):
@@ -95,13 +105,15 @@ class WgetCommand(Command):
     def _generate_footer(self, content, filename):
         return (
             f"\n     0K ....                                      100% "
-            f"{len(content)}={len(content)/1024:.2f}K/s\n\n"
+            f"{len(content)}={len(content) / 1024:.2f}K/s\n\n"
             f"2026-02-02 12:00:00 ({filename}) - saved [{len(content)}/{len(content)}]\n"
         )
 
     async def _download_file(self, url):
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+            async with session.get(
+                url, timeout=aiohttp.ClientTimeout(total=10)
+            ) as resp:
                 if resp.status != 200:
                     raise RuntimeError(f"HTTP {resp.status}")
                 return await resp.read()

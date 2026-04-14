@@ -122,19 +122,28 @@ class ScpHandler:
         try:
             self._save_to_vfs(target_path, content)
 
-            self.honeypot.save_quarantine_file(filename, content, self.session_id, self.src_ip)
+            self.honeypot.save_quarantine_file(
+                filename, content, self.session_id, self.src_ip
+            )
 
             self.logger.log_event(
                 self.session_id,
                 "scp_upload_complete",
-                {"filename": filename, "path": target_path, "size": size, "mode": mode_str},
+                {
+                    "filename": filename,
+                    "path": target_path,
+                    "size": size,
+                    "mode": mode_str,
+                },
             )
 
             self._send_ack()
             return 0
         except Exception as e:
             logger.error(f"SCP Upload Error for {filename}: {e}")
-            self._write(f"\x01SCP: Internal error saving file {filename}: {e}\n".encode("utf-8"))
+            self._write(
+                f"\x01SCP: Internal error saving file {filename}: {e}\n".encode("utf-8")
+            )
             return 1
 
     async def _handle_dir_command(self, header_str: str, current_base: str) -> str:
@@ -189,7 +198,9 @@ class ScpHandler:
             "scp_exec_detected",
             {
                 "command": command,
-                "direction": "upload" if is_sink else ("download" if is_source else "unknown"),
+                "direction": "upload"
+                if is_sink
+                else ("download" if is_source else "unknown"),
                 "target_path": path,
             },
         )
@@ -215,7 +226,11 @@ class ScpHandler:
         self.logger.log_event(
             self.session_id,
             "scp_download_started",
-            {"path": path, "type": "dir" if node.is_dir() else "file", "direction": "download"},
+            {
+                "path": path,
+                "type": "dir" if node.is_dir() else "file",
+                "direction": "download",
+            },
         )
         logger.debug(f"SCP Source Mode: Waiting for initial ACK for {path}...")
 
@@ -267,7 +282,9 @@ class ScpHandler:
         logger.debug(f"SCP _send_file: Received header ACK: {ack!r}")
         if ack != b"\0":
             self.logger.log_event(
-                self.session_id, "scp_protocol_error", {"msg": f"Missing header ACK, got {ack!r}"}
+                self.session_id,
+                "scp_protocol_error",
+                {"msg": f"Missing header ACK, got {ack!r}"},
             )
             return
 
@@ -356,7 +373,9 @@ class ScpHandler:
             elif header_str.startswith("T"):
                 self._send_ack()
             else:
-                self._write(f"\x01SCP: Unknown protocol command: {header_str}\n".encode("utf-8"))
+                self._write(
+                    f"\x01SCP: Unknown protocol command: {header_str}\n".encode("utf-8")
+                )
                 return 1
 
         return 0

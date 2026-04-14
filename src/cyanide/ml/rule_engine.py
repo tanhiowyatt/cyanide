@@ -273,7 +273,9 @@ class SecurityRuleEngine:
         sev_map = {"CRITICAL": 4, "HIGH": 3, "MEDIUM": 2, "LOW": 1}
 
         best_match = sorted(
-            matches, key=lambda x: (x["confidence"], sev_map.get(x["severity"], 0)), reverse=True
+            matches,
+            key=lambda x: (x["confidence"], sev_map.get(x["severity"], 0)),
+            reverse=True,
         )[0]
 
         return {

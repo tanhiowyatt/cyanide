@@ -6,7 +6,9 @@ from .base import Command
 class CatCommand(Command):
     """Concatenate content of files and print to standard output."""
 
-    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+    async def execute(
+        self, args: list[str], input_data: str = ""
+    ) -> tuple[str, str, int]:
         await asyncio.sleep(0)
         """Execute the cat command."""
         if not args:
@@ -39,7 +41,7 @@ class CatCommand(Command):
         """Handle a single file path."""
         path = self.emulator.resolve_path(arg)
         if self.fs.is_file(path):
-            return self.fs.get_content(path), "", 0
+            return self.get_content_str(path), "", 0
         if self.fs.is_dir(path):
             return "", f"cat: {arg}: Is a directory\n", 1
         return "", f"cat: {arg}: No such file or directory\n", 1

@@ -56,7 +56,9 @@ async def check_sftp_functional(host, port):
 async def check_telnet_functional(host, port):
     """Try to perform a simple Telnet connect and banner read."""
     try:
-        reader, writer = await asyncio.wait_for(asyncio.open_connection(host, port), timeout=5)
+        reader, writer = await asyncio.wait_for(
+            asyncio.open_connection(host, port), timeout=5
+        )
         # Try to read some data (banner)
         data = await asyncio.wait_for(reader.read(1024), timeout=5)
         writer.close()
@@ -105,7 +107,7 @@ def smoke_test():
     for i in range(10):
         if check_port(host, metrics_port):
             break
-        print(f"Waiting for metrics service on {metrics_port}... {i+1}/10")
+        print(f"Waiting for metrics service on {metrics_port}... {i + 1}/10")
         time.sleep(2)
 
     for name, port in ports.items():
@@ -181,9 +183,9 @@ def smoke_test():
 
                 req = urllib.request.Request(f"http://{host}:{metrics_port}/health")
                 req.add_header("Connection", "close")
-                with urllib.request.urlopen(
-                    req, timeout=5
-                ) as response:  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
+                with (
+                    urllib.request.urlopen(req, timeout=5) as response
+                ):  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
                     if response.status == 200:
                         data = json.loads(response.read().decode())
 
@@ -194,13 +196,17 @@ def smoke_test():
                     break
                 else:
                     print(
-                        f"[-] Health Endpoint (Attempt {attempt+1}/{max_retries}): UNHEALTHY ({data})"
+                        f"[-] Health Endpoint (Attempt {attempt + 1}/{max_retries}): UNHEALTHY ({data})"
                     )
             else:
-                print(f"[-] Health Endpoint (Attempt {attempt+1}/{max_retries}): FAILED (No data)")
+                print(
+                    f"[-] Health Endpoint (Attempt {attempt + 1}/{max_retries}): FAILED (No data)"
+                )
 
         except Exception as e:
-            print(f"[-] Health Endpoint Error (Attempt {attempt+1}/{max_retries}): {e}")
+            print(
+                f"[-] Health Endpoint Error (Attempt {attempt + 1}/{max_retries}): {e}"
+            )
 
         if attempt < max_retries - 1:
             time.sleep(3)

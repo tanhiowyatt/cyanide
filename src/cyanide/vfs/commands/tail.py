@@ -5,7 +5,6 @@ from .base import Command
 
 
 class TailCommand(Command):
-
     async def execute(self, args, input_data=""):
         await asyncio.sleep(0)
 
@@ -46,6 +45,6 @@ class TailCommand(Command):
         else:
             path = self.emulator.resolve_path(files[0])
             if self.fs.is_file(path):
-                lines = self.fs.get_content(path).splitlines(keepends=True)
+                lines = self.get_content_str(path).splitlines(keepends=True)
 
         return "".join(lines[-count:]), "", 0

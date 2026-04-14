@@ -87,9 +87,13 @@ class TCPProxy:
                 tgt_host, tgt_port = self.target_host, self.target_port
 
             logger.debug(f"Proxying {src_ip} -> {tgt_host}:{tgt_port}")
-            target_reader, target_writer = await asyncio.open_connection(tgt_host, tgt_port)
+            target_reader, target_writer = await asyncio.open_connection(
+                tgt_host, tgt_port
+            )
         except Exception as e:
-            logger.error(f"{self.protocol_name.upper()} Proxy: Failed to connect to target: {e}")
+            logger.error(
+                f"{self.protocol_name.upper()} Proxy: Failed to connect to target: {e}"
+            )
             client_writer.close()
             return
 
@@ -102,7 +106,8 @@ class TCPProxy:
             )
 
             _, pending = await asyncio.wait(
-                [client_to_target, target_to_client], return_when=asyncio.FIRST_COMPLETED
+                [client_to_target, target_to_client],
+                return_when=asyncio.FIRST_COMPLETED,
             )
 
             for task in pending:
@@ -132,7 +137,8 @@ class TCPProxy:
                                 "protocol": self.protocol_name,
                                 "direction": direction,
                                 "len": len(data),
-                                "data_hex": data.hex()[:100] + ("..." if len(data) > 100 else ""),
+                                "data_hex": data.hex()[:100]
+                                + ("..." if len(data) > 100 else ""),
                             }
                         )
                     )

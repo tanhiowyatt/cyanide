@@ -25,11 +25,16 @@ class AnalyticsService:
             self.logger.log_event(
                 "system",
                 "service_init_status",
-                {"service": "AnalyticsService", "message": "Components initialized successfully"},
+                {
+                    "service": "AnalyticsService",
+                    "message": "Components initialized successfully",
+                },
             )
         except Exception as e:
             self.logger.log_event(
-                "system", "service_init_error", {"service": "AnalyticsService", "error": str(e)}
+                "system",
+                "service_init_error",
+                {"service": "AnalyticsService", "error": str(e)},
             )
 
         self.ml_enabled = config.get("ml", {}).get("enabled", False)
@@ -67,7 +72,9 @@ class AnalyticsService:
                 self.logger.log_event(
                     "system",
                     "system_status",
-                    {"message": f"Loading CyanideML pipeline from {final_model_path}..."},
+                    {
+                        "message": f"Loading CyanideML pipeline from {final_model_path}..."
+                    },
                 )
                 self.ml_pipeline = CyanideML(str(final_model_path.parent))
             else:
@@ -85,16 +92,30 @@ class AnalyticsService:
             )
             self.ml_enabled = False
         except Exception as e:
-            self.logger.log_event("system", "error", {"message": f"Failed to init ML model: {e}"})
+            self.logger.log_event(
+                "system", "error", {"message": f"Failed to init ML model: {e}"}
+            )
             self.ml_enabled = False
 
-    def analyze_command(self, cmd: str, src_ip: str, session_id: str, is_bot: bool = False):
+    def analyze_command(
+        self, cmd: str, src_ip: str, session_id: str, is_bot: bool = False
+    ):
         """Analyze a command string for tools and anomalies."""
         if self.session_mgr:
             self.session_mgr.record_command(session_id)
 
-        automated_tools = ["wget", "curl", "python ", "perl ", "ruby ", "gcc ", "chmod +x"]
-        detected_tool = next((tool.strip() for tool in automated_tools if tool in cmd), None)
+        automated_tools = [
+            "wget",
+            "curl",
+            "python ",
+            "perl ",
+            "ruby ",
+            "gcc ",
+            "chmod +x",
+        ]
+        detected_tool = next(
+            (tool.strip() for tool in automated_tools if tool in cmd), None
+        )
         if detected_tool:
             self.logger.log_event(
                 session_id,
@@ -142,6 +163,16 @@ class AnalyticsService:
         except Exception as e:
             self.logger.log_event(session_id, "error", {"message": f"ML Error: {e}"})
 
+    def is_malicious(self, cmd: str) -> bool:
+        """Check if command is malicious based on ML verdict."""
+        if not self.ml_enabled or self.ml_pipeline is None:
+            return False
+        try:
+            result = self.ml_pipeline.analyze_command(cmd)
+            return result.get("is_anomaly", False)
+        except Exception:
+            return False
+
     def analyze_file(self, filename: str, content: bytes, session_id: str, src_ip: str):
         """Analyze uploaded file content and filename via ML."""
         if not self.ml_enabled or self.ml_pipeline is None:
@@ -182,7 +213,9 @@ class AnalyticsService:
                     },
                 )
         except Exception as e:
-            self.logger.log_event(session_id, "error", {"message": f"ML File Analysis Error: {e}"})
+            self.logger.log_event(
+                session_id, "error", {"message": f"ML File Analysis Error: {e}"}
+            )
 
     def _identify_threats(self, ptr_data: Optional[str]) -> list[str]:
         """Identify known scanners and bots from reverse DNS (PTR) records."""

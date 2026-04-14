@@ -16,11 +16,22 @@ def kb():
             "technique_name": "Command and Scripting Interpreter",
             "metadata": {},
         },
-        {"technique_id": "T1105", "technique_name": "Ingress Tool Transfer", "metadata": {}},
-        {"technique_id": "T1087", "technique_name": "Account Discovery", "metadata": {}},
+        {
+            "technique_id": "T1105",
+            "technique_name": "Ingress Tool Transfer",
+            "metadata": {},
+        },
+        {
+            "technique_id": "T1087",
+            "technique_name": "Account Discovery",
+            "metadata": {},
+        },
     ]
     kb.technique_db = {
-        "T1059": {"name": "Command and Scripting Interpreter", "tactics": ["Execution"]},
+        "T1059": {
+            "name": "Command and Scripting Interpreter",
+            "tactics": ["Execution"],
+        },
         "T1105": {"name": "Ingress Tool Transfer", "tactics": ["Command and Control"]},
         "T1087": {"name": "Account Discovery", "tactics": ["Discovery"]},
     }

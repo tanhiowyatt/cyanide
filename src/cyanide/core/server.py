@@ -83,24 +83,32 @@ class CyanideServer:
 
         try:
             self.stats = StatsManager()
-            self.tracer = setup_telemetry("cyanide-honeypot", config.get("otel", {}), "1.0.0")
+            self.tracer = setup_telemetry(
+                "cyanide-honeypot", config.get("otel", {}), "1.0.0"
+            )
             self.logger.log_event(
                 "system", "service_init_status", {"message": "Telemetry initialized"}
             )
         except Exception as e:
             self.logger.log_event(
-                "system", "service_init_error", {"service": "Telemetry", "error": str(e)}
+                "system",
+                "service_init_error",
+                {"service": "Telemetry", "error": str(e)},
             )
             raise
 
         try:
             session_mgr = SessionManager(config, self.logger)
             self.logger.log_event(
-                "system", "service_init_status", {"message": "SessionManager initialized"}
+                "system",
+                "service_init_status",
+                {"message": "SessionManager initialized"},
             )
         except Exception as e:
             self.logger.log_event(
-                "system", "service_init_error", {"service": "SessionManager", "error": str(e)}
+                "system",
+                "service_init_error",
+                {"service": "SessionManager", "error": str(e)},
             )
             raise
 
@@ -110,25 +118,35 @@ class CyanideServer:
             self.vt_scanner = VTScanner(vt_key, self.logger)
             quarantine_svc.set_scanner(self.vt_scanner)
             self.logger.log_event(
-                "system", "service_init_status", {"message": "QuarantineService initialized"}
+                "system",
+                "service_init_status",
+                {"message": "QuarantineService initialized"},
             )
             self.logger.log_event(
                 "system", "service_init_status", {"message": "VTScanner initialized"}
             )
         except Exception as e:
             self.logger.log_event(
-                "system", "service_init_error", {"service": "QuarantineService", "error": str(e)}
+                "system",
+                "service_init_error",
+                {"service": "QuarantineService", "error": str(e)},
             )
             raise
 
         try:
-            analytics_svc = AnalyticsService(config, self.logger, session_mgr=session_mgr)
+            analytics_svc = AnalyticsService(
+                config, self.logger, session_mgr=session_mgr
+            )
             self.logger.log_event(
-                "system", "service_init_status", {"message": "AnalyticsService initialized"}
+                "system",
+                "service_init_status",
+                {"message": "AnalyticsService initialized"},
             )
         except Exception as e:
             self.logger.log_event(
-                "system", "service_init_error", {"service": "AnalyticsService", "error": str(e)}
+                "system",
+                "service_init_error",
+                {"service": "AnalyticsService", "error": str(e)},
             )
             raise
 
@@ -145,7 +163,9 @@ class CyanideServer:
             )
         except Exception as e:
             self.logger.log_event(
-                "system", "service_init_error", {"service": "ServiceRegistry", "error": str(e)}
+                "system",
+                "service_init_error",
+                {"service": "ServiceRegistry", "error": str(e)},
             )
             raise
 
@@ -191,7 +211,9 @@ class CyanideServer:
         self.vfs_cache: OrderedDict[tuple, FakeFilesystem] = OrderedDict()
         self.vfs_cache_limit = 100
 
-    def _analyze_command(self, cmd, username, src_ip, session_id, protocol, is_bot=False):
+    def _analyze_command(
+        self, cmd, username, src_ip, session_id, protocol, is_bot=False
+    ):
         """Delegated to AnalyticsService."""
         with self.tracer.start_as_current_span("analyze_command") as span:
             span.set_attribute("command.body", cmd)
@@ -200,7 +222,9 @@ class CyanideServer:
             span.set_attribute("session.id", session_id)
             span.set_attribute("net.protocol.name", protocol)
             span.set_attribute("bot.detected", is_bot)
-            self.services.analytics.analyze_command(cmd, src_ip, session_id, is_bot=is_bot)
+            self.services.analytics.analyze_command(
+                cmd, src_ip, session_id, is_bot=is_bot
+            )
 
     async def log_geoip(self, ip):
         """Delegated to AnalyticsService."""
@@ -213,10 +237,11 @@ class CyanideServer:
                 return True
         return False
 
-    def _fs_audit_hook(self, action, path, fs=None, session_id="unknown", src_ip="unknown"):
+    def _fs_audit_hook(
+        self, action, path, fs=None, session_id="unknown", src_ip="unknown"
+    ):
         """Callback for filesystem auditing."""
         try:
-
             honeytokens = self.config.get("honeytokens", [])
             if not honeytokens and fs and hasattr(fs, "honeytokens"):
                 honeytokens = fs.honeytokens
@@ -277,7 +302,12 @@ class CyanideServer:
             return FakeFilesystem(audit_callback=audit_hook, stats=self.stats)
 
     def save_quarantine_file(
-        self, filename: str, content: bytes, session_id="unknown", src_ip="unknown", protocol="ssh"
+        self,
+        filename: str,
+        content: bytes,
+        session_id="unknown",
+        src_ip="unknown",
+        protocol="ssh",
     ):
         """Delegated to QuarantineService."""
         try:
@@ -310,7 +340,9 @@ class CyanideServer:
             return
 
         try:
-            readable_data = data.decode("utf-8", "ignore") if isinstance(data, bytes) else data
+            readable_data = (
+                data.decode("utf-8", "ignore") if isinstance(data, bytes) else data
+            )
             session_id = getattr(session_obj, "session_id", "unknown")
             src_ip = getattr(session_obj, "src_ip", "unknown")
             protocol = "ssh" if hasattr(session_obj, "channel") else "telnet"
@@ -333,7 +365,9 @@ class CyanideServer:
 
     def _log_tty_scriptreplay(self, session_obj, data: str):
         """Log TTY data for scriptreplay (timing + raw session)."""
-        if not hasattr(session_obj, "tty_log_path") or not hasattr(session_obj, "tty_timing_path"):
+        if not hasattr(session_obj, "tty_log_path") or not hasattr(
+            session_obj, "tty_timing_path"
+        ):
             return
 
         try:
@@ -341,20 +375,30 @@ class CyanideServer:
             elapsed = now - session_obj.last_log_time
             session_obj.last_log_time = now
 
-            self.async_logger.log(session_obj.tty_timing_path, f"{elapsed:.6f} {len(data)}\n")
+            self.async_logger.log(
+                session_obj.tty_timing_path, f"{elapsed:.6f} {len(data)}\n"
+            )
             encoded_data = data.encode() if isinstance(data, str) else data
             self.async_logger.log(session_obj.tty_log_path, encoded_data, mode="ab")
         except Exception as e:
             self.logger.log_event(
-                "system", "tty_error", {"message": f"Error saving scriptreplay TTY: {e}"}
+                "system",
+                "tty_error",
+                {"message": f"Error saving scriptreplay TTY: {e}"},
             )
 
     def _get_health_status(self) -> str:
-        ssh_up = self.ssh_server is not None or getattr(self, "ssh_proxy", None) is not None
-        telnet_up = (
-            self.telnet_server is not None or getattr(self, "telnet_proxy", None) is not None
+        ssh_up = (
+            self.ssh_server is not None or getattr(self, "ssh_proxy", None) is not None
         )
-        smtp_up = self.smtp_server is not None or getattr(self, "smtp_proxy", None) is not None
+        telnet_up = (
+            self.telnet_server is not None
+            or getattr(self, "telnet_proxy", None) is not None
+        )
+        smtp_up = (
+            self.smtp_server is not None
+            or getattr(self, "smtp_proxy", None) is not None
+        )
 
         is_healthy = True
         if self.config.get("ssh", {}).get("enabled", True) and not ssh_up:
@@ -373,7 +417,10 @@ class CyanideServer:
 
     def _route_metrics_request(self, path: str) -> tuple[str, str]:
         if path == "/metrics":
-            return self.stats.to_prometheus(), f"{CONTENT_TYPE_PLAIN}; version=0.0.4; charset=utf-8"
+            return (
+                self.stats.to_prometheus(),
+                f"{CONTENT_TYPE_PLAIN}; version=0.0.4; charset=utf-8",
+            )
         if path == "/stats":
             return json.dumps(self.stats.get_stats(), indent=2), "application/json"
         if path == "/health":
@@ -385,8 +432,14 @@ class CyanideServer:
     async def _handle_metrics_request(self, reader, writer):
         try:
             try:
-                header_data = await asyncio.wait_for(reader.readuntil(b"\r\n\r\n"), timeout=3.0)
-            except (asyncio.IncompleteReadError, asyncio.LimitOverrunError, asyncio.TimeoutError):
+                header_data = await asyncio.wait_for(
+                    reader.readuntil(b"\r\n\r\n"), timeout=3.0
+                )
+            except (
+                asyncio.IncompleteReadError,
+                asyncio.LimitOverrunError,
+                asyncio.TimeoutError,
+            ):
                 return
             if not header_data:
                 return
@@ -408,7 +461,12 @@ class CyanideServer:
             is_health_check = path.startswith("/health")
             if token and not is_health_check:
                 auth_header = next(
-                    (line for line in lines if line.lower().startswith("authorization:")), None
+                    (
+                        line
+                        for line in lines
+                        if line.lower().startswith("authorization:")
+                    ),
+                    None,
                 )
                 if not auth_header or f"Bearer {token}" not in auth_header:
                     response = (
@@ -466,13 +524,17 @@ class CyanideServer:
                 self._handle_metrics_request, host, port
             )
             self.logger.log_event(
-                "system", "service_started", {"service": "metrics", "host": host, "port": port}
+                "system",
+                "service_started",
+                {"service": "metrics", "host": host, "port": port},
             )
             async with self.metrics_server:
                 await self.metrics_server.serve_forever()
         except Exception as e:
             self.logger.log_event(
-                "system", "metrics_server_error", {"message": f"Metrics Server Error: {e}"}
+                "system",
+                "metrics_server_error",
+                {"message": f"Metrics Server Error: {e}"},
             )
 
     # Function 51: Retrieves host keys from disk or generates them if missing.
@@ -494,7 +556,9 @@ class CyanideServer:
                     loaded_keys.append(key)
                 except Exception as e:
                     self.logger.log_event(
-                        "system", "key_error", {"message": f"Failed to load {ktype}: {e}"}
+                        "system",
+                        "key_error",
+                        {"message": f"Failed to load {ktype}: {e}"},
                     )
             else:
                 try:
@@ -509,7 +573,9 @@ class CyanideServer:
                     loaded_keys.append(key)
                 except Exception as e:
                     self.logger.log_event(
-                        "system", "key_error", {"message": f"Failed to generate {ktype}: {e}"}
+                        "system",
+                        "key_error",
+                        {"message": f"Failed to generate {ktype}: {e}"},
                     )
 
         if not loaded_keys:
@@ -592,9 +658,9 @@ class CyanideServer:
             process.exit(rc)
             return
 
-        if (command.startswith("scp ") or command.startswith("/usr/bin/scp ")) and ssh_conf.get(
-            "scp_enabled", True
-        ):
+        if (
+            command.startswith("scp ") or command.startswith("/usr/bin/scp ")
+        ) and ssh_conf.get("scp_enabled", True):
             scp = ScpHandler(sess, process)
             rc = await scp.handle(command)
             process.exit(rc)
@@ -628,7 +694,9 @@ class CyanideServer:
             if not command:
                 await CyanideServer._handle_shell_session(process, sess)
             else:
-                await CyanideServer._handle_exec_session(process, sess, factory, command)
+                await CyanideServer._handle_exec_session(
+                    process, sess, factory, command
+                )
         except Exception as e:
             logging.debug(f"CyanideProcess EXCEPTION: {e}")
             traceback.print_exc()
@@ -688,10 +756,14 @@ class CyanideServer:
         backend_mode = ssh_conf.get("backend_mode", "emulated")
 
         if backend_mode == "emulated":
-            ssh_opts, chosen_version, actual_algs = self._get_ssh_options(ssh_conf, host_keys)
+            ssh_opts, chosen_version, actual_algs = self._get_ssh_options(
+                ssh_conf, host_keys
+            )
             self.ssh_server = await asyncssh.listen("0.0.0.0", ssh_port, **ssh_opts)
             self.logger.log_event(
-                "system", "service_started", {"service": "ssh_emulated", "port": ssh_port}
+                "system",
+                "service_started",
+                {"service": "ssh_emulated", "port": ssh_port},
             )
             self.logger.log_event(
                 "system",
@@ -738,10 +810,15 @@ class CyanideServer:
 
         if backend_mode == "emulated":
             self.telnet_server = await asyncio.start_server(
-                self.services.telnet.handle_connection, "0.0.0.0", telnet_port, reuse_address=True
+                self.services.telnet.handle_connection,
+                "0.0.0.0",
+                telnet_port,
+                reuse_address=True,
             )
             self.logger.log_event(
-                "system", "service_started", {"service": "telnet_emulated", "port": telnet_port}
+                "system",
+                "service_started",
+                {"service": "telnet_emulated", "port": telnet_port},
             )
         elif backend_mode == "pool" or backend_mode == "proxy":
             t_host = telnet_conf.get("target_host", "127.0.0.1")
@@ -777,10 +854,15 @@ class CyanideServer:
             if backend_mode == "emulated":
                 smtp_handler = SMTPHandler(self, smtp_conf)
                 self.smtp_server = await asyncio.start_server(
-                    smtp_handler.handle_connection, "0.0.0.0", smtp_port, reuse_address=True
+                    smtp_handler.handle_connection,
+                    "0.0.0.0",
+                    smtp_port,
+                    reuse_address=True,
                 )
                 self.logger.log_event(
-                    "system", "service_started", {"service": "smtp_emulated", "port": smtp_port}
+                    "system",
+                    "service_started",
+                    {"service": "smtp_emulated", "port": smtp_port},
                 )
             else:
                 self.smtp_server = TCPProxy(
@@ -802,7 +884,9 @@ class CyanideServer:
                 )
         except Exception as e:
             self.logger.log_event(
-                "system", "smtp_error", {"message": f"Failed to start SMTP Service: {e}"}
+                "system",
+                "smtp_error",
+                {"message": f"Failed to start SMTP Service: {e}"},
             )
 
     # Function 52: Performs operations related to start.
@@ -845,18 +929,23 @@ class CyanideServer:
     # Function 53: Performs operations related to stop.
     async def stop(self):
         """Stop all services."""
-        self.logger.log_event("system", "system_status", {"message": "Stopping CyanideServer..."})
+        self.logger.log_event(
+            "system", "system_status", {"message": "Stopping CyanideServer..."}
+        )
 
         if self.background_tasks:
             for task in self.background_tasks:
                 task.cancel()
             try:
                 await asyncio.wait_for(
-                    asyncio.gather(*self.background_tasks, return_exceptions=True), timeout=5.0
+                    asyncio.gather(*self.background_tasks, return_exceptions=True),
+                    timeout=5.0,
                 )
             except Exception:
                 self.logger.log_event(
-                    "system", "warning", {"message": "Background tasks shutdown timeout"}
+                    "system",
+                    "warning",
+                    {"message": "Background tasks shutdown timeout"},
                 )
         self.background_tasks = []
 
@@ -887,8 +976,12 @@ class CyanideServer:
             server.close()
             await asyncio.wait_for(server.wait_closed(), timeout=5.0)
         except Exception as e:
-            if name != "Metrics":  # Metrics usually closes fast, ignore its errors in stop
-                self.logger.log_event("system", "error", {"message": f"{name} shutdown error: {e}"})
+            if (
+                name != "Metrics"
+            ):  # Metrics usually closes fast, ignore its errors in stop
+                self.logger.log_event(
+                    "system", "error", {"message": f"{name} shutdown error: {e}"}
+                )
 
         async_logger = getattr(self, "async_logger", None)
         if async_logger:
@@ -901,14 +994,18 @@ class CyanideServer:
     async def _stats_logging_loop(self):
         """Periodically log statistics to cyanide-stats.json."""
         self.logger.log_event(
-            "system", "service_started", {"service": "stats_loop", "interval_seconds": 60}
+            "system",
+            "service_started",
+            {"service": "stats_loop", "interval_seconds": 60},
         )
         while True:
             try:
                 stats_data = self.stats.get_stats()
                 self.logger.log_event("system", "stats", stats_data)
             except Exception as e:
-                self.logger.log_event("system", "error", {"message": f"Stats Logging Error: {e}"})
+                self.logger.log_event(
+                    "system", "error", {"message": f"Stats Logging Error: {e}"}
+                )
 
             await asyncio.sleep(60)
 
@@ -922,7 +1019,9 @@ class CyanideServer:
         manager = CleanupManager(self.config, logger=self.logger)
 
         if not manager.enabled:
-            self.logger.log_event("system", "cleanup_status", {"message": "Cleanup: Disabled"})
+            self.logger.log_event(
+                "system", "cleanup_status", {"message": "Cleanup: Disabled"}
+            )
             return
 
         self.logger.log_event(
@@ -956,7 +1055,9 @@ class CyanideServer:
                         },
                     )
             except Exception as e:
-                self.logger.log_event("system", "cleanup_error", {"message": f"Cleanup Error: {e}"})
+                self.logger.log_event(
+                    "system", "cleanup_error", {"message": f"Cleanup Error: {e}"}
+                )
 
             await asyncio.sleep(manager.interval)
 
@@ -996,7 +1097,9 @@ class SSHServerFactory(asyncssh.SSHServer):
             return
 
         session_id = "conn_" + self.conn_id
-        self.honeypot.services.session.register_session(self.src_ip, session_id=session_id)
+        self.honeypot.services.session.register_session(
+            self.src_ip, session_id=session_id
+        )
         self.fs = self.honeypot.get_filesystem(
             session_id=session_id, src_ip=self.src_ip, username=self.username
         )
@@ -1005,7 +1108,9 @@ class SSHServerFactory(asyncssh.SSHServer):
 
         # Trigger GeoIP lookup (background task)
         self._background_tasks.add(
-            asyncio.create_task(self.honeypot.services.analytics.geoip.lookup(self.src_ip))
+            asyncio.create_task(
+                self.honeypot.services.analytics.geoip.lookup(self.src_ip)
+            )
         )
 
     def _extract_algorithm_name(self, obj):
@@ -1024,7 +1129,9 @@ class SSHServerFactory(asyncssh.SSHServer):
 
             def _capturing_set_extra_info(c, **kwargs):
                 if "send_cipher" in kwargs and self._captured_kex_alg is None:
-                    self._captured_kex_alg = self._extract_algorithm_name(getattr(c, "_kex", None))
+                    self._captured_kex_alg = self._extract_algorithm_name(
+                        getattr(c, "_kex", None)
+                    )
                     self._captured_host_key_alg = self._extract_algorithm_name(
                         getattr(c, "_server_host_key", None)
                     )
@@ -1045,12 +1152,17 @@ class SSHServerFactory(asyncssh.SSHServer):
 
             # Register for mirroring immediately
             self.honeypot.logger.register_session_log(
-                session_id, log_dir / "audit.json", log_dir / "ml_analysis.json", src_ip=self.src_ip
+                session_id,
+                log_dir / "audit.json",
+                log_dir / "ml_analysis.json",
+                src_ip=self.src_ip,
             )
         except Exception as e:
             # Fallback: connection continues but without session-specific audit mirroring
             logging.error(f"Failed to initialize session log directory: {e}")
-            task = asyncio.create_task(self.honeypot.services.analytics.log_geoip(self.src_ip))
+            task = asyncio.create_task(
+                self.honeypot.services.analytics.log_geoip(self.src_ip)
+            )
             self._background_tasks.add(task)
             task.add_done_callback(self._background_tasks.discard)
 
@@ -1081,7 +1193,9 @@ class SSHServerFactory(asyncssh.SSHServer):
         mac = conn.get_extra_info("send_mac")
         compression = conn.get_extra_info("send_compression")
 
-        fp_str = ",".join([str(v or "") for v in [kex_alg, host_key_alg, cipher, mac, compression]])
+        fp_str = ",".join(
+            [str(v or "") for v in [kex_alg, host_key_alg, cipher, mac, compression]]
+        )
         # MD5 is used here for identification (fingerprinting), not for security.
         # Adding usedforsecurity=False tells tools like Bandit/Semgrep it's non-cryptographic.
         fingerprint = hashlib.md5(fp_str.encode(), usedforsecurity=False).hexdigest()
@@ -1200,7 +1314,12 @@ class SSHServerFactory(asyncssh.SSHServer):
         self.honeypot.logger.log_event(
             "conn_" + self.conn_id,
             "auth.publickey",
-            {"username": username, "fingerprint": fingerprint, "key": raw_key, "success": False},
+            {
+                "username": username,
+                "fingerprint": fingerprint,
+                "key": raw_key,
+                "success": False,
+            },
         )
         return False
 
@@ -1230,7 +1349,9 @@ class SSHServerFactory(asyncssh.SSHServer):
         if success:
             # Re-fetch VFS now that we have a verified username to support user-specific persistence
             self.fs = self.honeypot.get_filesystem(
-                session_id="conn_" + self.conn_id, src_ip=self.src_ip, username=self.username
+                session_id="conn_" + self.conn_id,
+                src_ip=self.src_ip,
+                username=self.username,
             )
 
             ssh_conf = self.honeypot.config.get("ssh", {})
@@ -1242,8 +1363,15 @@ class SSHServerFactory(asyncssh.SSHServer):
 
     # Function 63: Performs operations related to session requested.
     def session_requested(self):
-        logging.debug(f"session_requested for {self.src_ip}")
-        sess = SSHSession(self.honeypot, self.fs, self.src_ip, self.src_port, self.conn_id)
+        logging.debug(f"session_requested for {self.src_ip} as {self.username}")
+        sess = SSHSession(
+            self.honeypot,
+            self.fs,
+            self.src_ip,
+            self.src_port,
+            self.conn_id,
+            self.username,
+        )
         self.sessions[self.conn_id] = sess
         return sess
 
@@ -1303,7 +1431,9 @@ class SSHServerFactory(asyncssh.SSHServer):
             await self._bridge_tcpip(chan, target_host, target_port)
         except Exception as e:
             self.honeypot.logger.log_event(
-                "conn_" + self.conn_id, "forward.error", {"message": f"Forward Error: {e}"}
+                "conn_" + self.conn_id,
+                "forward.error",
+                {"message": f"Forward Error: {e}"},
             )
             chan.close()
 
@@ -1380,7 +1510,9 @@ class SSHServerFactory(asyncssh.SSHServer):
 
     async def _bridge_tcpip(self, chan, target_host, target_port):
         """Bridge the SSH channel and the target TCP connection."""
-        target_reader, target_writer = await asyncio.open_connection(target_host, target_port)
+        target_reader, target_writer = await asyncio.open_connection(
+            target_host, target_port
+        )
 
         await asyncio.gather(
             self._forward_stream(chan, target_writer, close_writer=True),
@@ -1392,8 +1524,16 @@ class SSHSession(asyncssh.SSHServerSession):
     """SSH session handler."""
 
     # Function 64: Initializes the class instance and its attributes.
-    def __init__(self, honeypot: CyanideServer, fs: FakeFilesystem, src_ip, src_port, conn_id: str):
-        logging.debug(f"SSHSession.__init__ starting for {src_ip}")
+    def __init__(
+        self,
+        honeypot: CyanideServer,
+        fs: FakeFilesystem,
+        src_ip,
+        src_port,
+        conn_id: str,
+        username: str = "root",
+    ):
+        logging.debug(f"SSHSession.__init__ starting for {src_ip} as {username}")
         self.honeypot = honeypot
         self.fs = fs
         self.src_ip = src_ip
@@ -1402,7 +1542,7 @@ class SSHSession(asyncssh.SSHServerSession):
         self.commands: List[str] = []
         self.start_time = time.time()
         self.client_version = "unknown"
-        self.username = "root"
+        self.username = username
         self.buf = ""
         self.shell: Optional[ShellEmulator] = None
         self.last_log_time = time.time()
@@ -1417,8 +1557,7 @@ class SSHSession(asyncssh.SSHServerSession):
         super().connection_made(channel)
         self.channel = channel
         conn = channel.get_connection()
-        factory = getattr(conn, "cyanide_factory", None)
-        self.username = factory.username if factory else (conn.get_extra_info("username") or "root")
+        # Ensure we have the latest username from the connection/factory
         self.client_version = conn.get_extra_info("client_version") or "unknown"
 
         self.honeypot.stats.on_connect("ssh", self.src_ip)
@@ -1541,6 +1680,7 @@ class SSHSession(asyncssh.SSHServerSession):
             logger=self.honeypot.logger,
             session_id=self.session_id,
             src_ip=self.src_ip,
+            analytics=self.honeypot.services.analytics,
         )
         return True
 
@@ -1577,7 +1717,11 @@ class SSHSession(asyncssh.SSHServerSession):
         if not data:
             return
 
-        if hasattr(self, "process") and self.process and hasattr(self.process, "stdout"):
+        if (
+            hasattr(self, "process")
+            and self.process
+            and hasattr(self.process, "stdout")
+        ):
             if isinstance(data, bytes):
                 data = data.decode("utf-8", "ignore")
             self.process.stdout.write(data)
@@ -1666,7 +1810,9 @@ class SSHSession(asyncssh.SSHServerSession):
             self.keystrokes.append(now)
 
             rng = secrets.SystemRandom()
-            delay = rng.uniform(0.5, 1.5) if rng.random() < 0.1 else rng.uniform(0.02, 0.15)
+            delay = (
+                rng.uniform(0.5, 1.5) if rng.random() < 0.1 else rng.uniform(0.02, 0.15)
+            )
             await asyncio.sleep(delay)
 
             self.bytes_in += len(data)
@@ -1715,7 +1861,8 @@ class SSHSession(asyncssh.SSHServerSession):
 
         if len(self.keystrokes) > 1:
             delays = [
-                self.keystrokes[i] - self.keystrokes[i - 1] for i in range(1, len(self.keystrokes))
+                self.keystrokes[i] - self.keystrokes[i - 1]
+                for i in range(1, len(self.keystrokes))
             ]
 
             if delays:
@@ -1757,9 +1904,7 @@ class SSHSession(asyncssh.SSHServerSession):
         import re
 
         ipv4_regex = r"\b(?:\d{1,3}\.){3}\d{1,3}\b"
-        urls_regex = (
-            r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
-        )
+        urls_regex = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
 
         iocs = list(set(re.findall(ipv4_regex, cmd) + re.findall(urls_regex, cmd)))
         if iocs:
@@ -1800,12 +1945,17 @@ class SSHSession(asyncssh.SSHServerSession):
             # We must not re-raise SystemExit to prevent a malicious user from
             # crashing the server with a command like "mkdir --help" or argparse usage.
             rc = se.code if isinstance(se.code, int) else 2
-            stdout, stderr = "", f"{cmd.split()[0] if cmd else 'shell'}: argument error\n"
+            stdout, stderr = (
+                "",
+                f"{cmd.split()[0] if cmd else 'shell'}: argument error\n",
+            )
 
         if rc == 127:
             self.honeypot.stats.on_command_not_found(cmd)
             self.honeypot.logger.log_event(
-                self.session_id, "command_not_found", {"src_ip": self.src_ip, "cmd": cmd}
+                self.session_id,
+                "command_not_found",
+                {"src_ip": self.src_ip, "cmd": cmd},
             )
 
         response = stdout + stderr
@@ -1863,7 +2013,9 @@ class SSHSession(asyncssh.SSHServerSession):
 
             shell = ShellEmulator(
                 self.fs
-                or self.honeypot.get_filesystem(self.session_id, self.src_ip, self.username),
+                or self.honeypot.get_filesystem(
+                    self.session_id, self.src_ip, self.username
+                ),
                 self.username,
                 quarantine_callback=q_hook,
                 config=self.honeypot.config,
@@ -1907,17 +2059,25 @@ class SSHSession(asyncssh.SSHServerSession):
     def _write_to_process(self, stdout, stderr, rc):
         if not self.process:
             return
-        stdout_str = stdout.decode("utf-8", "ignore") if isinstance(stdout, bytes) else stdout
+        stdout_str = (
+            stdout.decode("utf-8", "ignore") if isinstance(stdout, bytes) else stdout
+        )
         self.process.stdout.write(stdout_str)
         if stderr:
-            stderr_str = stderr.decode("utf-8", "ignore") if isinstance(stderr, bytes) else stderr
+            stderr_str = (
+                stderr.decode("utf-8", "ignore")
+                if isinstance(stderr, bytes)
+                else stderr
+            )
             self.process.stderr.write(stderr_str)
         self.process.exit(rc)
 
     def _write_to_channel(self, stdout, stderr, rc):
         self.channel.write(stdout.encode() if isinstance(stdout, str) else stdout)
         if stderr:
-            self.channel.write_stderr(stderr.encode() if isinstance(stderr, str) else stderr)
+            self.channel.write_stderr(
+                stderr.encode() if isinstance(stderr, str) else stderr
+            )
         self.channel.write_eof()
         self.channel.exit(rc)
         self.channel.close()

@@ -9,7 +9,9 @@ from cyanide.vfs.rsync import RsyncHandler
 @pytest.fixture
 def mock_session():
     session = MagicMock()
-    session.honeypot.config = {"ssh": {"rsync": {"enabled": True, "allow_upload": True}}}
+    session.honeypot.config = {
+        "ssh": {"rsync": {"enabled": True, "allow_upload": True}}
+    }
     session.src_ip = "127.0.0.1"
     session.username = "root"
     session.conn_id = "test_conn"
@@ -56,7 +58,9 @@ async def test_rsync_push_upload_disabled(mock_session):
     mock_session.channel.read.side_effect = [struct.pack("<i", 31), b"\x00"]
     rc = await handler.handle("rsync --server . dest")
     assert rc == 13
-    mock_session.honeypot.logger.log_event.assert_any_call("conn_test_conn", "rsync_denied", ANY)
+    mock_session.honeypot.logger.log_event.assert_any_call(
+        "conn_test_conn", "rsync_denied", ANY
+    )
 
 
 @pytest.mark.asyncio
@@ -75,7 +79,9 @@ async def test_rsync_file_list_parsing(mock_session):
     ]
     rc = await handler.handle("rsync --server . dest")
     assert rc == 13
-    mock_session.honeypot.logger.log_event.assert_any_call("conn_test_conn", "rsync_filelist", ANY)
+    mock_session.honeypot.logger.log_event.assert_any_call(
+        "conn_test_conn", "rsync_filelist", ANY
+    )
 
 
 @pytest.mark.asyncio

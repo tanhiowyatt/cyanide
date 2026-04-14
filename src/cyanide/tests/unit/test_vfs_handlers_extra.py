@@ -66,10 +66,14 @@ async def test_rsync_handle_push_error(mock_session):
     handler = RsyncHandler(mock_session)
     handler._write = MagicMock()
     handler._read_int = AsyncMock(return_value=31)
-    with patch.object(RsyncHandler, "_read_file_list", side_effect=ValueError("list error")):
+    with patch.object(
+        RsyncHandler, "_read_file_list", side_effect=ValueError("list error")
+    ):
         result = await handler._handle_push("/tmp")
         assert result == 13
-        handler.honeypot.logger.log_event.assert_any_call("conn_test_id", "rsync_error", ANY)
+        handler.honeypot.logger.log_event.assert_any_call(
+            "conn_test_id", "rsync_error", ANY
+        )
 
 
 @pytest.mark.asyncio

@@ -17,7 +17,10 @@ class CyanideLogger:
         except Exception as e:
             import sys
 
-            print(f"WARNING: Could not create log directory {self.log_dir}: {e}", file=sys.stderr)
+            print(
+                f"WARNING: Could not create log directory {self.log_dir}: {e}",
+                file=sys.stderr,
+            )
 
         self.output_config = self.config.get("output", {})
         self.logging_config = self.config.get("logging", {})
@@ -43,7 +46,10 @@ class CyanideLogger:
         except Exception as e:
             import sys
 
-            print(f"ERROR: Failed to prepare ML log at {self.ml_log_path}: {e}", file=sys.stderr)
+            print(
+                f"ERROR: Failed to prepare ML log at {self.ml_log_path}: {e}",
+                file=sys.stderr,
+            )
 
         self.ml_log = self._setup_logger("cyanide_ml", self.ml_log_path)
 
@@ -52,7 +58,11 @@ class CyanideLogger:
         self.session_logs: dict[str, dict[str, Path]] = {}
 
     def register_session_log(
-        self, session_id: str, jsonl_path: Path, ml_json_path: Path, src_ip: Optional[str] = None
+        self,
+        session_id: str,
+        jsonl_path: Path,
+        ml_json_path: Path,
+        src_ip: Optional[str] = None,
     ):
         """Register a session's log paths for event mirroring."""
         self.session_logs[session_id] = {
@@ -93,7 +103,9 @@ class CyanideLogger:
                 continue
 
             if plugin_name not in VALID_PLUGINS:
-                logging.warning(f"Prevented loading of untrusted output plugin: {plugin_name}")
+                logging.warning(
+                    f"Prevented loading of untrusted output plugin: {plugin_name}"
+                )
                 continue
 
             try:
@@ -296,7 +308,8 @@ class CyanideLogger:
             import sys
 
             print(
-                f"ERROR: CyanideLogger failed to serialize event {event_type}: {e}", file=sys.stderr
+                f"ERROR: CyanideLogger failed to serialize event {event_type}: {e}",
+                file=sys.stderr,
             )
             return
         if self.async_logger:

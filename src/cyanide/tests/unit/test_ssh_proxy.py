@@ -16,7 +16,9 @@ def mock_fs():
 
 @pytest.fixture
 def ssh_server(mock_fs):
-    return CyanideSSHServer(pool=None, target_host="1.2.3.4", target_port=22, fs=mock_fs)
+    return CyanideSSHServer(
+        pool=None, target_host="1.2.3.4", target_port=22, fs=mock_fs
+    )
 
 
 def test_ssh_server_connection_made(ssh_server):
@@ -69,7 +71,9 @@ async def test_proxy_session_get_target(proxy_session):
     assert port == 22
 
     proxy_session.pool = AsyncMock()
-    proxy_session.pool.reserve_target.return_value = MagicMock(host="10.0.0.1", port=2222)
+    proxy_session.pool.reserve_target.return_value = MagicMock(
+        host="10.0.0.1", port=2222
+    )
     host, port = await proxy_session._get_target()
     assert host == "10.0.0.1"
     assert port == 2222
@@ -90,7 +94,9 @@ async def test_proxy_session_connection_lost(proxy_session):
 
 def test_proxy_client_channel_connection_lost():
     peer_chan = MagicMock()
-    client_chan = ProxyClientChannel(session_id="s1", src_ip="5.6.7.8", peer_channel=peer_chan)
+    client_chan = ProxyClientChannel(
+        session_id="s1", src_ip="5.6.7.8", peer_channel=peer_chan
+    )
     client_chan.send_task = MagicMock()
     client_chan.connection_lost(None)
     assert client_chan.send_task.cancel.called

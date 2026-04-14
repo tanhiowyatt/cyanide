@@ -21,7 +21,11 @@ def mock_chan():
     conn.cyanide_factory.conn_id = "test_sftp_123"
     conn.cyanide_factory.src_ip = "1.2.3.4"
     conn.cyanide_factory.honeypot.config = {
-        "ssh": {"allow_upload": True, "allow_download": True, "max_total_upload_mb_per_session": 1}
+        "ssh": {
+            "allow_upload": True,
+            "allow_download": True,
+            "max_total_upload_mb_per_session": 1,
+        }
     }
     conn.cyanide_factory.honeypot.logger = MagicMock()
     return chan
@@ -119,7 +123,9 @@ async def test_sftp_upload_limit_exceeded(sftp_handler, mock_chan):
     handle = await sftp_handler.open(
         "/test", asyncssh.FXF_WRITE | asyncssh.FXF_CREAT, asyncssh.SFTPAttrs()
     )
-    with pytest.raises(asyncssh.SFTPPermissionDenied, match="Session upload limit exceeded"):
+    with pytest.raises(
+        asyncssh.SFTPPermissionDenied, match="Session upload limit exceeded"
+    ):
         await sftp_handler.write(handle, 0, b"some data")
 
 
@@ -169,7 +175,9 @@ async def test_sftp_handler_fstat_fsetstat(sftp_handler, mock_chan):
     """Test fstat and fsetstat on handles."""
     fs = mock_chan.get_connection().cyanide_factory.fs
     fs.mkfile("/test.txt", content="data")
-    handle = await sftp_handler.open("/test.txt", asyncssh.FXF_READ, asyncssh.SFTPAttrs())
+    handle = await sftp_handler.open(
+        "/test.txt", asyncssh.FXF_READ, asyncssh.SFTPAttrs()
+    )
 
     attrs = await sftp_handler.fstat(handle)
     assert attrs.size == 4
@@ -182,9 +190,13 @@ async def test_sftp_handler_write_read_only(sftp_handler, mock_chan):
     """Test write on a handle opened for reading."""
     fs = mock_chan.get_connection().cyanide_factory.fs
     fs.mkfile("/test.txt", content="data")
-    handle = await sftp_handler.open("/test.txt", asyncssh.FXF_READ, asyncssh.SFTPAttrs())
+    handle = await sftp_handler.open(
+        "/test.txt", asyncssh.FXF_READ, asyncssh.SFTPAttrs()
+    )
 
-    with pytest.raises(asyncssh.SFTPPermissionDenied, match="File not open for writing"):
+    with pytest.raises(
+        asyncssh.SFTPPermissionDenied, match="File not open for writing"
+    ):
         await sftp_handler.write(handle, 0, b"more data")
 
 

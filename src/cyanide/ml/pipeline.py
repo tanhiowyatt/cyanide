@@ -15,7 +15,9 @@ class CyanideML:
 
     def __init__(self, model_dir="assets/models"):
         self.model_dir = Path(model_dir)
-        self.anomaly_detector = CommandAutoencoder.load(self.model_dir / "cyanideML.pkl")
+        self.anomaly_detector = CommandAutoencoder.load(
+            self.model_dir / "cyanideML.pkl"
+        )
 
         self.kb = KnowledgeBase()
         self.kb.load(self.model_dir / "knowledge_base.pkl")
@@ -31,8 +33,10 @@ class CyanideML:
         rule_result = self.rule_engine.evaluate(command)
         context_results = self._get_context_results(command)
 
-        is_anomaly, verdict, final_score, source, context_triggered = self._fusion_analysis(
-            is_anomaly_ml, float(score), rule_result, context_results
+        is_anomaly, verdict, final_score, source, context_triggered = (
+            self._fusion_analysis(
+                is_anomaly_ml, float(score), rule_result, context_results
+            )
         )
 
         classification, severity = self._get_classification(
@@ -63,7 +67,11 @@ class CyanideML:
         }
 
     def _fusion_analysis(
-        self, is_anomaly_ml: bool, score: float, rule_result: dict, context_results: dict
+        self,
+        is_anomaly_ml: bool,
+        score: float,
+        rule_result: dict,
+        context_results: dict,
     ) -> tuple[bool, str, float, str, bool]:
         """Combine ML, rules, and context detections into a final verdict."""
         verdict = "anomaly" if is_anomaly_ml else "clean"
@@ -99,7 +107,11 @@ class CyanideML:
         return is_anomaly_ml, verdict, final_score, source, context_triggered
 
     def _get_classification(
-        self, command: str, is_anomaly: bool, rule_result: dict, context_result_path: dict
+        self,
+        command: str,
+        is_anomaly: bool,
+        rule_result: dict,
+        context_result_path: dict,
     ) -> tuple[Optional[dict], str]:
         """Determine final classification and severity for anomalous commands."""
         if not is_anomaly:
@@ -120,7 +132,9 @@ class CyanideML:
             )
 
         # Priority 2: Context-based enrichment
-        elif context_result_path.get("matched") and not classification.get("classified"):
+        elif context_result_path.get("matched") and not classification.get(
+            "classified"
+        ):
             classification = self._format_kb_entry(
                 context_result_path["techniques"][0],
                 0.8,

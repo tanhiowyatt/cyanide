@@ -18,6 +18,5 @@ def test_setup_telemetry_enabled():
         patch("opentelemetry.trace.set_tracer_provider"),
         patch("opentelemetry.trace.get_tracer"),
     ):
-
         tracer = setup_telemetry("service", {"enabled": True}, "1.0")
         assert tracer is not None

@@ -8,7 +8,7 @@ class MockCommand(Command):
     """Mock command for testing shell orchestration."""
 
     def __init__(self, emulator):
-        self.emulator = emulator
+        super().__init__(emulator)
 
     async def execute(self, args, input_data=""):
         if args and args[0] == "fail":

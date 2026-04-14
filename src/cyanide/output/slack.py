@@ -25,15 +25,25 @@ class Plugin(OutputPlugin):
 
         session = event.get("session", "unknown")
         eventid = event.get("eventid", "unknown")
-        data = {k: v for k, v in event.items() if k not in ["timestamp", "session", "eventid"]}
+        data = {
+            k: v
+            for k, v in event.items()
+            if k not in ["timestamp", "session", "eventid"]
+        }
 
         text = f"*{self.username} Event*: `{eventid}`\n*Session*: `{session}`\n*Details*: ```{json.dumps(data, indent=2)}```"
 
-        payload = {"username": self.username, "icon_emoji": self.icon_emoji, "text": text}
+        payload = {
+            "username": self.username,
+            "icon_emoji": self.icon_emoji,
+            "text": text,
+        }
 
         try:
             resp = requests.post(self.webhook_url, json=payload, timeout=5)
             if resp.status_code != 200:
-                logging.error(f"[Slack] Write error: status={resp.status_code} text={resp.text}")
+                logging.error(
+                    f"[Slack] Write error: status={resp.status_code} text={resp.text}"
+                )
         except Exception as e:
             logging.error(f"[Slack] Delivery failure: {e}")

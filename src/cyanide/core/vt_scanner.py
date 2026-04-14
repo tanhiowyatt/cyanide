@@ -44,7 +44,9 @@ class VTScanner:
                         return self._parse_report(data, result)
 
                     if resp.status == 404:
-                        return await self._upload_file(session, content, filename, result)
+                        return await self._upload_file(
+                            session, content, filename, result
+                        )
 
                     return self._handle_error_status(resp.status, result)
 
@@ -80,13 +82,17 @@ class VTScanner:
 
         return result
 
-    async def _upload_file(self, session, content: bytes, filename: str, result: dict) -> dict:
+    async def _upload_file(
+        self, session, content: bytes, filename: str, result: dict
+    ) -> dict:
         result["status"] = "uploaded_queued"
         upload_url = f"{self.base_url}/files"
         form = aiohttp.FormData()
         form.add_field("file", content, filename=filename)
 
-        async with session.post(upload_url, headers=self.headers, data=form) as upload_resp:
+        async with session.post(
+            upload_url, headers=self.headers, data=form
+        ) as upload_resp:
             if upload_resp.status == 200:
                 upload_data = await upload_resp.json()
                 analysis_id = upload_data.get("data", {}).get("id")

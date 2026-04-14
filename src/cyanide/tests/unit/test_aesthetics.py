@@ -11,9 +11,7 @@ def test_get_logo_raw(tmp_path):
     with patch("cyanide.core.aesthetics.Path") as mock_path:
         logo_file = tmp_path / "logo.txt"
         # Mock Path(__file__).resolve().parent.parent / "assets/branding/logo.txt"
-        mock_path.return_value.resolve.return_value.parent.parent.__truediv__.return_value = (
-            logo_file
-        )
+        mock_path.return_value.resolve.return_value.parent.parent.__truediv__.return_value = logo_file
 
         assert _get_logo_raw() == []
         logo_file.write_text("LOGO\nTEXT")

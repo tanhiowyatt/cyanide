@@ -46,7 +46,9 @@ class SimplePool:
         self.failed_targets[(host, port)] = time.time()
         if self.logger:
             self.logger.log_event(
-                "system", "pool_failure", {"backend": "simple", "host": host, "port": port}
+                "system",
+                "pool_failure",
+                {"backend": "simple", "host": host, "port": port},
             )
 
     async def start(self):
@@ -75,7 +77,9 @@ class SimplePool:
         if not available_targets:
             if self.logger:
                 self.logger.log_event(
-                    "system", "pool_fallback", {"backend": "simple", "reason": "all_targets_failed"}
+                    "system",
+                    "pool_fallback",
+                    {"backend": "simple", "reason": "all_targets_failed"},
                 )
             available_targets = self.targets
 
@@ -129,7 +133,9 @@ class VMPool:
                 except Exception as e:
                     if self.logger:
                         self.logger.log_event(
-                            "system", "pool_error", {"backend": "libvirt", "error": str(e)}
+                            "system",
+                            "pool_error",
+                            {"backend": "libvirt", "error": str(e)},
                         )
                     logging.getLogger(VM_POOL_LOGGER_NAME).error(
                         f"Failed to load LibvirtPool: {e}. Falling back to SimplePool."

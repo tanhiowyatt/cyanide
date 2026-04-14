@@ -47,7 +47,11 @@ class SessionManager:
             self.logger.log_event(
                 "system",
                 "ip_banned",
-                {"src_ip": ip, "ban_duration": self.ban_duration, "reason": "rate_limit_exceeded"},
+                {
+                    "src_ip": ip,
+                    "ban_duration": self.ban_duration,
+                    "reason": "rate_limit_exceeded",
+                },
             )
             return False, "rate_limit_exceeded (banned)"
 

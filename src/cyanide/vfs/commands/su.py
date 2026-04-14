@@ -6,7 +6,9 @@ from .base import Command
 class SuCommand(Command):
     """Switch user ID or become superuser."""
 
-    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+    async def execute(
+        self, args: list[str], input_data: str = ""
+    ) -> tuple[str, str, int]:
         await asyncio.sleep(0)
         target_user = "root"
         login_shell = False

@@ -46,7 +46,9 @@ class CommandAutoencoder(nn.Module):
             nn.Sigmoid(),
         )
 
-        self.device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+        self.device = torch.device(
+            "mps" if torch.backends.mps.is_available() else "cpu"
+        )
         if torch.cuda.is_available():
             self.device = torch.device("cuda")
         self.to(self.device)
@@ -110,7 +112,9 @@ class CommandAutoencoder(nn.Module):
         try:
             # SECURE: weights_only=True (S5334) preferred for security.
             # nosemgrep: trailofbits.python.pickles-in-pytorch.pickles-in-pytorch
-            checkpoint = torch.load(path, map_location=torch.device("cpu"), weights_only=True)
+            checkpoint = torch.load(
+                path, map_location=torch.device("cpu"), weights_only=True
+            )
 
             model = CommandAutoencoder(
                 input_dim=checkpoint.get("input_dim", 512),

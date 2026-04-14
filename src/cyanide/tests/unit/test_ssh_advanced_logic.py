@@ -114,11 +114,9 @@ async def test_server_get_host_keys_generation(tmp_path):
         patch("cyanide.services.quarantine.QuarantineService"),
         patch("cyanide.services.analytics.AnalyticsService"),
     ):
-
         server = CyanideServer(conf)
 
         with patch("asyncssh.generate_private_key") as mock_gen:
-
             with patch("pathlib.Path.chmod") as mock_chmod:
                 mock_key = MagicMock()
                 mock_gen.return_value = mock_key
@@ -149,7 +147,6 @@ async def test_server_rekey_limit_parsing(tmp_path):
         patch("cyanide.services.analytics.AnalyticsService"),
         patch("cyanide.core.server.VMPool") as mock_vm_pool_cls,
     ):
-
         mock_vm_pool_cls.return_value.start = MagicMock()
         server = CyanideServer(conf)
 

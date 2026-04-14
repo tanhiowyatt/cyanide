@@ -57,7 +57,9 @@ async def test_quarantine_save_file_success(quarantine_service, mock_logger):
 
 
 @pytest.mark.asyncio
-async def test_quarantine_quota_reached(quarantine_service, mock_logger, quarantine_dir):
+async def test_quarantine_quota_reached(
+    quarantine_service, mock_logger, quarantine_dir
+):
     """Test that files are rejected when quota is reached."""
     dummy_file = quarantine_dir / "large_file"
     with open(dummy_file, "wb") as f:
@@ -66,7 +68,9 @@ async def test_quarantine_quota_reached(quarantine_service, mock_logger, quarant
     filename = "new_file.sh"
     content = b"echo 'too big'"
 
-    path = await quarantine_service.save_file(filename, content, "sess_quota", "2.2.2.2")
+    path = await quarantine_service.save_file(
+        filename, content, "sess_quota", "2.2.2.2"
+    )
 
     assert path is None
     mock_logger.log_event.assert_any_call(
@@ -151,7 +155,9 @@ async def test_quarantine_save_file_exception(quarantine_service, mock_logger):
 
         assert path is None
         mock_logger.log_event.assert_any_call(
-            "sess_err", "error", {"message": "Error saving quarantine file: Permission denied"}
+            "sess_err",
+            "error",
+            {"message": "Error saving quarantine file: Permission denied"},
         )
 
 
@@ -164,7 +170,9 @@ async def test_quarantine_scan_error_log(quarantine_service, mock_logger):
 
     quarantine_service.set_scanner(mock_scanner)
 
-    await quarantine_service._scan_and_log("test.sh", b"data", "sess_scan_err", "4.4.4.4")
+    await quarantine_service._scan_and_log(
+        "test.sh", b"data", "sess_scan_err", "4.4.4.4"
+    )
 
     mock_logger.log_event.assert_any_call(
         "sess_scan_err",

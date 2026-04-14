@@ -7,7 +7,12 @@ from cyanide.core.cleanup import CleanupManager
 def test_cleanup_initialization():
     """Test that cleanup manager initializes with config."""
     config = {
-        "cleanup": {"enabled": True, "interval": 3600, "retention_days": 7, "paths": "/tmp/logs"}
+        "cleanup": {
+            "enabled": True,
+            "interval": 3600,
+            "retention_days": 7,
+            "paths": "/tmp/logs",
+        }
     }
     mgr = CleanupManager(config)
     assert mgr.enabled is True

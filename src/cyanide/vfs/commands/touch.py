@@ -4,8 +4,9 @@ from .base import Command
 
 
 class TouchCommand(Command):
-
-    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+    async def execute(
+        self, args: list[str], input_data: str = ""
+    ) -> tuple[str, str, int]:
         await asyncio.sleep(0)
         if not args:
             return "", "touch: missing file operand\n", 1
@@ -16,6 +17,10 @@ class TouchCommand(Command):
 
             path = self.emulator.resolve_path(arg)
             if self.fs.mkfile(path, content="", owner=self.username) is None:
-                return "", f"touch: cannot touch '{arg}': No such file or directory\n", 1
+                return (
+                    "",
+                    f"touch: cannot touch '{arg}': No such file or directory\n",
+                    1,
+                )
 
         return "", "", 0

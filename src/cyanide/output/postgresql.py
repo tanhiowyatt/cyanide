@@ -25,7 +25,9 @@ class Plugin(OutputPlugin):
         import re
 
         if not re.match(r"^\w+$", self.table):
-            raise ValueError(f"Invalid table name (must be alphanumeric/underscore): {self.table}")
+            raise ValueError(
+                f"Invalid table name (must be alphanumeric/underscore): {self.table}"
+            )
 
         self.conn: Optional[psycopg.Connection] = None
         self._connect()
@@ -60,7 +62,11 @@ class Plugin(OutputPlugin):
         timestamp = event.get("timestamp")
         session = event.get("session")
         eventid = event.get("eventid")
-        data = {k: v for k, v in event.items() if k not in ["timestamp", "session", "eventid"]}
+        data = {
+            k: v
+            for k, v in event.items()
+            if k not in ["timestamp", "session", "eventid"]
+        }
 
         try:
             with self.conn.cursor() as cursor:

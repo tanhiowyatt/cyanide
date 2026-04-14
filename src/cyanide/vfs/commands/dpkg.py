@@ -4,10 +4,12 @@ from .base import Command
 
 
 class DpkgCommand(Command):
-    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+    async def execute(
+        self, args: list[str], input_data: str = ""
+    ) -> tuple[str, str, int]:
         await asyncio.sleep(0)
         """Execute the dpkg command."""
-        if not self._is_dpkg_os():
+        if not self.is_pkg_mgr_supported("dpkg"):
             return "", "bash: dpkg: command not found\n", 127
 
         if not args:
@@ -23,11 +25,6 @@ class DpkgCommand(Command):
             return self._handle_list()
 
         return "", f"dpkg: error: unknown option {action}\n", 2
-
-    def _is_dpkg_os(self) -> bool:
-        """Check if the current OS profile supports dpkg."""
-        os_profile = getattr(self.fs, "os_profile", "debian").lower()
-        return os_profile in ["debian", "debian", "kali", "custom"]
 
     def _handle_install(self, targets: list[str]) -> tuple[str, str, int]:
         """Handle package installation."""

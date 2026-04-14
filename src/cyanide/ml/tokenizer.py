@@ -66,6 +66,8 @@ class CharacterLevelTokenizer:
         with open(path, "r") as f:
             data = json.load(f)
             self.char_map = data["char_map"]
-            self.index_map = {int(k) if k.isdigit() else k: v for k, v in data["index_map"].items()}
+            self.index_map = {
+                int(k) if k.isdigit() else k: v for k, v in data["index_map"].items()
+            }
             self.max_length = data["max_length"]
             self.vocab_size = len(self.char_map)

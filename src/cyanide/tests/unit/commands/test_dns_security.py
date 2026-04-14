@@ -20,7 +20,10 @@ async def test_validate_url_checks_all_ips(mock_emulator):
     cmd = CurlCommand(mock_emulator)
 
     with patch("socket.getaddrinfo") as mock_dns:
-        mock_dns.return_value = [(0, 0, 0, "", ("8.8.8.8", 80)), (0, 0, 0, "", ("127.0.0.1", 80))]
+        mock_dns.return_value = [
+            (0, 0, 0, "", ("8.8.8.8", 80)),
+            (0, 0, 0, "", ("127.0.0.1", 80)),
+        ]
 
         is_valid, error, ip = cmd.validate_url("http://mixed-ips.com")
         assert not is_valid

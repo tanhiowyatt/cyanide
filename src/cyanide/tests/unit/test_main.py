@@ -8,7 +8,10 @@ from cyanide.main import async_main, is_docker, main
 def test_is_docker():
     with patch("os.path.exists", return_value=True):
         assert is_docker()
-    with patch("os.path.exists", return_value=False), patch("os.environ.get", return_value=None):
+    with (
+        patch("os.path.exists", return_value=False),
+        patch("os.environ.get", return_value=None),
+    ):
         assert not is_docker()
 
 
@@ -38,7 +41,6 @@ async def test_async_main():
         patch("cyanide.main.is_docker", return_value=False),
         patch("cyanide.main.CyanideServer") as mock_server,
     ):
-
         from unittest.mock import AsyncMock
 
         mock_server.return_value.start = AsyncMock()

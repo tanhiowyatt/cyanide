@@ -4,13 +4,19 @@ from .base import Command
 
 
 class YumCommand(Command):
-    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+    async def execute(
+        self, args: list[str], input_data: str = ""
+    ) -> tuple[str, str, int]:
         await asyncio.sleep(0)
-        if not self._is_yummy_os():
+        if not self.is_pkg_mgr_supported("yum"):
             return "", f"bash: {args[0] if args else 'yum'}: command not found\n", 127
 
         if not args:
-            return ("Loaded plugins: fastestmirror\n" + "You need to give some command\n"), "", 1
+            return (
+                ("Loaded plugins: fastestmirror\n" + "You need to give some command\n"),
+                "",
+                1,
+            )
 
         subcommand = args[0]
         packages = args[1:]
@@ -22,12 +28,11 @@ class YumCommand(Command):
         elif subcommand == "search":
             return self._handle_search(packages)
 
-        return "Loaded plugins: fastestmirror\nNo such command: " + subcommand + ".\n", "", 1
-
-    def _is_yummy_os(self) -> bool:
-        """Check if the current OS profile supports yum/dnf."""
-        os_profile = getattr(self.fs, "os_profile", "centos").lower()
-        return os_profile in ["centos", "rhel", "fedora", "rocky", "almalinux", "custom"]
+        return (
+            "Loaded plugins: fastestmirror\nNo such command: " + subcommand + ".\n",
+            "",
+            1,
+        )
 
     def _handle_update(self) -> tuple[str, str, int]:
         """Handle update and upgrade subcommands."""
@@ -41,7 +46,9 @@ class YumCommand(Command):
             0,
         )
 
-    def _handle_install_remove(self, subcommand: str, packages: list[str]) -> tuple[str, str, int]:
+    def _handle_install_remove(
+        self, subcommand: str, packages: list[str]
+    ) -> tuple[str, str, int]:
         """Handle install, remove, and erase subcommands."""
         if not packages:
             return (
@@ -77,7 +84,9 @@ class YumCommand(Command):
         )
 
         for pkg in packages:
-            output += f"---> Package {pkg}.x86_64 0:1.0-1.el7 will be {action.lower()}\n"
+            output += (
+                f"---> Package {pkg}.x86_64 0:1.0-1.el7 will be {action.lower()}\n"
+            )
 
         output += (
             "--> Finished Dependency Resolution\n\n"

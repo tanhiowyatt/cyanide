@@ -34,7 +34,12 @@ def mock_config():
             "model_path": "model_test.pkl",
             "online_learning": False,
         },
-        "cleanup": {"enabled": True, "interval": 3600, "retention_days": 1, "paths": []},
+        "cleanup": {
+            "enabled": True,
+            "interval": 3600,
+            "retention_days": 1,
+            "paths": [],
+        },
         "virustotal": {"api_key": "test_key"},
         "metrics": {"enabled": False},
     }

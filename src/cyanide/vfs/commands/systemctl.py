@@ -9,7 +9,9 @@ class SystemctlCommand(Command):
         await asyncio.sleep(0)
         if "status" in args:
             service = (
-                args[args.index("status") + 1] if args.index("status") + 1 < len(args) else "ssh"
+                args[args.index("status") + 1]
+                if args.index("status") + 1 < len(args)
+                else "ssh"
             )
             rng = secrets.SystemRandom()
             return (

@@ -7,7 +7,10 @@ def test_rate_limiting():
     cfg = {
         "max_sessions": 100,
         "max_sessions_per_ip": 10,
-        "rate_limit": {"max_connections_per_minute": 2, "ban_duration": 1},  # short ban for testing
+        "rate_limit": {
+            "max_connections_per_minute": 2,
+            "ban_duration": 1,
+        },  # short ban for testing
     }
     from unittest.mock import MagicMock
 

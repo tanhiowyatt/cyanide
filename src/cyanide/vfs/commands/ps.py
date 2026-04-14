@@ -6,7 +6,9 @@ from .base import Command
 class PsCommand(Command):
     """Report a snapshot of the current processes."""
 
-    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+    async def execute(
+        self, args: list[str], input_data: str = ""
+    ) -> tuple[str, str, int]:
         await asyncio.sleep(0)
         """Execute the ps command.
 
@@ -23,14 +25,23 @@ class PsCommand(Command):
             processes = [
                 {"pid": 1, "tty": "?", "time": "00:00:15", "cmd": "/sbin/init"},
                 {"pid": 2, "tty": "?", "time": "00:00:00", "cmd": "[kthreadd]"},
-                {"pid": 890, "tty": "?", "time": "00:00:04", "cmd": "/usr/sbin/sshd -D"},
+                {
+                    "pid": 890,
+                    "tty": "?",
+                    "time": "00:00:04",
+                    "cmd": "/usr/sbin/sshd -D",
+                },
             ]
 
         import secrets
 
         mypid = secrets.SystemRandom().randint(10000, 32000)
-        processes.append({"pid": mypid, "tty": "pts/0", "time": "00:00:00", "cmd": "-bash"})
-        processes.append({"pid": mypid + 1, "tty": "pts/0", "time": "00:00:00", "cmd": "ps"})
+        processes.append(
+            {"pid": mypid, "tty": "pts/0", "time": "00:00:00", "cmd": "-bash"}
+        )
+        processes.append(
+            {"pid": mypid + 1, "tty": "pts/0", "time": "00:00:00", "cmd": "ps"}
+        )
 
         if "aux" in args or "a" in args or "-aux" in args:
             output = "USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND\n"

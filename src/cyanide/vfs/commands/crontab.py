@@ -1,8 +1,12 @@
+import asyncio
+import logging
 from .base import Command
 
 
 class CrontabCommand(Command):
-    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+    async def execute(
+        self, args: list[str], input_data: str = ""
+    ) -> tuple[str, str, int]:
         """Execute the crontab command."""
         cron_dir = "/var/spool/cron/crontabs"
         cron_file = f"{cron_dir}/{self.emulator.username}"
@@ -54,7 +58,11 @@ class CrontabCommand(Command):
         """Handle installing a crontab from a file."""
         files = [a for a in args if not a.startswith("-")]
         if not files:
-            return "crontab: usage error: file name must be specified for install.\n", "", 1
+            return (
+                "crontab: usage error: file name must be specified for install.\n",
+                "",
+                1,
+            )
 
         target = self.emulator.resolve_path(files[0])
         if not self.fs.exists(target):
@@ -74,11 +82,53 @@ class CrontabCommand(Command):
         if raw_line == "DONE":
             cron_dir = "/var/spool/cron/crontabs"
             cron_file = f"{cron_dir}/{self.emulator.username}"
-            content = "\n".join(self._capture_lines) + "\n" if self._capture_lines else ""
+            content = (
+                "\n".join(self._capture_lines) + "\n" if self._capture_lines else ""
+            )
             self.fs.mkfile(cron_file, content=content, owner=self.emulator.username)
+
+            # Initiate background simulation of cron jobs
+            for entry in self._capture_lines:
+                if entry and not entry.startswith("#"):
+                    asyncio.create_task(self._schedule_cron_job(entry))
+
             return "crontab: installing new crontab\n", "", 0
 
         self._capture_lines.append(line.rstrip("\n"))
         self.emulator.pending_input_callback = self._on_editor_input
         self.emulator.pending_input_prompt = "> "
         return "", "", 0
+
+    async def _schedule_cron_job(self, entry: str):
+        """Parse cron line and schedule simulated execution."""
+        parts = entry.split()
+        if len(parts) < 6:
+            return
+
+        cmd_str = " ".join(parts[5:])
+
+        # ML Analysis Check
+        if self.emulator.analytics and self.emulator.analytics.is_malicious(cmd_str):
+            if self.emulator.logger:
+                self.emulator.logger.log_event(
+                    self.emulator.session_id,
+                    "cron_simulation_blocked",
+                    {"command": cmd_str, "reason": "ML flagged as malicious"},
+                )
+            return
+
+        # Simulate delay (realistic for cron)
+        await asyncio.sleep(5)
+
+        if self.emulator.logger:
+            self.emulator.logger.log_event(
+                self.emulator.session_id, "cron_simulation_start", {"command": cmd_str}
+            )
+
+        # Basic simulation: handle redirection like echo "x" >> file
+        try:
+            # We use the shell emulator itself to execute the command!
+            # This is the most realistic way because it uses our existing VFS/Redirection logic.
+            await self.emulator.execute(cmd_str)
+        except Exception as e:
+            logging.error(f"Cron simulation failed for '{cmd_str}': {e}")

@@ -65,6 +65,9 @@ class TelnetHandler:
             bytes_out += b_out
 
             if auth_success:
+                # Re-fetch VFS now that we have a verified username
+                fs = self.server.get_filesystem(session_id, src_ip, username=username)
+
                 from cyanide.core.emulator import ShellEmulator
 
                 self.logger.log_event(
@@ -76,7 +79,11 @@ class TelnetHandler:
                     fs,
                     username,
                     quarantine_callback=lambda f, c: self.services.quarantine.save_file(
-                        f, c, session_id, src_ip, sub_dir=f"telnet_{src_ip}_{session_id}"
+                        f,
+                        c,
+                        session_id,
+                        src_ip,
+                        sub_dir=f"telnet_{src_ip}_{session_id}",
                     ),
                     config=self.config,
                     logger=self.logger,
@@ -104,10 +111,19 @@ class TelnetHandler:
             if "fs" in locals():
                 fs.save_ip_history()
             await self._cleanup_session(
-                writer, session_id, src_ip, username, start_time, commands, bytes_in, bytes_out
+                writer,
+                session_id,
+                src_ip,
+                username,
+                start_time,
+                commands,
+                bytes_in,
+                bytes_out,
             )
 
-    async def _prepare_session(self, src_ip: str, writer) -> Tuple[str, Optional[object], bool]:
+    async def _prepare_session(
+        self, src_ip: str, writer
+    ) -> Tuple[str, Optional[object], bool]:
         """Check session limits, register session, and prepare log directory."""
         await asyncio.sleep(0)
         accepted, reason = self.services.session.can_accept(src_ip)
@@ -120,7 +136,9 @@ class TelnetHandler:
                     "src_ip": src_ip,
                     "reason": reason,
                     "active_sessions": self.services.session.active_sessions,
-                    "per_ip_sessions": self.services.session.sessions_per_ip.get(src_ip, 0),
+                    "per_ip_sessions": self.services.session.sessions_per_ip.get(
+                        src_ip, 0
+                    ),
                 },
             )
             writer.close()
@@ -183,7 +201,11 @@ class TelnetHandler:
             if not raw:
                 return 0
 
-            banner = raw.replace("\\n", hostname).replace("\\l", "pts/0").replace("\n", "\r\n")
+            banner = (
+                raw.replace("\\n", hostname)
+                .replace("\\l", "pts/0")
+                .replace("\n", "\r\n")
+            )
             if not banner.endswith("\r\n"):
                 banner += "\r\n"
             writer.write(banner.encode())
@@ -192,7 +214,9 @@ class TelnetHandler:
         except Exception:
             return 0
 
-    async def _perform_auth(self, reader, writer, session_id, src_ip) -> Tuple[bool, str, int, int]:
+    async def _perform_auth(
+        self, reader, writer, session_id, src_ip
+    ) -> Tuple[bool, str, int, int]:
         """Handle login/password prompts and user validation."""
         bytes_in, bytes_out = 0, 0
         try:
@@ -215,7 +239,9 @@ class TelnetHandler:
             password = pass_data.decode().strip()
         except (asyncio.IncompleteReadError, ConnectionResetError):
             self.logger.log_event(
-                session_id, "telnet_disconnect", {"message": "Client disconnected during auth"}
+                session_id,
+                "telnet_disconnect",
+                {"message": "Client disconnected during auth"},
             )
             return False, "", bytes_in, bytes_out
 
@@ -233,7 +259,9 @@ class TelnetHandler:
             session_id, "auth_attempt", {**log_common, "password_len": len(password)}
         )
         self.logger.log_event(
-            session_id, "auth", {**log_common, "src_ip": src_ip, "password": log_password}
+            session_id,
+            "auth",
+            {**log_common, "src_ip": src_ip, "password": log_password},
         )
 
         if success:
@@ -267,7 +295,9 @@ class TelnetHandler:
 
         while True:
             try:
-                line = await asyncio.wait_for(reader.readuntil(b"\n"), timeout=self.session_timeout)
+                line = await asyncio.wait_for(
+                    reader.readuntil(b"\n"), timeout=self.session_timeout
+                )
                 bytes_in += len(line)
                 self.stats.on_traffic("in", len(line))
                 cmd = line.decode().strip()
@@ -336,7 +366,15 @@ class TelnetHandler:
         return f"{username}@server:{cwd}$ "
 
     async def _cleanup_session(
-        self, writer, session_id, src_ip, username, start_time, commands, bytes_in, bytes_out
+        self,
+        writer,
+        session_id,
+        src_ip,
+        username,
+        start_time,
+        commands,
+        bytes_in,
+        bytes_out,
     ):
         """Finalize session logging and close connection."""
         duration = time.time() - start_time

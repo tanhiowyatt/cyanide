@@ -23,7 +23,12 @@ def base_config(tmp_path):
 async def get_ssh_banner_and_handshake(host, port):
     try:
         async with asyncssh.connect(
-            host, port, username="admin", password="password", known_hosts=None, login_timeout=2
+            host,
+            port,
+            username="admin",
+            password="password",
+            known_hosts=None,
+            login_timeout=2,
         ) as conn:
             banner = conn.get_extra_info("server_version")
             return banner

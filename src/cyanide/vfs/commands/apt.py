@@ -4,10 +4,12 @@ from .base import Command
 
 
 class AptCommand(Command):
-    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+    async def execute(
+        self, args: list[str], input_data: str = ""
+    ) -> tuple[str, str, int]:
         """Execute the apt command."""
         await asyncio.sleep(0)
-        if not self._is_apt_os():
+        if not self.is_pkg_mgr_supported("apt"):
             return "", f"bash: {args[0] if args else 'apt'}: command not found\n", 127
 
         if not args:
@@ -30,11 +32,6 @@ class AptCommand(Command):
             return self._handle_search(packages)
 
         return "", f"E: Invalid operation {subcommand}\n", 100
-
-    def _is_apt_os(self) -> bool:
-        """Check if the current OS profile supports apt."""
-        os_profile = getattr(self.fs, "os_profile", "debian").lower()
-        return os_profile in ["debian", "debian", "kali", "custom"]
 
     def _handle_update(self) -> tuple[str, str, int]:
         """Handle 'apt update' command."""
@@ -61,14 +58,20 @@ class AptCommand(Command):
         )
         return output, "", 0
 
-    def _handle_install_remove(self, subcommand: str, packages: list[str]) -> tuple[str, str, int]:
+    def _handle_install_remove(
+        self, subcommand: str, packages: list[str]
+    ) -> tuple[str, str, int]:
         """Handle 'apt install' and 'apt remove' commands."""
         if not packages:
             return "", "E: No packages found\n", 100
 
         clean_pkgs = [p for p in packages if not p.startswith("-")]
         if not clean_pkgs:
-            return "0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.\n", "", 0
+            return (
+                "0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.\n",
+                "",
+                0,
+            )
 
         if subcommand == "install":
             for pkg in clean_pkgs:

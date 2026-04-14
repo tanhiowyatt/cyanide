@@ -21,7 +21,9 @@ sys.path.append(os.getcwd())
 from cyanide.vfs.engine import FakeFilesystem
 
 logging.basicConfig(
-    level=logging.INFO, format="%(message)s", handlers=[logging.StreamHandler(sys.stdout)]
+    level=logging.INFO,
+    format="%(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger("ssh_proxy")
 
@@ -83,7 +85,11 @@ class CyanideSSHServer(asyncssh.SSHServer):
         self.src_ip = peername[0] if peername else "unknown"
         logger.info(
             json.dumps(
-                {"event": "connection_new", "src_ip": self.src_ip, "session_id": self.session_id}
+                {
+                    "event": "connection_new",
+                    "src_ip": self.src_ip,
+                    "session_id": self.session_id,
+                }
             )
         )
 
@@ -106,7 +112,12 @@ class CyanideSSHServer(asyncssh.SSHServer):
     async def session_requested(self):
         """Bridge a new session to the backend."""
         session = ProxyServerSession(
-            self.pool, self.target_host, self.target_port, self.session_id, self.src_ip, self.fs
+            self.pool,
+            self.target_host,
+            self.target_port,
+            self.session_id,
+            self.src_ip,
+            self.fs,
         )
 
         if hasattr(self, "logger") and getattr(self, "logger"):
@@ -168,7 +179,11 @@ class ProxyServerSession(asyncssh.SSHServerSession):
 
         try:
             self.backend_conn = await asyncssh.connect(
-                tgt_host, tgt_port, username="root", password="password", known_hosts=None
+                tgt_host,
+                tgt_port,
+                username="root",
+                password="password",
+                known_hosts=None,
             )
 
             if not self._chan:
@@ -249,7 +264,9 @@ class ProxyServerSession(asyncssh.SSHServerSession):
     def terminal_window_resized(self, width, height, pixwidth, pixheight):
         """Handle window resize."""
         if self.backend_channel:
-            self.backend_channel.change_terminal_size(width, height, pixwidth, pixheight)
+            self.backend_channel.change_terminal_size(
+                width, height, pixwidth, pixheight
+            )
 
     def break_received(self, msec):
         """Handle break signal."""
@@ -374,16 +391,22 @@ async def main():
 
     key = generate_private_key("ssh-rsa")
 
-    logger.info(f"Starting SSH Proxy on 0.0.0.0:{listen_port} -> {dst_host}:{dst_port}...")
+    logger.info(
+        f"Starting SSH Proxy on 0.0.0.0:{listen_port} -> {dst_host}:{dst_port}..."
+    )
 
     fs = FakeFilesystem()
 
     stop_event = asyncio.Event()
 
     def factory():
-        return CyanideSSHServer(pool=None, target_host=dst_host, target_port=dst_port, fs=fs)
+        return CyanideSSHServer(
+            pool=None, target_host=dst_host, target_port=dst_port, fs=fs
+        )
 
-    await asyncssh.create_server(factory, "0.0.0.0", listen_port, server_host_keys=[key])
+    await asyncssh.create_server(
+        factory, "0.0.0.0", listen_port, server_host_keys=[key]
+    )
 
     await stop_event.wait()
 

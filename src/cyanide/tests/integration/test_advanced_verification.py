@@ -14,7 +14,12 @@ def advanced_config(tmp_path: Path) -> dict[str, Any]:
     log_dir = tmp_path / "logs"
     log_dir.mkdir()
     return {
-        "ssh": {"enabled": True, "port": 0, "backend_mode": "emulated", "vfs_persistence": False},
+        "ssh": {
+            "enabled": True,
+            "port": 0,
+            "backend_mode": "emulated",
+            "vfs_persistence": False,
+        },
         "telnet": {"enabled": False},
         "metrics": {"enabled": False},
         "logging": {"directory": str(log_dir)},
@@ -51,7 +56,9 @@ async def test_log_correlation(advanced_config: dict[str, Any]) -> None:
             fs_entries = [json.loads(line) for line in f if line.strip()]
 
         session_ids = [
-            e["session"] for e in fs_entries if "session" in e and e["session"] != "system"
+            e["session"]
+            for e in fs_entries
+            if "session" in e and e["session"] != "system"
         ]
         assert len(session_ids) > 0
         target_session = session_ids[0]
@@ -122,7 +129,9 @@ async def test_resource_limits(advanced_config: dict[str, Any]) -> None:
             assert result.exit_status != 0
 
             # 2. Output size limit test (max_output_size is 1024 bytes)
-            large_output_cmd = " ; ".join(["echo 'THIS_IS_A_LONG_STRING_REPEATED_MANY_TIMES'"] * 50)
+            large_output_cmd = " ; ".join(
+                ["echo 'THIS_IS_A_LONG_STRING_REPEATED_MANY_TIMES'"] * 50
+            )
             result = await conn.run(large_output_cmd)
             stdout = str(result.stdout or "")
             stderr = str(result.stderr or "")

@@ -6,7 +6,9 @@ from .base import Command
 class EditorCommand(Command):
     """Mock text editors (vi, nano, etc)."""
 
-    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
+    async def execute(
+        self, args: list[str], input_data: str = ""
+    ) -> tuple[str, str, int]:
         if not args:
             return "", "No filename provided.\n", 1
 
@@ -38,8 +40,12 @@ class EditorCommand(Command):
             if parent != "/" and not self.fs.exists(parent):
                 self.fs.mkdir_p(parent, owner=self.emulator.username)
 
-            content = "\n".join(self._capture_lines) + "\n" if self._capture_lines else ""
-            self.fs.mkfile(self.target_file, content=content, owner=self.emulator.username)
+            content = (
+                "\n".join(self._capture_lines) + "\n" if self._capture_lines else ""
+            )
+            self.fs.mkfile(
+                self.target_file, content=content, owner=self.emulator.username
+            )
             return f'"{self.target_file}" written\n', "", 0
 
         if raw_line in stop_abort:

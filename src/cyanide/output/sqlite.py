@@ -20,7 +20,9 @@ class Plugin(OutputPlugin):
         import re
 
         if not re.match(r"^\w+$", self.table):
-            raise ValueError(f"Invalid table name (must be alphanumeric/underscore): {self.table}")
+            raise ValueError(
+                f"Invalid table name (must be alphanumeric/underscore): {self.table}"
+            )
 
         self.conn: Optional[sqlite3.Connection] = None
         self._init_db()
@@ -53,7 +55,11 @@ class Plugin(OutputPlugin):
         session = event.get("session")
         eventid = event.get("eventid")
 
-        data = {k: v for k, v in event.items() if k not in ["timestamp", "session", "eventid"]}
+        data = {
+            k: v
+            for k, v in event.items()
+            if k not in ["timestamp", "session", "eventid"]
+        }
 
         try:
             cursor = self.conn.cursor()

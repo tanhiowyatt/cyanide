@@ -6,7 +6,6 @@ from .base import Command
 
 
 class RmCommand(Command):
-
     async def execute(self, args, input_data=""):
         await asyncio.sleep(0)
         recursive = "-r" in args or "-rf" in args or "-R" in args

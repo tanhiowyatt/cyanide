@@ -64,7 +64,9 @@ def motd_provider(context: Any, args: Optional[Dict[str, Any]] = None) -> str:
         banner_parts.append(f"Welcome to {os_name} ({kernel} {arch})\r\n")
 
     now = datetime.datetime.now()
-    last_login_date = now - datetime.timedelta(days=secrets.SystemRandom().randint(1, 10))
+    last_login_date = now - datetime.timedelta(
+        days=secrets.SystemRandom().randint(1, 10)
+    )
     date_str = last_login_date.strftime("%a %b %d %H:%M:%S %Y")
 
     last_ip = LAST_LOGINS.get(src_ip)

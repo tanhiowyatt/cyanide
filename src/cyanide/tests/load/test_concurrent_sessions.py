@@ -45,7 +45,11 @@ async def test_concurrent_sessions_load(load_test_server):
         start = time.time()
         try:
             async with asyncssh.connect(
-                target_host, port=port, username="root", password="admin", known_hosts=None
+                target_host,
+                port=port,
+                username="root",
+                password="admin",
+                known_hosts=None,
             ) as conn:
                 await conn.run("whoami", timeout=5)
                 latency = time.time() - start
@@ -64,6 +68,6 @@ async def test_concurrent_sessions_load(load_test_server):
         avg_latency = sum(latencies) / len(latencies)
         print(f"[Load Test] Avg Latency: {avg_latency:.4f}s")
 
-    assert (
-        success_count >= concurrency * 0.9
-    ), f"Success rate too low: {success_count}/{concurrency}"
+    assert success_count >= concurrency * 0.9, (
+        f"Success rate too low: {success_count}/{concurrency}"
+    )

@@ -5,7 +5,10 @@ from cyanide.output.slack import Plugin
 
 
 def test_slack_init():
-    config: Dict[str, Any] = {"webhook_url": "http://webhook.com", "username": "TestBot"}
+    config: Dict[str, Any] = {
+        "webhook_url": "http://webhook.com",
+        "username": "TestBot",
+    }
     plugin = Plugin(config)
     assert plugin.webhook_url == "http://webhook.com"
     assert plugin.username == "TestBot"

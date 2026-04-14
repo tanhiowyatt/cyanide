@@ -21,11 +21,11 @@ async def test_python_interactive(emulator):
     out, err, rc = await emulator.execute("help")
     assert "interactive help" in out
     assert emulator.pending_input_prompt == ">>> "
-    out, err, rc = await emulator.execute("import sys")
-    assert emulator.pending_input_prompt == ">>> "
 
+    # In imitation mode, unknown names return empty output (silent acknowledgement)
     out, err, rc = await emulator.execute("invalidname")
-    assert "NameError: name 'invalidname' is not defined" in out
+    assert out == ""
+    assert emulator.pending_input_prompt == ">>> "
 
     out, err, rc = await emulator.execute("exit()")
     assert emulator.pending_input_callback is None

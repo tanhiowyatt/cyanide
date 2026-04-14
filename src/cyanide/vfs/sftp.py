@@ -48,7 +48,9 @@ class CyanideSFTPHandler(asyncssh.SFTPServer):
             return path.decode("utf-8", "ignore")
         return path
 
-    def _log_op(self, op: str, path: str, success: bool = True, extra: Optional[Dict] = None):
+    def _log_op(
+        self, op: str, path: str, success: bool = True, extra: Optional[Dict] = None
+    ):
         log_data = {
             "protocol": "sftp",
             "src_ip": self.src_ip,
@@ -73,7 +75,9 @@ class CyanideSFTPHandler(asyncssh.SFTPServer):
             return res.encode("utf-8")
         return res
 
-    async def scandir(self, path: Union[str, bytes]) -> AsyncIterator[asyncssh.SFTPName]:
+    async def scandir(
+        self, path: Union[str, bytes]
+    ) -> AsyncIterator[asyncssh.SFTPName]:
         p = self._decode_path(path)
         try:
             names = self.fs.list_dir(p)
@@ -115,7 +119,9 @@ class CyanideSFTPHandler(asyncssh.SFTPServer):
         p = self._decode_path(path)
         self._log_op("open", p, extra={"flags": flags})
 
-        is_write = bool(flags & (asyncssh.FXF_WRITE | asyncssh.FXF_CREAT | asyncssh.FXF_TRUNC))
+        is_write = bool(
+            flags & (asyncssh.FXF_WRITE | asyncssh.FXF_CREAT | asyncssh.FXF_TRUNC)
+        )
         self._check_sftp_permissions(is_write)
 
         if is_write and self.fs.is_dir(p):
@@ -164,7 +170,9 @@ class CyanideSFTPHandler(asyncssh.SFTPServer):
         buffer = fh["buffer"]
         try:
             ssh_conf = self.honeypot.config.get("ssh", {})
-            session_limit = ssh_conf.get("max_total_upload_mb_per_session", 200) * 1024 * 1024
+            session_limit = (
+                ssh_conf.get("max_total_upload_mb_per_session", 200) * 1024 * 1024
+            )
             if len(buffer) + len(data) > session_limit:
                 raise asyncssh.SFTPPermissionDenied("Session upload limit exceeded")
 
@@ -175,7 +183,9 @@ class CyanideSFTPHandler(asyncssh.SFTPServer):
             buffer[offset:end] = data
             return len(data)
         except Exception as e:
-            logger.exception(f"SFTP write error for handle {handle!r} ({fh['path']}): {e}")
+            logger.exception(
+                f"SFTP write error for handle {handle!r} ({fh['path']}): {e}"
+            )
             raise
 
     async def close(self, handle: Any):
@@ -242,7 +252,9 @@ class CyanideSFTPHandler(asyncssh.SFTPServer):
     async def rmdir(self, path: Union[str, bytes]):
         await self.remove(path)
 
-    async def rename(self, oldpath: Union[str, bytes], newpath: Union[str, bytes], flags: int = 0):
+    async def rename(
+        self, oldpath: Union[str, bytes], newpath: Union[str, bytes], flags: int = 0
+    ):
         op = self._decode_path(oldpath)
         np = self._decode_path(newpath)
         if self.fs.move(op, np):

@@ -82,7 +82,9 @@ class LibvirtPool:
             task.cancel()
 
         if self._bg_tasks or self._rebuild_tasks:
-            await asyncio.gather(*self._bg_tasks, *self._rebuild_tasks, return_exceptions=True)
+            await asyncio.gather(
+                *self._bg_tasks, *self._rebuild_tasks, return_exceptions=True
+            )
 
         self._bg_tasks = []
         self._rebuild_tasks = set()
@@ -160,7 +162,9 @@ class LibvirtPool:
                 del self.leases[lease.session_id]
 
             if lease.vm_id in self.vms:
-                logger.info(f"Releasing VM {lease.vm_id} from session {lease.session_id}")
+                logger.info(
+                    f"Releasing VM {lease.vm_id} from session {lease.session_id}"
+                )
                 self.vms[lease.vm_id]["state"] = "rebuilding"
                 task = asyncio.create_task(self._rebuild_vm(lease.vm_id))
                 self._rebuild_tasks.add(task)
@@ -170,12 +174,19 @@ class LibvirtPool:
         """Mark the VM associated with this host as rebuilding if it's currently leased."""
         for vm_id, v in self.vms.items():
             if v["ip"] == host:
-                logger.warning(f"LibvirtPool: Reporting failure for {host}:{port} (VM {vm_id})")
+                logger.warning(
+                    f"LibvirtPool: Reporting failure for {host}:{port} (VM {vm_id})"
+                )
                 if self.logger:
                     self.logger.log_event(
                         "system",
                         "pool_failure",
-                        {"backend": "libvirt", "host": host, "port": port, "vm_id": vm_id},
+                        {
+                            "backend": "libvirt",
+                            "host": host,
+                            "port": port,
+                            "vm_id": vm_id,
+                        },
                     )
                 if v["state"] == "leased":
                     v["state"] = "rebuilding"
@@ -206,7 +217,9 @@ class LibvirtPool:
         """Revert VM to snapshot or just restart."""
         logger.info(f"Rebuilding/Reverting VM: {vm_id}")
         if self.logger:
-            self.logger.log_event("system", "pool_rebuild", {"backend": "libvirt", "vm_id": vm_id})
+            self.logger.log_event(
+                "system", "pool_rebuild", {"backend": "libvirt", "vm_id": vm_id}
+            )
         if self.conn:
             try:
                 dom = self.conn.lookupByName(vm_id)
@@ -241,7 +254,9 @@ class LibvirtPool:
             async with self.lock:
                 now = time.time()
                 for vm_id, v in self.vms.items():
-                    if v["state"] == "ready" and (now - v["last_used"] > self.vm_unused_timeout):
+                    if v["state"] == "ready" and (
+                        now - v["last_used"] > self.vm_unused_timeout
+                    ):
                         logger.info(f"Recycling unused VM {vm_id}")
                         self.vms[vm_id]["state"] = "rebuilding"
                         task = asyncio.create_task(self._rebuild_vm(vm_id))

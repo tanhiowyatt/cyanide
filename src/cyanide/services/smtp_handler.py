@@ -38,7 +38,11 @@ class SMTPHandler:
             self.logger.log_event(
                 session_id,
                 "connect",
-                {"protocol": "smtp", "src_ip": src_ip, "src_port": peer[1] if peer else 0},
+                {
+                    "protocol": "smtp",
+                    "src_ip": src_ip,
+                    "src_port": peer[1] if peer else 0,
+                },
             )
         if self.stats:
             self.stats.on_connect("smtp", src_ip)
@@ -77,7 +81,9 @@ class SMTPHandler:
         args = parts[1:] if len(parts) > 1 else []
         return cmd, args
 
-    async def _handle_command(self, reader, writer, cmd, args, src_ip, hostname) -> bool:
+    async def _handle_command(
+        self, reader, writer, cmd, args, src_ip, hostname
+    ) -> bool:
         handler = self._dispatch_map.get(cmd)
         if handler:
             return await handler(reader, writer, args, src_ip, hostname)
@@ -85,7 +91,9 @@ class SMTPHandler:
         writer.write(b"502 5.5.2 Error: command not recognized\r\n")
         return True
 
-    async def handle_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+    async def handle_connection(
+        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+    ):
         src_ip, session_id, hostname, _ = self._init_session(writer)
 
         try:
@@ -98,7 +106,9 @@ class SMTPHandler:
             pass
         except Exception as e:
             if self.logger:
-                self.logger.log_event(session_id, "error", {"message": f"SMTP Error: {e}"})
+                self.logger.log_event(
+                    session_id, "error", {"message": f"SMTP Error: {e}"}
+                )
         finally:
             await self._cleanup(writer, session_id, src_ip)
 
@@ -109,7 +119,9 @@ class SMTPHandler:
         except Exception:
             pass
         if self.logger:
-            self.logger.log_event(session_id, "session.end", {"protocol": "smtp", "src_ip": src_ip})
+            self.logger.log_event(
+                session_id, "session.end", {"protocol": "smtp", "src_ip": src_ip}
+            )
         if self.stats:
             self.stats.on_disconnect()
 

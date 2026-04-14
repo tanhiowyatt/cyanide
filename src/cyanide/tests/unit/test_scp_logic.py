@@ -25,7 +25,11 @@ async def test_scp_sink_file_upload(mock_session):
     handler = ScpHandler(mock_session)
 
     # Simulate C0644 5 test.txt\n + 'hello'
-    mock_session.channel.read.side_effect = [b"C0644 5 test.txt\n", b"hello", b""]  # End of stream
+    mock_session.channel.read.side_effect = [
+        b"C0644 5 test.txt\n",
+        b"hello",
+        b"",
+    ]  # End of stream
 
     rc = await handler.handle("scp -t /tmp/test.txt")
     assert rc == 0
@@ -53,7 +57,9 @@ async def test_scp_sink_invalid_header(mock_session):
     rc = await handler.handle("scp -t /tmp")
     assert rc == 1
     # Should have sent initial ACK then error for unknown command
-    mock_session.channel.write.assert_any_call("\x01SCP: Unknown protocol command: INVALID\n")
+    mock_session.channel.write.assert_any_call(
+        "\x01SCP: Unknown protocol command: INVALID\n"
+    )
 
 
 @pytest.mark.asyncio

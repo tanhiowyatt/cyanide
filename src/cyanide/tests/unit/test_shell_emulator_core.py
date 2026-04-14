@@ -124,7 +124,9 @@ async def test_execute_max_chain_depth(emulator):
 async def test_execute_max_output_size(emulator):
     emulator.max_output_size = 5
     with patch.object(
-        emulator, "_execute_single_command", AsyncMock(return_value=("long output", "", 0))
+        emulator,
+        "_execute_single_command",
+        AsyncMock(return_value=("long output", "", 0)),
     ):
         stdout, stderr, rc = await emulator.execute("echo long")
         assert "output truncated" in stdout

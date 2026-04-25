@@ -41,6 +41,9 @@ from .vt_scanner import VTScanner
 # Default honeytokens removed - users must now configure them explicitly.
 
 CONTENT_TYPE_PLAIN = "text/plain"
+MIME_JSON = "application/json"
+PATH_STATS = "/logs/stats"
+PATH_HEALTH = "/health"
 EVENT_COMMAND_INPUT = "command.input"
 
 
@@ -433,7 +436,7 @@ class CyanideServer:
             "/logs/vfs": "cyanide-vfs.json",
             "/logs/ml": "cyanide-ml.json",
             "/logs/server": "cyanide-server.json",
-            "/logs/stats": "cyanide-stats.json",
+            PATH_STATS: "cyanide-stats.json",
             "/logs/reports/stix": "reports/cyanide_iocs.stix.json",
             "/logs/reports/misp": "reports/cyanide_iocs.misp.json",
         }
@@ -443,27 +446,27 @@ class CyanideServer:
                 self.stats.to_prometheus(),
                 f"{CONTENT_TYPE_PLAIN}; version=0.0.4; charset=utf-8",
             )
-        if path == "/logs/stats":
-            return json.dumps(self.stats.get_stats(), indent=2), "application/json"
-        if path == "/health":
-            return self._get_health_status(), "application/json"
+        if path == PATH_STATS:
+            return json.dumps(self.stats.get_stats(), indent=2), MIME_JSON
+        if path == PATH_HEALTH:
+            return self._get_health_status(), MIME_JSON
 
         # Handle Root Index
         if path == "/" or path == "":
             index = {
                 "cyanide_control_plane": {
-                    "monitoring": ["/health", "/metrics"],
+                    "monitoring": [PATH_HEALTH, "/metrics"],
                     "reports": ["/logs/reports/stix", "/logs/reports/misp"],
                     "logs": [
                         "/logs/ml",
                         "/logs/server",
-                        "/logs/stats",
+                        PATH_STATS,
                         "/logs/vfs",
                     ],
                 },
-                "usage": "Use 'Authorization: Bearer <token>' for all endpoints except /health",
+                "usage": f"Use 'Authorization: Bearer <token>' for all endpoints except {PATH_HEALTH}",
             }
-            return json.dumps(index, indent=2), "application/json"
+            return json.dumps(index, indent=2), MIME_JSON
 
         # Handle Virtual Log Access
         if path in log_mapping:
@@ -473,11 +476,27 @@ class CyanideServer:
             log_path = os.path.join(self.logger.log_dir, filename)
 
             if os.path.exists(log_path) and os.path.isfile(log_path):
-                with open(log_path, "r") as f:
-                    return f.read(), "application/json"
-            return json.dumps({"error": f"Resource '{path}' not found"}), "application/json"
+                # For reports, return the full file as it's a single JSON bundle
+                if "reports/" in filename:
+                    with open(log_path, "r") as f:
+                        return f.read(), MIME_JSON
 
-        return json.dumps({"error": "Not Found", "path": path}), "application/json"
+                # For line-based logs, return the last 2000 lines to avoid OOM
+                from collections import deque
+
+                try:
+                    with open(log_path, "r") as f:
+                        # Simple and reasonably efficient for typical log sizes
+                        last_lines = deque(f, maxlen=2000)
+                        return "".join(last_lines), MIME_JSON
+                except Exception as e:
+                    return (
+                        json.dumps({"error": f"Failed to read log: {str(e)}"}),
+                        MIME_JSON,
+                    )
+            return json.dumps({"error": f"Resource '{path}' not found"}), MIME_JSON
+
+        return json.dumps({"error": "Not Found", "path": path}), MIME_JSON
 
     async def _handle_metrics_request(self, reader, writer):
         try:
@@ -1000,8 +1019,10 @@ class CyanideServer:
         self.ssh_server = None
         await self._close_server(getattr(self, "telnet_server", None), "Telnet")
         self.telnet_server = None
-        await self._close_server(getattr(self, "smtp_server", None), "SMTP")
         self.smtp_server = None
+
+        if hasattr(self.services, "analytics") and hasattr(self.services.analytics, "geoip"):
+            await self.services.analytics.geoip.close()
         await self._close_server(getattr(self, "metrics_server", None), "Metrics")
         self.metrics_server = None
 
@@ -1092,8 +1113,7 @@ class CyanideServer:
 
         logging.info(f"[*] IOC Reporting loop started (interval: {self.ioc_interval}s)")
 
-        interval_hours = conf.get("report_interval_hours", 1)
-        interval = max(60, interval_hours * 3600)
+        interval = self.ioc_interval
 
         while True:
             try:
@@ -1374,7 +1394,7 @@ class SSHServerFactory(asyncssh.SSHServer):
         # Extract IOCs from malicious login attempts
         if not success:
             analytics_svc = self.honeypot.services.analytics
-            analytics_svc.analyze_auth(username, password, self.src_ip, "conn_" + self.conn_id)
+            analytics_svc.analyze_auth(username, password, "conn_" + self.conn_id)
 
         if success:
             # Re-fetch VFS now that we have a verified username to support user-specific persistence

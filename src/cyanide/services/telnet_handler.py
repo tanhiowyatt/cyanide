@@ -251,7 +251,7 @@ class TelnetHandler:
                 await asyncio.sleep(auth_delay)
 
         if not success:
-            self.services.analytics.analyze_auth(username, password, src_ip, session_id)
+            self.services.analytics.analyze_auth(username, password, session_id)
             resp = b"\r\nLogin incorrect\r\n"
             writer.write(resp)
             bytes_out += len(resp)

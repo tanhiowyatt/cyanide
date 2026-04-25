@@ -78,10 +78,13 @@ Click on a section below to expand the available settings.
 ### HTTP API Endpoints
 If the Metrics server is enabled (`CYANIDE_METRICS_ENABLED`), you can access real-time status and reports via:
 *   `/metrics`: Prometheus-compatible metrics.
-*   `/stats`: High-level JSON statistics summary.
 *   `/health`: Health check probe (returns HTTP 200 if OK).
-*   `/reports/stix`: Download the latest STIX 2.1 IOC bundle.
-*   `/reports/misp`: Download the latest MISP JSON report.
+*   `/logs/stats`: High-level JSON statistics summary.
+*   `/logs/reports/stix`: Download the latest STIX 2.1 IOC bundle.
+*   `/logs/reports/misp`: Download the latest MISP JSON Event.
+*   `/logs/vfs`: Virtual Filesystem activity logs (JSON).
+*   `/logs/server`: Core server event logs (JSON).
+*   `/logs/ml`: Machine Learning retraining and inference logs.
 
 > [!NOTE]
 > All endpoints except `/health` require a Bearer Token if `CYANIDE_METRICS_TOKEN` is configured.

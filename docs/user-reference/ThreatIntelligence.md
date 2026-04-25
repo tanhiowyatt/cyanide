@@ -28,12 +28,12 @@ Reports are generated as snapshots containing all unique IOCs collected since th
 #### STIX 2.1 (JSON Bundle)
 *   **Identity Object**: Representing the honeypot sensor itself.
 *   **Indicator Objects**: Each containing a STIX pattern (e.g., `[ipv4-addr:value = '1.2.3.4']`) and associated metadata like severity and session context.
-*   **File Path**: `var/log/cyanide/cyanide_iocs.stix.json`
+*   **File Path**: `var/log/cyanide/reports/cyanide_iocs.stix.json`
 
 #### MISP (JSON Event)
 *   **Event Object**: Aggregating all attributes under a single threat intelligence event.
 *   **Attributes**: Mapped to MISP types (e.g., `ip-src`, `url`, `sha256`).
-*   **File Path**: `var/log/cyanide/cyanide_iocs.misp.json`
+*   **File Path**: `var/log/cyanide/reports/cyanide_iocs.misp.json`
 
 ---
 
@@ -43,8 +43,8 @@ Collected IOCs can be retrieved remotely via the Cyanide Metrics API (if enabled
 
 | Format | Endpoint | Description |
 | :--- | :--- | :--- |
-| **STIX 2.1** | `GET /reports/stix` | Returns the latest STIX JSON Bundle. |
-| **MISP** | `GET /reports/misp` | Returns the latest MISP JSON Event. |
+| **STIX 2.1** | `GET /logs/reports/stix` | Returns the latest STIX JSON Bundle. |
+| **MISP** | `GET /logs/reports/misp` | Returns the latest MISP JSON Event. |
 
 > [!IMPORTANT]
 > Access to these endpoints requires the same Bearer Token as the `/metrics` endpoint (configured via `CYANIDE_METRICS_TOKEN`).

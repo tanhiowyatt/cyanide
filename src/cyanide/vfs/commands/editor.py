@@ -1,6 +1,9 @@
+import os
 from typing import List
 
 from .base import Command
+
+EDITOR_PROMPT = "editor> "
 
 
 class EditorCommand(Command):
@@ -25,7 +28,7 @@ class EditorCommand(Command):
 
         self._capture_lines = existing.splitlines() if existing else []
         self.emulator.pending_input_callback = self._on_input
-        self.emulator.pending_input_prompt = "editor> "
+        self.emulator.pending_input_prompt = EDITOR_PROMPT
 
         prompt = f"Entering editor for {args[0]}.\nType :wq or ^X on a new line to save and exit, :q! or ^C to abort.\n"
         if self._capture_lines:
@@ -38,10 +41,14 @@ class EditorCommand(Command):
 
         if raw_line in [":wq", "wq", "^X", ":w"]:
             content = "\n".join(self._capture_lines) + "\n" if self._capture_lines else ""
+
+            parent = os.path.dirname(self.target_file)
+            if parent:
+                self.fs.mkdir_p(parent)
             self.fs.mkfile(self.target_file, content=content, owner=self.emulator.username)
             if raw_line == ":w":
                 self.emulator.pending_input_callback = self._on_input
-                self.emulator.pending_input_prompt = "editor> "
+                self.emulator.pending_input_prompt = EDITOR_PROMPT
                 return f'"{self.target_file}" written\n', "", 0
             return f'"{self.target_file}" written, exit.\n', "", 0
 
@@ -50,7 +57,7 @@ class EditorCommand(Command):
 
         self._capture_lines.append(line.rstrip("\n"))
         self.emulator.pending_input_callback = self._on_input
-        self.emulator.pending_input_prompt = "editor> "
+        self.emulator.pending_input_prompt = EDITOR_PROMPT
         return "", "", 0
 
 

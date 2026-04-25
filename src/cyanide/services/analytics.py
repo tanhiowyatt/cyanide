@@ -155,6 +155,15 @@ class AnalyticsService:
         if self.session_mgr:
             self.session_mgr.record_command(session_id)
 
+        self._detect_tools(cmd, src_ip, session_id)
+
+        if not self.ml_enabled or self.ml_pipeline is None:
+            return
+
+        self._perform_ml_analysis(cmd, src_ip, session_id, is_bot)
+
+    def _detect_tools(self, cmd: str, src_ip: str, session_id: str):
+        """Helper to detect automated tools and extract related IOCs."""
         automated_tools = [
             "wget",
             "curl",
@@ -165,23 +174,46 @@ class AnalyticsService:
             "chmod +x",
         ]
         detected_tool = next((tool.strip() for tool in automated_tools if tool in cmd), None)
-        if detected_tool:
-            self.logger.log_event(
-                session_id,
-                "tool_detection",
-                {"src_ip": src_ip, "tool": detected_tool, "command": cmd},
-            )
+        if not detected_tool:
+            return
 
-            if self.ioc_reporter:
+        self.logger.log_event(
+            session_id,
+            "tool_detection",
+            {"src_ip": src_ip, "tool": detected_tool, "command": cmd},
+        )
+
+        if self.ioc_reporter:
+            import re
+
+            urls = set(re.findall(r"https?://[^\s<>\"']+", cmd))
+            for url in urls:
                 self.ioc_reporter.add_ioc(
-                    "domain" if "://" not in detected_tool else "url",
-                    cmd,
+                    "url",
+                    url,
+                    f"Automated tool detection: {detected_tool}",
+                    session_id,
+                    severity="low",
+                )
+            url_domains = {re.sub(r"[:/].*$", "", re.sub(r"^https?://", "", url)) for url in urls}
+            domains = {
+                domain
+                for domain in re.findall(r"\b(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\b", cmd)
+                if domain not in url_domains
+                and not domain.replace(".", "").isdigit()  # Ignore IP-like strings
+            }
+            for domain in domains:
+                self.ioc_reporter.add_ioc(
+                    "domain",
+                    domain,
                     f"Automated tool detection: {detected_tool}",
                     session_id,
                     severity="low",
                 )
 
-        if not self.ml_enabled or self.ml_pipeline is None:
+    def _perform_ml_analysis(self, cmd: str, src_ip: str, session_id: str, is_bot: bool):
+        """Helper to perform ML reconstruction analysis and report anomalies."""
+        if not self.ml_pipeline:
             return
 
         try:
@@ -205,56 +237,61 @@ class AnalyticsService:
             )
 
             if is_anomaly:
-                if self.ioc_reporter:
-                    self.ioc_reporter.add_ioc(
-                        "ipv4-addr",
-                        src_ip,
-                        f"Malicious source IP (anomaly score: {result['anomaly_score']})",
-                        session_id,
-                        severity="high",
-                    )
-
-                self.logger.log_event(
-                    session_id,
-                    "ml_anomaly",
-                    {
-                        "score": result["anomaly_score"],
-                        "error": result["reconstruction_error"],
-                        "source_type": source_type,
-                        "cmd": cmd,
-                        "classification": result.get("classification"),
-                        "severity": result.get("severity"),
-                    },
-                )
-
-                if self.ioc_reporter:
-                    # Extract URLs or suspicious strings from the command
-                    import re
-
-                    urls = re.findall(r"https?://[^\s<>\"']+", cmd)
-                    for url in urls:
-                        self.ioc_reporter.add_ioc(
-                            "url",
-                            url,
-                            "Extracted from anomalous command",
-                            session_id,
-                            severity="high",
-                        )
-
-                    ips = re.findall(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", cmd)
-                    for ip in ips:
-                        self.ioc_reporter.add_ioc(
-                            "ipv4-addr",
-                            ip,
-                            "IP extracted from anomalous command",
-                            session_id,
-                            severity="high",
-                        )
+                self._report_ml_anomaly(cmd, src_ip, session_id, result, source_type)
 
         except Exception as e:
             self.logger.log_event(session_id, "error", {"message": f"ML Error: {e}"})
 
-    def analyze_auth(self, username, password, src_ip, session_id):
+    def _report_ml_anomaly(
+        self, cmd: str, src_ip: str, session_id: str, result: dict, source_type: str
+    ):
+        """Internal helper to report details of an ML anomaly."""
+        if self.ioc_reporter:
+            self.ioc_reporter.add_ioc(
+                "ipv4-addr",
+                src_ip,
+                f"Malicious source IP (anomaly score: {result['anomaly_score']})",
+                session_id,
+                severity="high",
+            )
+
+        self.logger.log_event(
+            session_id,
+            "ml_anomaly",
+            {
+                "score": result["anomaly_score"],
+                "error": result["reconstruction_error"],
+                "source_type": source_type,
+                "cmd": cmd,
+                "classification": result.get("classification"),
+                "severity": result.get("severity"),
+            },
+        )
+
+        if self.ioc_reporter:
+            import re
+
+            urls = re.findall(r"https?://[^\s<>\"']+", cmd)
+            for url in urls:
+                self.ioc_reporter.add_ioc(
+                    "url",
+                    url,
+                    "Extracted from anomalous command",
+                    session_id,
+                    severity="high",
+                )
+
+            ips = re.findall(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", cmd)
+            for ip in ips:
+                self.ioc_reporter.add_ioc(
+                    "ipv4-addr",
+                    ip,
+                    "IP extracted from anomalous command",
+                    session_id,
+                    severity="high",
+                )
+
+    def analyze_auth(self, username, password, session_id):
         """Analyze authentication attempt for IOC extraction."""
         if self.ioc_reporter:
             # Check if this user/pass combo is part of a common attack list

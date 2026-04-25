@@ -9,9 +9,6 @@ class PingCommand(Command):
         if not args:
             return "", "ping: usage error: Destination address required\n", 1
 
-        # Find the first non-flag argument as hostname
-        hostname = next((arg for arg in args if not arg.startswith("-")), None)
-
         # If the last argument is a number (count for -c), the previous one might be hostname
         # or it might be something like ping -c 1 8.8.8.8
         # Let's be simple: last non-flag argument is usually the host

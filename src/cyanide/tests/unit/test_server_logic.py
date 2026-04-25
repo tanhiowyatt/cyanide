@@ -130,6 +130,7 @@ async def test_server_stop(server):
     server.ssh_server = MagicMock()
     server.ssh_server.close = MagicMock()
     server.ssh_server.wait_closed = AsyncMock()
+    server.services.analytics.geoip.close = AsyncMock()
 
     task = asyncio.create_task(asyncio.sleep(10))
     server.background_tasks = [task]

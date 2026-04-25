@@ -15,7 +15,7 @@ class GeoIP:
         self.cache_size = cache_size
         self._session: Optional[aiohttp.ClientSession] = None
 
-    async def _get_session(self) -> aiohttp.ClientSession:
+    def _get_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
             self._session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=3))
         return self._session
@@ -52,7 +52,7 @@ class GeoIP:
             return cast(Dict[Any, Any], self.cache[ip])
 
         try:
-            session = await self._get_session()
+            session = self._get_session()
             url = f"{self.base_url}/{ip}"
             async with session.get(url) as resp:
                 if resp.status == 200:

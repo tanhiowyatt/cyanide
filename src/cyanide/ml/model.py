@@ -112,7 +112,7 @@ class CommandAutoencoder(nn.Module):
             return
 
         self.train()
-        optimizer = torch.optim.Adam(self.parameters(), lr=lr)
+        optimizer = torch.optim.Adam(self.parameters(), lr=lr, weight_decay=1e-5)
         criterion = nn.MSELoss()
 
         # Tokenize and normalize all commands

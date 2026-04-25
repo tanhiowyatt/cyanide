@@ -53,8 +53,6 @@ class IOCReporter:
             "ioc_extracted",
             {"type": ioc_type, "value": value, "severity": severity},
         )
-        # Immediate report generation for better responsiveness (quiet mode for tests)
-        self.generate_reports(quiet=True)
 
     def generate_reports(self, quiet: bool = False):
         """Generate both STIX and MISP reports."""

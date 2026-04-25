@@ -8,7 +8,7 @@ class DateCommand(Command):
     async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         await asyncio.sleep(0)
         # Mon Oct 25 14:00:00 UTC 2026
-        return time.strftime("%a %b %d %H:%M:%S UTC %Y\n"), "", 0
+        return time.strftime("%a %b %d %H:%M:%S UTC %Y\n", time.gmtime()), "", 0
 
 
 class DfCommand(Command):

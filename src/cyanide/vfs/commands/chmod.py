@@ -4,7 +4,7 @@ from .base import Command
 
 
 class ChmodCommand(Command):
-    async def execute(self, args, input_data=""):
+    async def execute(self, args: list[str], input_data: str = "") -> tuple[str, str, int]:
         await asyncio.sleep(0)
         if len(args) < 2:
             return "", "chmod: missing operand\n", 1
@@ -16,55 +16,48 @@ class ChmodCommand(Command):
             path = self.emulator.resolve_path(target)
             node = self.fs.get_node(path)
             if not node:
-                return (
-                    "",
-                    f"chmod: cannot access '{target}': No such file or directory\n",
-                    1,
-                )
+                return "", f"chmod: cannot access '{target}': No such file or directory\n", 1
 
-            current_perm = node.perm  # e.g., "-rwxr-xr-x"
-            prefix = current_perm[0]
-            perms = current_perm[1:]  # e.g., "rwxr-xr-x"
-
-            new_perms = list(perms)
-
+            perms = list(node.perm[1:])
             if mode_arg.isdigit():
-                # Octal mode
-                try:
-                    oct_val = int(mode_arg, 8)
-                    new_perms = self._octal_to_str(oct_val)
-                except ValueError:
-                    continue
+                perms = self._apply_octal_mode(mode_arg, perms)
             else:
-                # Relative mode: [ugoa]*[+-=][rwx]*
-                import re
+                perms = self._apply_relative_mode(mode_arg, perms)
 
-                match = re.match(r"([ugoa]*)([+-=])([rwx]*)", mode_arg)
-                if match:
-                    who, op, what = match.groups()
-                    if not who or "a" in who:
-                        who = "ugo"
-
-                    for w in who:
-                        start_idx = {"u": 0, "g": 3, "o": 6}[w]
-                        for i, char in enumerate("rwx"):
-                            if char in what:
-                                if op == "+":
-                                    new_perms[start_idx + i] = char
-                                elif op == "-":
-                                    new_perms[start_idx + i] = "-"
-                                elif op == "=":
-                                    # This is more complex, but for now just set it
-                                    new_perms[start_idx + i] = char
-                        if op == "=":
-                            # clear other bits in this group that weren't in 'what'
-                            for i, char in enumerate("rwx"):
-                                if char not in what:
-                                    new_perms[start_idx + i] = "-"
-
-            self.fs.chmod(path, prefix + "".join(new_perms))
+            self.fs.chmod(path, node.perm[0] + "".join(perms))
 
         return "", "", 0
+
+    def _apply_octal_mode(self, mode_arg: str, perms: list) -> list:
+        try:
+            oct_val = int(mode_arg, 8)
+            return self._octal_to_str(oct_val)
+        except ValueError:
+            return perms
+
+    def _apply_relative_mode(self, mode_arg: str, perms: list) -> list:
+        import re
+
+        match = re.match(r"([ugoa]*)([+-=])([rwx]*)", mode_arg)
+        if not match:
+            return perms
+
+        who, op, what = match.groups()
+        if not who or "a" in who:
+            who = "ugo"
+
+        new_perms = list(perms)
+        for w in who:
+            start_idx = {"u": 0, "g": 3, "o": 6}[w]
+            for i, char in enumerate("rwx"):
+                if char in what:
+                    if op == "+":
+                        new_perms[start_idx + i] = char
+                    elif op in ("-", "="):
+                        new_perms[start_idx + i] = char if op == "=" else "-"
+                elif op == "=":
+                    new_perms[start_idx + i] = "-"
+        return new_perms
 
     def _octal_to_str(self, octal: int) -> list:
         """Convert octal mode (e.g. 0o755) to string list (e.g. ['r','w','x','r','-','x','r','-','x'])."""

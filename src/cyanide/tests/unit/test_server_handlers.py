@@ -71,13 +71,7 @@ def test_server_route_metrics_request(server):
         patch("os.path.isfile", return_value=True),
         patch(
             "builtins.open",
-            MagicMock(
-                return_value=MagicMock(
-                    __enter__=MagicMock(
-                        return_value=MagicMock(read=MagicMock(return_value="log content"))
-                    )
-                )
-            ),
+            MagicMock(return_value=MagicMock(__enter__=MagicMock(return_value=["log content"]))),
         ),
     ):
         content, ctype = server._route_metrics_request("/logs/server")

@@ -49,23 +49,27 @@ users:
     pass: "123456"
 
 metrics:
-  enabled: true
+  enabled: false
   port: 9090
   allow_remote: true
 
 ml:
-  enabled: true
+  enabled: false
   metrics_port: 9090
   online_learning: false
   retraining_interval_days: 7
 
+rate_limit:
+  max_connections_per_minute: 60
+  ban_duration: 3600
+
 ioc_reporting:
-  enabled: true
+  enabled: false
   report_interval_hours: 1
   output_format: stix2.1
 
 ssh:
-  enabled: true
+  enabled: false
   listen_port: 2222
   rsa_keying: true
   backend_mode: emulated
@@ -95,14 +99,16 @@ ssh:
   forward_tunnel_enabled: false
   forward_tunnel_rules:
     "3306": "mysql-sandbox:3306"
+  log_passwords: false
 
 telnet:
-  enabled: true
+  enabled: false
   listen_port: 2323
   backend_mode: emulated
+  log_passwords: false
 
 smtp:
-  enabled: true
+  enabled: false
   port: 2525
   target_host: 127.0.0.1
   target_port: 25255
@@ -140,14 +146,23 @@ output:
     enabled: false
     webhook_url: ""
     username: "Cyanide Honeypot"
+    batch_size: 5
+    batch_timeout: 5.0
+    max_content_length: 4000
   discord:
     enabled: false
     webhook_url: ""
     username: "Cyanide Honeypot"
+    batch_size: 5
+    batch_timeout: 5.0
+    max_content_length: 2000
   telegram:
     enabled: false
     token: ""
     chat_id: ""
+    batch_size: 5
+    batch_timeout: 5.0
+    max_content_length: 4096
   hpfeeds:
     enabled: false
     host: hpfeeds.honeycloud.net

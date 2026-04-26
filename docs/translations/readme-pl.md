@@ -1,13 +1,16 @@
-[![Stars](https://img.shields.io/github/stars/tanhiowyatt/cyanide-honeypot?style=flat&logo=GitHub&color=yellow)](https://github.com/tanhiowyatt/cyanide-honeypot/stargazers)
-[![CI](https://github.com/tanhiowyatt/cyanide-honeypot/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tanhiowyatt/cyanide-honeypot/actions/workflows/ci.yml)
-[![Security Scan](https://github.com/tanhiowyatt/cyanide-honeypot/actions/workflows/security_scan.yml/badge.svg)](https://github.com/tanhiowyatt/cyanide-honeypot/actions/workflows/security_scan.yml)
-[![Quality gate](https://sonarcloud.io/api/project_badges/measure?project=tanhiowyatt_cyanide_honeypot&metric=alert_status)](https://sonarcloud.io/dashboard?id=tanhiowyatt_cyanide_honeypot)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=tanhiowyatt_cyanide_honeypot&metric=coverage)](https://sonarcloud.io/component_measures/metric/coverage/list?id=tanhiowyatt_cyanide_honeypot)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+  [![Stars](https://img.shields.io/github/stars/tanhiowyatt/cyanide-honeypot?style=flat&logo=GitHub&color=yellow)](https://github.com/tanhiowyatt/cyanide-honeypot/stargazers)
+  [![CI](https://github.com/tanhiowyatt/cyanide-honeypot/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tanhiowyatt/cyanide-honeypot/actions/workflows/ci.yml)
+  [![Security Scan](https://github.com/tanhiowyatt/cyanide-honeypot/actions/workflows/security_scan.yml/badge.svg)](https://github.com/tanhiowyatt/cyanide-honeypot/actions/workflows/security_scan.yml)
+  [![Quality gate](https://sonarcloud.io/api/project_badges/measure?project=tanhiowyatt_cyanide_honeypot&metric=alert_status)](https://sonarcloud.io/dashboard?id=tanhiowyatt_cyanide_honeypot)
+  [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=tanhiowyatt_cyanide_honeypot&metric=coverage)](https://sonarcloud.io/component_measures/metric/coverage/list?id=tanhiowyatt_cyanide_honeypot)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+  [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/)
+</p>
 
 <p align="center">
+  <a target="_blank" href="https://github.com/tanhiowyatt/cyanide-honeypot/blob/main/README.md">ENG</a> &nbsp; | &nbsp;
   <a target="_blank" href="https://github.com/tanhiowyatt/cyanide-honeypot/blob/main/docs/translations/readme-ru.md">RU</a> &nbsp; | &nbsp;
-  <a target="_blank" href="https://github.com/tanhiowyatt/cyanide-honeypot/blob/main/README.md">ENG</a>
+  <a target="_blank" href="https://github.com/tanhiowyatt/cyanide-honeypot/blob/main/docs/translations/readme-pl.md">PL</a>
 </p>
 
 <p align="center">
@@ -35,6 +38,7 @@
 #### 3) Zaawansowane integracje SOC i analityczne
 - Strukturalne logi JSON ze ustandaryzowanym schematem zdarzeń ułatwiającym korelację i wyszukiwanie.
 - Eksport zdarzeń do systemów zewnętrznych: stosy SIEM/logów (ELK/Splunk), powiadomienia webhook (Slack/Discord/Telegram) w czasie rzeczywistym.
+- Obsługa przetwarzania wsadowego (batching) i kontroli limitów komunikatów w celu zapobiegania spamowi i blokadom platform.
 - Konfigurowalne triggery i reguły dla alertów o krytycznych wzorcach (np. anomalna prędkość brute-force, przesyłanie dropperów, podejrzane komendy/ładunki).
 
 ---
@@ -50,8 +54,8 @@ Aby uzyskać pełne instrukcje dotyczące instalacji, konfiguracji i integracji,
 ---
 
 ### Szybki start
-
-```bash
+ 
+ ```bash
 1. Sklonuj repozytorium
 git clone https://github.com/tanhiowyatt/cyanide-honeypot.git
 

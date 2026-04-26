@@ -96,11 +96,20 @@ If the Metrics server is enabled (`CYANIDE_METRICS_ENABLED`), you can access rea
 | :--- | :--- | :--- |
 | `CYANIDE_OUTPUT_SLACK_ENABLED` | `false` | Toggle Slack notification plugin. |
 | `CYANIDE_OUTPUT_SLACK_WEBHOOK_URL` | `None` | Incoming Webhook URL for Slack. |
+| `CYANIDE_OUTPUT_SLACK_BATCH_SIZE` | `1` | Number of events to bundle per message. |
+| `CYANIDE_OUTPUT_SLACK_BATCH_TIMEOUT` | `2.0` | Max seconds to wait before sending a batch. |
+| `CYANIDE_OUTPUT_SLACK_MAX_CONTENT_LENGTH` | `4000` | Max character length for Slack messages. |
 | `CYANIDE_OUTPUT_DISCORD_ENABLED` | `false` | Toggle Discord notification plugin. |
 | `CYANIDE_OUTPUT_DISCORD_WEBHOOK_URL` | `None` | Webhook URL for Discord. |
+| `CYANIDE_OUTPUT_DISCORD_BATCH_SIZE` | `1` | Number of events to bundle per message. |
+| `CYANIDE_OUTPUT_DISCORD_BATCH_TIMEOUT` | `2.0` | Max seconds to wait before sending a batch. |
+| `CYANIDE_OUTPUT_DISCORD_MAX_CONTENT_LENGTH` | `2000` | Max character length for Discord messages. |
 | `CYANIDE_OUTPUT_TELEGRAM_ENABLED` | `false` | Toggle Telegram notification plugin. |
 | `CYANIDE_OUTPUT_TELEGRAM_TOKEN` | `None` | Telegram Bot Token. |
 | `CYANIDE_OUTPUT_TELEGRAM_CHAT_ID` | `None` | Target Chat ID for Telegram alerts. |
+| `CYANIDE_OUTPUT_TELEGRAM_BATCH_SIZE` | `1` | Number of events to bundle per message. |
+| `CYANIDE_OUTPUT_TELEGRAM_BATCH_TIMEOUT` | `2.0` | Max seconds to wait before sending a batch. |
+| `CYANIDE_OUTPUT_TELEGRAM_MAX_CONTENT_LENGTH` | `4096` | Max character length for Telegram messages. |
 
 </details>
 

@@ -176,10 +176,12 @@ jobs:
           # Pull latest built image
           docker pull ghcr.io/${{ github.repository }}:latest
 
-          # Run container with all exposed ports
           docker run -d --name smoke-test \
             -p 2222:2222 -p 2323:2323 -p 2525:2525 -p 9090:9090 \
-            -e CYANIDE_USERS='[{"user": "root", "pass": "admin"}]' \
+            -e CYANIDE_METRICS_ENABLED=true \
+            -e CYANIDE_SSH_ENABLED=true \
+            -e CYANIDE_TELNET_ENABLED=true \
+            -e CYANIDE_AUTH_USERS='[{"user": "root", "pass": "admin"}]' \
             ghcr.io/${{ github.repository }}:latest
 
           # 1. Check Container Status (immediate)

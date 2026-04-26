@@ -90,6 +90,19 @@ CYANIDE_OUTPUT_TELEGRAM_TOKEN="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
 CYANIDE_OUTPUT_TELEGRAM_CHAT_ID="987654321"
 ```
 
+##  Batching and Spam Protection
+
+Chat platforms like Slack, Discord, and Telegram have strict rate limits and message length restrictions. To prevent being banned or losing events, Cyanide supports batching:
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `CYANIDE_OUTPUT_*_BATCH_SIZE` | `1` | Number of events to bundle into a single message. |
+| `CYANIDE_OUTPUT_*_BATCH_TIMEOUT` | `2.0` | Max seconds to wait before sending a partial batch. |
+| `CYANIDE_OUTPUT_*_MAX_CONTENT_LENGTH`| *Platform Dependent* | Max character length before splitting/truncating messages. |
+
+> [!NOTE]
+> Default limits: Slack (4000), Discord (2000), Telegram (4096).
+
 > [!TIP]
 > Combine Webhooks with **Honeytokens** for a zero-noise alerting system. You will only get a notification when someone actually tries to read your "secrets."
 

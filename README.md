@@ -11,6 +11,7 @@
 
 
 <p align="center">
+  <a target="_blank" href="https://github.com/tanhiowyatt/cyanide-honeypot/blob/main/README.md">ENG</a> &nbsp; | &nbsp;
   <a target="_blank" href="https://github.com/tanhiowyatt/cyanide-honeypot/blob/main/docs/translations/readme-ru.md">RU</a> &nbsp; | &nbsp;
   <a target="_blank" href="https://github.com/tanhiowyatt/cyanide-honeypot/blob/main/docs/translations/readme-pl.md">PL</a>
 </p>
@@ -41,6 +42,7 @@
 #### 3) Advanced SOC and Analytics Integrations
 - Structured JSON logs with a standardized event schema to facilitate correlation and search.
 - Event export to external systems: SIEM/log stacks (ELK/Splunk), webhook alerts (Slack/Discord/Telegram) for real-time notifications.
+- Support for batching and message limit control to prevent spam and platform bans.
 - Configurable triggers and rules for critical pattern alerts (e.g., anomalous brute-force velocity, dropper uploads, suspicious commands/payloads).
 
 ---
@@ -56,20 +58,20 @@ For complete guides on installation, configuration, and integration, visit our *
 ---
 
 ### Quick Start
-
+ 
  ```bash
 1. Clone the repository
 git clone https://github.com/tanhiowyatt/cyanide-honeypot.git
 
-2. Go in docker folder
+2. Navigate to the project directory
 cd cyanide-honeypot
 
 3. Launch the environment
 docker-compose up -d
 
-4. Connect via SSH, Telnet or SFTP
-ssh root@localhost -p 2222 or 
-telnet localhost -p 2222 or 
+4. Connect via SSH, Telnet, or SFTP
+ssh root@localhost -p 2222
+telnet localhost -p 2222
 sftp root@localhost -p 2222
 
 * With Local Changes
@@ -106,10 +108,10 @@ YAML serves as the "source code," compiled/cached into **SQLite** (`.compiled.db
 - More stable high-load performance.
 
 #### Session Flow
-1. Incoming event (login/command/payload)  
-2. State update  
-3. Profile rules application (YAML/SQLite)  
-4. Response generation (with realistic timing)  
+1. Incoming event (login/command/payload)
+2. State update
+3. Profile rules application (YAML/SQLite)
+4. Response generation (with realistic timing)
 5. Logging + IOC extraction
 
 #### Logs and IOCs
@@ -126,3 +128,9 @@ This honeypot was created by **tanhiowyatt** and **koshanzov**. Our initial coll
 ### Disclaimer
 
 This software is for educational and research purposes only. Running a honeypot involves significant risks. The author is not responsible for any damage or misuse.
+
+---
+
+<p align="center">
+  <i>Revision: 1.0 - April 2026 - Cyanide Honeypot</i>
+</p>

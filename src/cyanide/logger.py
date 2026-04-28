@@ -110,7 +110,11 @@ class CyanideLogger:
                 # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
                 module = importlib.import_module(f"cyanide.output.{plugin_name}")
                 plugin_class = getattr(module, "Plugin")
-                plugin_instance = plugin_class(plugin_cfg)
+                # Inject resolved log_dir so webhook plugins can locate report files
+                cfg = dict(plugin_cfg)
+                if plugin_name in ("discord", "telegram"):
+                    cfg.setdefault("log_dir", str(self.log_dir))
+                plugin_instance = plugin_class(cfg)
                 plugin_instance.start()
                 plugins.append(plugin_instance)
                 logging.info(f"Loaded output plugin: {plugin_name}")

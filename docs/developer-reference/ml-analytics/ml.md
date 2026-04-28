@@ -59,7 +59,7 @@ Identifying a threat is useless if nowhere is alerted. The analytics pipeline st
 In production, Cyanide can replicate these unified logs via asynchronous output plugins to:
 1. **ElasticSearch / Splunk:** For massive SIEM aggregations.
 2. **PostgreSQL:** For structured long-term historical analysis.
-3. **Slack / Discord:** For real-time, high-priority severity alerts (e.g., when a user drops a confirmed zero-day binary).
+3. **Slack:** For real-time, high-priority severity alerts (e.g., when a user drops a confirmed zero-day binary).
 4. **HPFeeds:** For sharing anonymous threat feeds with the global Honeynet project community.
 
 ---

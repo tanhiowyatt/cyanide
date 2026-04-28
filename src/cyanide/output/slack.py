@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import Any, Dict
 
@@ -10,7 +9,7 @@ from .base import OutputPlugin
 class Plugin(OutputPlugin):
     """
     Slack Webhook Output Plugin.
-    Requires requests.
+    Optimized for high-priority critical alerts (Honeytoken triggers).
     """
 
     def __init__(self, config: Dict[str, Any]):
@@ -20,44 +19,41 @@ class Plugin(OutputPlugin):
         self.icon_emoji = config.get("icon_emoji", ":skull_and_crossbones:")
         self.max_length = config.get("max_content_length", 4000)
 
+    def emit(self, event: Dict[str, Any]):
+        """Filter events: only CRITICAL_ALERT (honeytoken hits) allowed."""
+        if not self.running:
+            return
+        if event.get("eventid") != "CRITICAL_ALERT":
+            return
+        super().emit(event)
+
+    def _format_alert(self, event: Dict[str, Any]) -> str:
+        """Format critical honeytoken alert for Slack."""
+        session = event.get("session", "unknown")
+        src_ip = event.get("src_ip", "unknown")
+        path = event.get("path", "unknown")
+        action = event.get("action", "unknown")
+
+        return (
+            f"🚨 *CRITICAL ALERT*: `Honeytoken Triggered` 🚨\n"
+            f"*Path*: `{path}`\n"
+            f"*Action*: `{action}`\n"
+            f"*Attacker IP*: `{src_ip}`\n"
+            f"*Session*: `{session}`\n"
+            f"---"
+        )
+
     def flush(self, events: list[Dict[str, Any]]):
+        """Send formatted alerts to Slack webhook."""
         if not self.webhook_url or not events:
             return
 
-        messages = []
-        current_message = ""
-
         for event in events:
-            session = event.get("session", "unknown")
-            eventid = event.get("eventid", "unknown")
-            data = {k: v for k, v in event.items() if k not in ["timestamp", "session", "eventid"]}
+            msg = self._format_alert(event)
+            # Slack has a limit of 40000 characters, but 4000 is safer for visibility
+            if len(msg) > self.max_length:
+                msg = msg[: self.max_length - 3] + "..."
 
-            event_text = (
-                f"*{self.username} Event*: `{eventid}`\n"
-                f"*Session*: `{session}`\n"
-                f"*Details*: ```{json.dumps(data, indent=2)}```\n"
-            )
-
-            # If a single event is too long, truncate the JSON part
-            if len(event_text) > self.max_length:
-                truncated_data = json.dumps(data, indent=2)[: self.max_length - 200]
-                event_text = (
-                    f"*{self.username} Event*: `{eventid}`\n"
-                    f"*Session*: `{session}`\n"
-                    f"*Details (Truncated)*: ```{truncated_data}...```\n"
-                )
-
-            if len(current_message) + len(event_text) > self.max_length:
-                if current_message:
-                    messages.append(current_message)
-                current_message = event_text
-            else:
-                current_message += event_text
-
-        if current_message:
-            messages.append(current_message)
-
-        for msg in messages:
             payload = {
                 "username": self.username,
                 "icon_emoji": self.icon_emoji,
@@ -65,8 +61,8 @@ class Plugin(OutputPlugin):
             }
 
             try:
-                resp = requests.post(self.webhook_url, json=payload, timeout=5)
-                if resp.status_code != 200:
+                resp = requests.post(self.webhook_url, json=payload, timeout=10)
+                if resp.status_code not in (200, 201, 204):
                     logging.error(
                         f"[Slack] Write error: status={resp.status_code} text={resp.text}"
                     )

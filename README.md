@@ -41,7 +41,7 @@
 
 #### 3) Advanced SOC and Analytics Integrations
 - Structured JSON logs with a standardized event schema to facilitate correlation and search.
-- Event export to external systems: SIEM/log stacks (ELK/Splunk), webhook alerts (Slack/Discord/Telegram) for real-time notifications.
+- Event export to external systems: SIEM/log stacks (ELK/Splunk), webhook alerts (Slack, Discord, Telegram) for real-time notifications.
 - Support for batching and message limit control to prevent spam and platform bans.
 - Configurable triggers and rules for critical pattern alerts (e.g., anomalous brute-force velocity, dropper uploads, suspicious commands/payloads).
 

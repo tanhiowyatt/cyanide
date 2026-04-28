@@ -37,7 +37,7 @@
 
 #### 3) Zaawansowane integracje SOC i analityczne
 - Strukturalne logi JSON ze ustandaryzowanym schematem zdarzeń ułatwiającym korelację i wyszukiwanie.
-- Eksport zdarzeń do systemów zewnętrznych: stosy SIEM/logów (ELK/Splunk), powiadomienia webhook (Slack/Discord/Telegram) w czasie rzeczywistym.
+- Eksport zdarzeń do systemów zewnętrznych: stosy SIEM/logów (ELK/Splunk), powiadomienia webhook (Slack, Discord, Telegram) w czasie rzeczywistym.
 - Obsługa przetwarzania wsadowego (batching) i kontroli limitów komunikatów w celu zapobiegania spamowi i blokadom platform.
 - Konfigurowalne triggery i reguły dla alertów o krytycznych wzorcach (np. anomalna prędkość brute-force, przesyłanie dropperów, podejrzane komendy/ładunki).
 

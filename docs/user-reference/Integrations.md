@@ -10,8 +10,8 @@ Cyanide currently includes a wide variety of native output plugins:
 
 *   **Databases**: SQLite, MySQL, PostgreSQL, MongoDB, RethinkDB.
 *   **Analytics & SIEM**: Elasticsearch, Splunk (HEC), Syslog.
-*   **Specialized Alerting**: Slack (Webhooks), HPFeeds (Threat Intel).
-*   **Threat Intelligence**: STIX 2.1 & MISP (Structured IOC reports).
+*   **Specialized Alerting**: Slack, Discord, Telegram.
+*   **Threat Intelligence**: HPFeeds (Threat Intel), STIX 2.1 & MISP (Structured IOC reports).
 
 ---
 
@@ -32,30 +32,30 @@ All exported events use a flat, searchable JSON structure.
 
 | Field | Description | Example |
 | :--- | :--- | :--- |
-| `event_type` | Category of the event. | `honeytoken`, `cmd.input`, `login` |
+| `eventid` | Category of the event. | `CRITICAL_ALERT`, `command.input`, `auth` |
 | `src_ip` | The attacker's source IP. | `1.2.3.4` |
 | `is_malicious` | ML Engine's verdict. | `true` |
-| `session_id` | Unique session trace ID. | `dfa1-423b-88...` |
+| `session` | Unique session trace ID. | `dfa1-423b-88...` |
 
 ---
 
-##  SIEM Alerting Manifest (Example Rules)
+## SIEM Alerting Manifest (Example Rules)
 
 Use these logic blocks to build high-fidelity alerts in **Elasticsearch (Kibana)** or **Splunk**.
 
 ### 1. The "Red Phone" (Critical)
 **Trigger**: Attacker touches a honeytoken.
-*   **Logic**: `event_type: "honeytoken"`
-*   **Action**: PagerDuty / Telegram. This indicates a human attacker exploring the system.
+*   **Logic**: `eventid: "CRITICAL_ALERT"`
+*   **Action**: PagerDuty / Slack. This indicates a human attacker exploring the system.
 
 ### 2. Payload Extraction (High)
 **Trigger**: Attacker attempts to download a file or URL.
-*   **Logic**: `event_type: "ioc"`
-*   **Search**: Look for `wget`, `curl`, or `ftp` in `cmd.input`.
+*   **Logic**: `eventid: "ioc_extracted"`
+*   **Search**: Look for `wget`, `curl`, or `ftp` in `command.input`.
 
 ### 3. Successful Intrusion (Medium)
 **Trigger**: Valid credentials guessed.
-*   **Logic**: `event_type: "login" AND success: true`
+*   **Logic**: `eventid: "auth" AND success: true`
 
 ---
 
@@ -67,9 +67,9 @@ For specialized needs (e.g., calling an internal API), you can write a custom pl
 
 ---
 
-## Quick Integration: Webhooks (Slack / Discord / Telegram)
+## Quick Integration: Webhooks (Slack)
 
-To get real-time alerts in your favorite chat platform, add these environment variables:
+To get real-time alerts via Slack, add these environment variables:
 
 ### Slack
 ```bash
@@ -78,21 +78,42 @@ CYANIDE_OUTPUT_SLACK_WEBHOOK_URL="https://hooks.slack.com/services/XXXX/YYYY/ZZZ
 ```
 
 ### Discord
+Discord integration uses Webhooks for alerts and an optional Bot Token for the `/report` command.
+
 ```bash
 CYANIDE_OUTPUT_DISCORD_ENABLED=true
 CYANIDE_OUTPUT_DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/..."
+# Optional: Required only for /report command
+CYANIDE_OUTPUT_DISCORD_BOT_TOKEN="your_bot_token"
+CYANIDE_OUTPUT_DISCORD_REPORT_CHANNEL_ID="target_channel_id"
 ```
 
+> [!IMPORTANT]
+> To use the `/report` command in Discord, you **must** provide a dedicated Bot Token and Channel ID. The Webhook alone cannot listen for messages.
+
 ### Telegram
+Telegram uses a single Bot Token for both alerts and interactive commands.
+
 ```bash
 CYANIDE_OUTPUT_TELEGRAM_ENABLED=true
-CYANIDE_OUTPUT_TELEGRAM_TOKEN="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
+CYANIDE_OUTPUT_TELEGRAM_TOKEN="123456:ABC..."
 CYANIDE_OUTPUT_TELEGRAM_CHAT_ID="987654321"
 ```
 
+---
+
+## Interactive Commands (/report)
+
+Both Discord and Telegram support the `/report` command. When triggered by an authorized user (based on `chat_id` or `channel_id`), the honeypot will:
+1.  Generate the latest STIX 2.1 and MISP IOC reports.
+2.  Upload them as physical **file attachments** (bypassing platform character limits).
+
+> [!NOTE]
+> For **Discord**, the honeypot must be invited to the server as a Bot with message-reading permissions. For **Telegram**, simply send the command to your bot.
+
 ##  Batching and Spam Protection
 
-Chat platforms like Slack, Discord, and Telegram have strict rate limits and message length restrictions. To prevent being banned or losing events, Cyanide supports batching:
+Slack has strict rate limits and message length restrictions. To prevent being banned or losing events, Cyanide supports batching:
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
@@ -101,7 +122,7 @@ Chat platforms like Slack, Discord, and Telegram have strict rate limits and mes
 | `CYANIDE_OUTPUT_*_MAX_CONTENT_LENGTH`| *Platform Dependent* | Max character length before splitting/truncating messages. |
 
 > [!NOTE]
-> Default limits: Slack (4000), Discord (2000), Telegram (4096).
+> Default limit: Slack (4000).
 
 > [!TIP]
 > Combine Webhooks with **Honeytokens** for a zero-noise alerting system. You will only get a notification when someone actually tries to read your "secrets."

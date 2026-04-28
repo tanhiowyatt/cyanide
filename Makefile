@@ -1,4 +1,4 @@
-.PHONY: test lint format check coverage clean help
+.PHONY: test lint format check coverage clean purge help
 
 VENV := .venv
 BIN := $(VENV)/bin
@@ -27,6 +27,7 @@ help:
 	@echo "  make coverage  Run tests with coverage report"
 	@echo "  make check     Run all linters and tests (full CI check)"
 	@echo "  make clean     Remove temporary files and caches"
+	@echo "  make purge     Wipe all honeypot data (logs, quarantine, keys, VFS cache)"
 
 lint:
 	$(BLACK) --check src/
@@ -54,3 +55,11 @@ clean:
 	find . -type d -name ".ruff_cache" -exec rm -rf {} +
 	rm -f .coverage
 	rm -f coverage.xml
+
+purge: clean
+	@echo "Purging all honeypot data..."
+	rm -rf var/log/cyanide/*
+	rm -rf var/quarantine/*
+	rm -rf var/lib/cyanide/*
+	find . -name "*.compiled.db" -delete
+	@echo "All data wiped."

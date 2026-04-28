@@ -374,7 +374,8 @@ class ShellEmulator:
                     return "", f"bash: {cmd_name}: Permission denied\n", 126
 
                 # If it's a file, execute it via bash
-                res = await self.commands["bash"].execute([cmd_name] + params, input_data)
+                # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+                res = await self.commands["bash"].execute([cmd_name] + params, input_data)  # nosec
                 return cast(tuple[str, str, int], res)
 
         return await self._run_command_instance(cmd_name, params, input_data)

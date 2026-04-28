@@ -86,17 +86,19 @@ def _scan_filesystem(rootfs_dir: Path) -> Dict[str, Any]:
 
 def _compile_to_sqlite(manifest: Dict[str, Any], db_path: Path, target_hash: str):
     """Compile a manifest into a SQLite database."""
-    if db_path.exists():
+    # Use a temporary file for compilation to avoid race conditions
+    temp_db_path = db_path.with_suffix(".tmp")
+    if temp_db_path.exists():
         try:
-            db_path.unlink()
+            temp_db_path.unlink()
         except OSError:
             pass
 
     try:
-        conn = sqlite3.connect(db_path)
+        conn = sqlite3.connect(temp_db_path)
     except sqlite3.DatabaseError as e:
         logger.warning(
-            f"Failed to open '{db_path}' for compilation (e.g. read-only/corrupt db): {e}. Falling back to in-memory db."
+            f"Failed to open '{temp_db_path}' for compilation: {e}. Falling back to in-memory db."
         )
         conn = sqlite3.connect(":memory:")
 
@@ -153,6 +155,13 @@ def _compile_to_sqlite(manifest: Dict[str, Any], db_path: Path, target_hash: str
         conn.commit()
     finally:
         conn.close()
+
+    # Atomically replace the target DB path
+    if temp_db_path.exists():
+        try:
+            temp_db_path.replace(db_path)
+        except OSError as e:
+            logger.warning(f"Failed to move compiled VFS to {db_path}: {e}")
 
 
 def _handle_list_node(flat_map: Dict[str, Any], path: str, items: list):

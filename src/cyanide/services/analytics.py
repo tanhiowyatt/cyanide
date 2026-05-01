@@ -150,6 +150,18 @@ class AnalyticsService:
             self.logger.log_event("system", "error", {"message": f"Failed to init ML model: {e}"})
             self.ml_enabled = False
 
+    def is_malicious(self, cmd: str) -> bool:
+        """Check if a command is flagged as malicious by ML or rules."""
+        if not self.ml_enabled or self.ml_pipeline is None:
+            return False
+
+        try:
+            result = self.ml_pipeline.analyze_command(cmd)
+            return result.get("is_anomaly", False)
+        except Exception as e:
+            self.logger.log_event("system", "error", {"message": f"ML Error in is_malicious: {e}"})
+            return False
+
     def analyze_command(self, cmd: str, src_ip: str, session_id: str, is_bot: bool = False):
         """Analyze a command string for tools and anomalies."""
         if self.session_mgr:
